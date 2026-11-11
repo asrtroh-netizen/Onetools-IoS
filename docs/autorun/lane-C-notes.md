@@ -51,3 +51,14 @@ C4、C5 在 2026-11-12 落盘。C1、C2、C3 的下载没做。C6 没做。没�
 - `DOMAIN` / `AND` 过了 Swift 映射之后还要 `kernelCheck`（`ModuleRuleMapping.swift:36-39`）。`AppCore.validateItem` 不在本树，不把这些规则写成忽略。依据：计划 5.5，查不到就不凭印象写成会被内核拒绝。回退：有了 Clash 模块之后用 B4 的真实输出替换这一句。
 - 正则用本机 Swift 6.4.2 Foundation 的 `NSRegularExpression` 核对了 160 条，对应 `ModuleLineSyntax.swift:121`。没有跑解析器。结果是 0 条构造失败。
 
+## C3（2026-11-12）
+
+只做了 C3。没有改 C1、C2、C4、C5、C6 各段，也没有改本文件前半里「空目录 / C3 没做」的原句。那些句子停在 zipball 落地之前。当前盘面以 `docs/findings/submodules.md` 为准。没有 git 写操作，没有 submodule update，没有编译，没有下载，没有跑这三个目录里的脚本。
+
+- 三份都是 zipball 副本。三处 `.git` 的 `Test-Path` 都是 false。含点文件的清点：Zsign 247 文件 / 29 目录 / 73,644,372 字节；IDeviceKitten 25 / 13 / 46,693；DeveloperDiskImage 6 / 0 / 18,046,187。与 `.mimocode/r0-6-submodules-ready.txt:2-4` 一致。
+- Zsign 给 Feather 用要现编 C++ 源。依据：`project.pbxproj:512` 本地包，`Package.swift:39-53` 列了源，没有 `binaryTarget`，盘上没有 `bin/zsign`。README 的 CLI 是另 clone `zhlynn/zsign` 再 `make clean && make`（`README.zh-CN.md:51-54`、`:62-65`、`:73-82`，Windows 是打开 `zsign.sln`，`:87`）。本次不跑。`build/macos/Makefile:14-18` 用 `git describe`，取不到则为 `0.0.0-dev`；本目录没有 `.git`。体积大头是已在树里的两份 OpenSSL `.lib`，不把它们当成已编好的 zsign。
+- IDeviceKit（目录名 IDeviceKitten）不在本目录现编 Rust。没有 `Cargo.toml`。`IDevice` 是 `binaryTarget`，zip 不在盘上（`Package.swift:21-24`）。`IDeviceSwift` 是源码（`:26-29`）。README 只有标题，没有编译命令。
+- DeveloperDiskImage 不编译。`README.md:7` 只写替换文件。这份快照里没有 LICENSE，README 也没写许可。个性化变体和 `Restore.plist`：README `:5` 写留在外面，目录 6 个文件里也没有这两个名字。
+- 提交号只出现在 `.mimocode/r0-6-zsign-ready.txt:2`、`r0-6-idevicekit-ready.txt:2`、`r0-6-ddi-ready.txt:2` 的 zip URL 里。树内没有 `.git`，本次没有重下 zip 去复核。
+- 不改 `docs/findings/integration-inventory.md`。它仍写「未初始化」。超出本次可写的两个路径。
+
