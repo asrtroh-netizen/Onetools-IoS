@@ -62,6 +62,34 @@
         "tools/test_golden_diff.py",
         "-q"
       ]
+    },
+    {
+      "id": "A1-flutter-test",
+      "cwd": "_golden",
+      "enabled": true,
+      "command": [
+        "C:/Flutter/flutter/bin/flutter.bat",
+        "test"
+      ]
+    },
+    {
+      "id": "R0-7-swift-smoke",
+      "cwd": ".",
+      "enabled": true,
+      "command": [
+        "wsl",
+        "-d",
+        "Ubuntu-24.04",
+        "-u",
+        "root",
+        "--",
+        "env",
+        "PATH=/opt/swift/usr/bin:/usr/bin:/bin",
+        "/opt/swift/usr/bin/swift",
+        "test",
+        "--package-path",
+        "/mnt/e/GQ/Ultra/Onetools-IoS/_harness/_smoke"
+      ]
     }
   ]
 }

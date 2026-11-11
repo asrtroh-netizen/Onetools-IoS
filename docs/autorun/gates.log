@@ -9,3 +9,21 @@ R0-8-icons result=pass exit=0 key=lines=121
 D1-export-ad-sdks result=pass exit=0 key=4 passed in 0.26s
 D2-check-samples result=pass exit=0 key=ok XWebAds.plugin b6d218d58a709cd72559fbe9c6d5eed5e6e5e2f003e7329fc34c2477cf785649
 A2-golden-diff result=pass exit=0 key=4 passed in 0.19s
+== 2026-11-12 00:27:31 +0800 ==
+R0-5-branches result=pass exit=0 key=Feather=onetools
+R0-8-material-count result=pass exit=0 key=src=200 dst=200
+R0-8-icons result=pass exit=0 key=lines=121
+D1-export-ad-sdks result=pass exit=0 key=4 passed in 0.25s
+D2-check-samples result=pass exit=0 key=ok XWebAds.plugin b6d218d58a709cd72559fbe9c6d5eed5e6e5e2f003e7329fc34c2477cf785649
+A2-golden-diff result=pass exit=0 key=4 passed in 0.20s
+A1-flutter-test result=pass exit=0 key=00:00 +2: All tests passed!
+R0-7-swift-smoke result=fail exit=2 key=bash: -c: line 1: `export PATH=/opt/swift/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files/OpenSSH/:/mnt/c/Program Files/Microsoft/jdk-21.0.11.10-hotspot/bin:/mnt/c/Program Files (x86)/Common Files/Oracle/Java/java8path:/mnt/c/Program Files (x86)/Common Files/Oracle/Java/javapath:/mnt/c/Program Files/Microsoft/jdk-17.0.19.10-hotspot/bin:/mnt/c/Python314/Scripts/:/mnt/c/Python314/:/mnt/d/MINE/Vmware/bin/:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/GitHub CLI/:/mnt/c/Program Files/Git/cmd:/mnt/d/MINE/Node/:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Program Files/Cloudflare/Cloudflare WARP/:/mnt/c/Program Files/Tailscale/:/mnt/c/Program Files/Go/bin:/mnt/c/Users/Administrator/.local/bin:/mnt/c/Users/Administrator/.grok/bin:/mnt/c/Users/Administrator/AppData/Local/Programs/OpenAI/Codex/bin:/mnt/c/Users/Administrator/.cargo/bin:/mnt/c/Users/Administrator/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/Administrator/AppData/Local/Microsoft/WinGet/Links:/mnt/c/Users/Administrator/AppData/Roaming/npm:/mnt/d/Work/CodeBuddy CN/bin:/mnt/c/Flutter/flutter/bin:/mnt/c/Users/Administrator/go/bin:/mnt/c/Users/Administrator/.dotnet/tools:/mnt/d/MINE/cursor/resources/app/bin; cd /mnt/e/GQ/Ultra/Onetools-IoS/_harness/_smoke && swift test'
+== 2026-11-12 00:28:58 +0800 ==
+R0-5-branches result=pass exit=0 key=Feather=onetools
+R0-8-material-count result=pass exit=0 key=src=200 dst=200
+R0-8-icons result=pass exit=0 key=lines=121
+D1-export-ad-sdks result=pass exit=0 key=4 passed in 0.30s
+D2-check-samples result=pass exit=0 key=ok XWebAds.plugin b6d218d58a709cd72559fbe9c6d5eed5e6e5e2f003e7329fc34c2477cf785649
+A2-golden-diff result=pass exit=0 key=4 passed in 0.18s
+A1-flutter-test result=pass exit=0 key=00:00 +2: All tests passed!
+R0-7-swift-smoke result=pass exit=0 key=Build complete! (1.11 secs)
