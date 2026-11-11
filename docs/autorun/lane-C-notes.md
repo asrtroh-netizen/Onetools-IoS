@@ -62,3 +62,14 @@ C4、C5 在 2026-11-12 落盘。C1、C2、C3 的下载没做。C6 没做。没�
 - 提交号只出现在 `.mimocode/r0-6-zsign-ready.txt:2`、`r0-6-idevicekit-ready.txt:2`、`r0-6-ddi-ready.txt:2` 的 zip URL 里。树内没有 `.git`，本次没有重下 zip 去复核。
 - 不改 `docs/findings/integration-inventory.md`。它仍写「未初始化」。超出本次可写的两个路径。
 
+## P5
+
+六份子计划只记本机已核对的事实，开头都是「未在 Mac 上运行」。没有 git 写操作。
+
+- `docs/superpowers/plans/2026-11-11-onetools-p4-oneui-core.md`（SP-04，4.0 到 4.5）
+- `docs/superpowers/plans/2026-11-11-onetools-p4-oneui-components.md`（SP-05，4.6 到 4.9）
+- `docs/superpowers/plans/2026-11-11-onetools-p5-shell-swipt.md`（SP-06，5.0、5.1）
+- `docs/superpowers/plans/2026-11-11-onetools-p5-feather.md`（SP-07，5.2）
+- `docs/superpowers/plans/2026-11-11-onetools-p6-adblock.md`（SP-08，P6）
+- `docs/superpowers/plans/2026-11-11-onetools-p7-signing.md`（SP-09，P7）
+
