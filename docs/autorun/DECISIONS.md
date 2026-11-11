@@ -16,3 +16,4 @@
 | 2026-11-12 | 不提交 `_golden/.flutter-plugins-dependencies`，并把它写进 `.gitignore` | 文件头写明不要进版本库，正文是本机绝对路径 | 从 `.gitignore` 删掉该行再 `git add -f` |
 | 2026-11-12 | 线 C 的第一个子代理停掉，换一个写 C4、C5 | 49 轮之后盘上仍只有 `scripts/mac/10-env.sh`，最后一轮时间不再前进 | 已有的 `10-env.sh` 留着，不删 |
 | 2026-11-12 | OneUI 的 `Package.swift` 用 `#if os(macOS)`。非 macOS 只声明 `OneUICore` 和 `OneUICoreTests`，把 target 的 path 扩到 `Sources`，exclude 掉界面目录和 Fonts，资源为 `.copy("OneUI/Resources/Icons")` | 计划 7.E：不是 macOS 时不参与 SwiftUI target。图标已在 `Sources/OneUI/Resources/Icons`，不另复制。macOS 上不能和 OneUI 的 `Sources/OneUI` 共用 path | 把 Linux 分支改回只有测试 target，并把图标拷贝 `Sources/OneUICore/Resources` |
+| 2026-11-12 | C1 先不派。`skia.googlesource.com:443` 超时一次；`api.github.com` 仍是 remaining=0，重置 `1794416617` | 三个文件还没落到 `_ref/skia/`。同一做法没失败两次，额度恢复后再用 API 下一次 | 额度恢复后用 `Accept: application/vnd.github.raw` 取 `e9ed4fc9` 的三个文件 |

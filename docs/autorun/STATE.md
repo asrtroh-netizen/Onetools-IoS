@@ -3,8 +3,8 @@
 - 起点：2026-11-11 18:00:13 +08:00（发车检查通过、计时 armed）
 - 截止：2026-11-12 06:00:13 +08:00（unix 1794434413）
 - 续跑上限：40
-- 当前阶段：第 2 轮派发前。现在 2026-11-12 00:52 +08:00，剩余约 308 分钟。
-- 下一动作：E1、C4、C5 主代理已重跑。提交后派 A3、A4、D3、B3、C2。C1 等 Skia 三个源文件；C3 等子模块。
+- 当前阶段：第 2 轮已派。现在 2026-11-12 00:55 +08:00，剩余约 305 分钟。
+- 下一动作：等 A3/A4、D3、B3、C2 交回后主代理重跑再提交。C1 的 Skia 源文件 googlesource 连不上，改走 GitHub API。C3 等子模块。
 
 ## 第 0 轮
 
@@ -26,11 +26,11 @@
 
 | 线 | 队列 | 现状 |
 |---|---|---|
-| A 基准线 | A1、A2 已验证；其后 A3–A11 待做 | 主代理在 `_golden` 连跑两次 `flutter test`，都是 `All tests passed!`。图哈希与子代理记录一致：light `E01AC4A4…`，dark `02400F31…`。A2 为 `4 passed` |
-| B Clash 线 | B1 已验证；B2 未编译；B3、B4 待做 | 主代理重跑 `swift test --package-path _harness/ClashLogic`：5 个测试通过。`sync_harness.py --check` 两行 `same`。B2 的 7 个 Swift 文件 `swiftc -parse` 退出码 0。三个语言文件各有 `Swipt Compatibility` 和环回长句。Clash-Client 提交 `658c29c`、`1358825` |
-| C 调研线 | C4、C5 已验证；C1 等 Skia 源文件；C2 待做（内核已在 `_ref/kernel-4b7d5f5/`）；C3 等子模块；C6 等 B3 | 主代理重跑五个脚本 `bash -n` 退出码都是 0。`Bundle.main` 计数相加 58。三个子模块目录仍为空。脚本标「未在 Mac 上运行」 |
-| D 规则线 | D1、D2 已验证；D3、D4 待做 | 主代理重跑：`pytest` 两个测试文件 `7 passed`；`check_samples.py` 五条 `ok`。样本 5 个。提交 `01f9839`、`881dbcf` |
-| E OneUI 线 | E1 已验证；E2、E3 等 A3、A4 | 主代理重跑 `swift test --package-path OneUI`：`Executed 3 tests, with 0 failures`，退出码 0。现有 `Sources/OneUI` 界面文件没有改动 |
+| A 基准线 | A1、A2 已验证；A3、A4 进行中；其后 A5–A11 待做 | 第 2 轮已派 A3、A4 |
+| B Clash 线 | B1 已验证；B2 未编译；B3 进行中；B4 等 B3 和 D2 | B3 已派。B1 提交 `658c29c`，B2 提交 `1358825` |
+| C 调研线 | C2 进行中；C4、C5 已验证并提交 `37f542c`；C1 等 Skia；C3 等子模块；C6 等 B3 | 五个脚本 `bash -n` 退出码 0。`Bundle.main` 相加 58。`skia.googlesource.com:443` 超时 |
+| D 规则线 | D1、D2 已验证；D3 进行中；D4 等 D1–D3 | 第 2 轮已派 D3 |
+| E OneUI 线 | E1 已验证，提交 `cb3fcdc`；E2、E3 等 A3、A4 | `swift test --package-path OneUI`：3 个测试通过。`Sources/OneUI` 界面文件没有改动 |
 
 ## 下载（R0-6）
 
