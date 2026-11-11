@@ -3,8 +3,8 @@
 - 起点：2026-11-11 18:00:13 +08:00（发车检查通过、计时 armed）
 - 截止：2026-11-12 06:00:13 +08:00（unix 1794434413）
 - 续跑上限：40
-- 当前阶段：打磨队列。现在 2026-11-12 04:35 +08:00，剩余约 85 分钟。
-- 下一动作：P7 双 Go 草稿已核对。P6（`experiments/G3/`）和 P8（通话规格）仍在写。A4、E3 图标夹具仍阻塞，B4 不做，P3 因 B3 不可行阻塞。
+- 当前阶段：打磨队列。现在 2026-11-12 04:38 +08:00，剩余约 82 分钟。
+- 下一动作：P6、P7、P8 的草稿已核对。能在这台机器上做的打磨项都已验收或标成阻塞。A4、E3 图标夹具仍阻塞，B4 不做，P3 因 B3 不可行阻塞。文字、模糊、投影、水波纹触摸和双 Go 共存要等 Mac 上的实验。
 
 ## 第 0 轮
 
@@ -28,9 +28,9 @@
 |---|---|---|
 | A 基准线 | A1–A3、A5–A11、P1、P2 已验证；A4 阻塞（缺 `icons.json`） | 种子 `20261112` 盲读 40 个数值，对 `tokens.json` 一致 23、未收录 17，没有同一键数值不同。主代理按行号复核源码字面量，并抽查 12 个一致键。480 毫秒在 `layout.json` 的 `dock.slideMs`，不在 `tokens.json` |
 | B Clash 线 | B1 已验证；B2 未编译；B3 不可行；B4 未做 | 主代理重跑 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`。原文件第 1 行是 `#if os(iOS) || os(macOS)`。B4 不做。B1 提交 `658c29c`，B2 提交 `1358825` |
-| C 调研线 | C1、C2、C3、C6 已验证；C4、C5 已验证并提交 `37f542c`；SP-04 到 SP-09 已复核；P7 草稿已核对 | 双 Go 草稿在 `docs/drafts/g2-go-runtimes.md`，第一行是「未在 Mac 上运行」。`Swipt/Frameworks` 不存在，没有 `LibSwipt.xcframework`。`project.yml:164` 是 `type: framework`，`ClashiOS` 对 Clash 是 `embed: true`（`:155-156`），扩展是 `embed: false`（`:259-260`）。`device.go:77` 是 `NewLoopbackProbe`。没改 `project.yml`。G2 结论还没有 |
+| C 调研线 | C1、C2、C3、C6 已验证；C4、C5 已验证并提交 `37f542c`；SP-04 到 SP-09 已复核；P7 草稿已核对 | 双 Go 草稿在 `docs/drafts/g2-go-runtimes.md`，第一行是「未在 Mac 上运行」。`Swipt/Frameworks` 不存在，没有 `LibSwipt.xcframework`。`project.yml:164` 是 `type: framework`，`ClashiOS` 对 Clash 是 `embed: true`（`:155-156`），扩展是 `embed: false`（`:259-260`）。`device.go:77` 是 `NewLoopbackProbe`。没改 `project.yml`。G2 结论还没有。通话规格在 `docs/superpowers/plans/2026-11-11-onetools-p9-calls-design.md`：`Calls` 目录 9 个文件、3038 行；四个点名文件在 `Runner` 下，不在 `Calls` 里。六项都标「未决定」。总计划第 156 行记了归属答复，第 351 行和第 922 行仍未勾上 |
 | D 规则线 | D1–D4 已验证 | 主代理重跑：覆盖检查与样本 `pytest` 为 `9 passed`；`loon_lint.py` 为 `ok`；`check_ad_coverage.py` 为 21 行 `ok`。抽查 11 处来源行，域名都在该行。三份公开列表的 SHA-256 与 `SOURCES.md` 一致。插件 12 条规则，覆盖 8 个 SDK；其余 13 个写了未收原因 |
-| E OneUI 线 | E1 已验证，提交 `cb3fcdc`；E2 已验证；E3 等图标夹具；P4 自签纯逻辑已验证 | 主代理重跑 `swift test --package-path SigningLogic`：`Executed 13 tests, with 0 failures`，退出码 0。到期前 7 天和 1 天各一条；已过期、当天到期、提前 6 天都不发。批量里单个失败不影响其余。只依赖 Foundation |
+| E OneUI 线 | E1 已验证，提交 `cb3fcdc`；E2 已验证；E3 等图标夹具；P4 自签纯逻辑已验证；P6 数值草稿已核对 | 主代理重跑 `swift test --package-path SigningLogic`：`Executed 13 tests, with 0 failures`，退出码 0。`experiments/G3/` 四个 Swift 文件一起 `swiftc -parse` 退出码 0，只 `import Foundation`。模糊常数与夹具一致：`blurPanel` 18、`blurBar` 24、`blurDock` 12、`blurLiquid` 10。文字、模糊、投影、水波纹触摸都没选实现 |
 
 ## 下载（R0-6）
 
