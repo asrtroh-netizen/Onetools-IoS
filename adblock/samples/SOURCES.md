@@ -60,3 +60,34 @@ license: GPL-3.0
 covers: 信息流广告
 why: 同一仓库的 Loon 插件。脚本匹配 HomeTimeline 与 HomeLatestTimeline，对应信息流广告。单文件提交是 2026-06-17T11:40:00Z。与微博信息流不是同一家。
 <!-- /sample -->
+
+## 公开域名列表
+
+D4 只追记三份。这里不用样本那对标记，check_samples.py 不会把它们算进样本个数。文件只存储，没有执行。
+
+<!-- domain-list -->
+file: adblock/lists/easylistchina.txt
+url: https://api.github.com/repos/easylist/easylistchina/contents/easylistchina.txt?ref=master
+fetched: 2026-11-12
+sha256: 94bdd0b3a0222489c62b8768742c9bdc8faf80cdef760297d4ea84673f3a8eea
+license: https://easylist.to/pages/licence.html
+why: EasyList 中文补充名单，仓库 easylist/easylistchina，推送 2026-11-11T13:06:50Z，star 362。GitHub 接口没有 SPDX，文件头写明上述许可页。和 limbopro 的短名单不是同一份文件。
+<!-- /domain-list -->
+
+<!-- domain-list -->
+file: adblock/lists/AWAvenue-Ads-Rule.txt
+url: https://api.github.com/repos/TG-Twilight/AWAvenue-Ads-Rule/contents/AWAvenue-Ads-Rule.txt?ref=main
+fetched: 2026-11-12
+sha256: fdf930d67659f6f1405c81e67c1fb7797145c54296c5ba0398729aa4d846808c
+license: GPL-3.0
+why: TG-Twilight/AWAvenue-Ads-Rule，star 6793，推送 2026-10-26T14:03:29Z。文件头版本 1.7.8，更新时间 2026-10-22。说明里写自己是上游名单，不是 EasyList 的合并产物。
+<!-- /domain-list -->
+
+<!-- domain-list -->
+file: adblock/lists/ADgk.txt
+url: https://api.github.com/repos/banbendalao/ADgk/contents/ADgk.txt?ref=master
+fetched: 2026-11-12
+sha256: 4f638ae80d54a062c01275c972f8a4cbc5ab83084acccd9e28f249fdb89d72e8
+license: MIT
+why: banbendalao/ADgk，star 627，推送 2023-07-13T07:41:43Z，MIT。说明里写作为 EasyList China 的补充，作者不是 EasyList。文件较早，只拿它已经和别的名单重合的主机当第二来源。
+<!-- /domain-list -->

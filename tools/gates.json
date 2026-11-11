@@ -165,6 +165,24 @@
       "cwd": ".",
       "enabled": true,
       "command": ["python", "tools/check_fixtures.py"]
+    },
+    {
+      "id": "D4-ad-coverage",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "tools/check_ad_coverage.py"]
+    },
+    {
+      "id": "D4-plugin-lint",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "tools/loon_lint.py", "adblock/onetools-cn-ads.plugin"]
+    },
+    {
+      "id": "D4-coverage-tests",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "-m", "pytest", "tools/test_check_ad_coverage.py", "-q"]
     }
   ]
 }

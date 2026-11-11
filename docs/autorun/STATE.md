@@ -3,8 +3,8 @@
 - 起点：2026-11-11 18:00:13 +08:00（发车检查通过、计时 armed）
 - 截止：2026-11-12 06:00:13 +08:00（unix 1794434413）
 - 续跑上限：40
-- 当前阶段：第 2 轮后半。现在 2026-11-12 02:12 +08:00，剩余约 228 分钟。
-- 下一动作：A5 已验收。D4 仍在写，交回后主代理重跑再提交。接着派 A6。B4 不做。C3 等子模块。E3 等图标夹具。
+- 当前阶段：第 2 轮后半。现在 2026-11-12 02:22 +08:00，剩余约 218 分钟。
+- 下一动作：A5、D4 已验收。A6 正在写 B 组场景，交回后再跑整包 `flutter test`。这期间不跑含 `flutter test` 的全部门禁，避免和正在写的 `b_*` 测试撞车。B4 不做。C3 等子模块。E3 等图标夹具。
 
 ## 第 0 轮
 
@@ -26,10 +26,10 @@
 
 | 线 | 队列 | 现状 |
 |---|---|---|
-| A 基准线 | A1–A3、A5 已验证；A4 阻塞（缺 `icons.json`）；其后 A6–A11 待做 | 主代理在 `_golden` 连跑两次 `flutter test`，都是 `00:02 +15: All tests passed!`，退出码 0。14 张图 SHA-256 两次相同，尺寸都是 1170×2532。a3 画 119 个 Material 图标，7×17，没有空格。a4/a5 用 `Glass`，水波纹用 `InkRipple.splashFactory` 和 `OneSizes.minimumTarget` |
+| A 基准线 | A1–A3、A5 已验证，提交 `aa3a000`；A4 阻塞（缺 `icons.json`）；A6 进行中；其后 A7–A11 待做 | 主代理在 `_golden` 连跑两次 `flutter test`，都是 `00:02 +15: All tests passed!`，退出码 0。14 张图 SHA-256 两次相同，尺寸都是 1170×2532。a3 画 119 个 Material 图标。A6 正在写 B 组前 8 个组件 |
 | B Clash 线 | B1 已验证；B2 未编译；B3 不可行；B4 未做 | 主代理重跑 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`。原文件第 1 行是 `#if os(iOS) || os(macOS)`。B4 不做。B1 提交 `658c29c`，B2 提交 `1358825` |
 | C 调研线 | C1、C2、C6 已验证；C4、C5 已验证并提交 `37f542c`；C3 等子模块 | C6 文档开头是「推断，未经解析器实测」。主代理核过：`notAModule` 在 `ModuleParser.swift:1177`，`unreadableLine` 在 `:1077-1078`，文案在 `ModuleCopy.swift:372`。`adblock4limbo.list` 796 行，非注释 548 条（SUFFIX 291、DOMAIN 223、KEYWORD 34），第一条在第 24 行 |
-| D 规则线 | D1–D3 已验证；D4 进行中 | 主代理重跑 `python -m pytest tools/test_loon_lint.py -q`：`17 passed`。D4 已派 |
+| D 规则线 | D1–D4 已验证 | 主代理重跑：覆盖检查与样本 `pytest` 为 `9 passed`；`loon_lint.py` 为 `ok`；`check_ad_coverage.py` 为 21 行 `ok`。抽查 11 处来源行，域名都在该行。三份公开列表的 SHA-256 与 `SOURCES.md` 一致。插件 12 条规则，覆盖 8 个 SDK；其余 13 个写了未收原因 |
 | E OneUI 线 | E1 已验证，提交 `cb3fcdc`；E2 已验证；E3 等图标夹具 | 主代理重跑 `swift test --package-path OneUI`：`Executed 4 tests, with 0 failures`。假键 `__probe` 失败于 `swift missing tokens.__probe`，撤掉后再过。`Glass.radiusCard` 18，浅色描边 alpha `0.5950` |
 
 ## 下载（R0-6）

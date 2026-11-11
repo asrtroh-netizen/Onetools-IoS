@@ -1,0 +1,21 @@
+#!name=OneTools CN Ads
+#!desc=Chinese ad SDK hosts named by two independent public rules
+
+[Rule]
+# baidu
+DOMAIN-SUFFIX,cpro.baidu.com,REJECT
+DOMAIN-SUFFIX,pos.baidu.com,REJECT
+DOMAIN-SUFFIX,mobads.baidu.com,REJECT
+DOMAIN-SUFFIX,als.baidu.com,REJECT
+DOMAIN,afd.baidu.com,REJECT
+DOMAIN-SUFFIX,mobads-logs.baidu.com,REJECT
+# kuaishou
+DOMAIN-SUFFIX,e.kuaishou.com,REJECT
+# gdt / tencent
+DOMAIN-SUFFIX,gdt.qq.com,REJECT
+# bytedance / csj / pangle
+DOMAIN-SUFFIX,pangolin-sdk-toutiao-b.com,REJECT
+DOMAIN,pangolin.snssdk.com,REJECT
+DOMAIN-SUFFIX,log-api.pangolin-sdk-toutiao.com,REJECT
+# sigmob
+DOMAIN-SUFFIX,dc.sigmob.cn,REJECT

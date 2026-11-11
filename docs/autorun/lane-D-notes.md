@@ -39,6 +39,18 @@
 
 时间：2026-11-12 00:55 开始，01:19 写完本节。限时 60 分钟，未到点。
 
-## 未做
+## D4
 
-D4 不在本次范围。没有写 `adblock/onetools-cn-ads.plugin`、`docs/findings/ad-sdk-domains.md`、`tools/check_ad_coverage.py`。没有改 Clash-Client，没有 git 写操作，没有下载。
+已验证。插件 12 条规则，8 个 SDK 有规则（baidu、bytedance、csj、gdt、kuaishou、pangle、sigmob、tencent），另外 13 个在 findings 里写了没有的原因。
+
+先红：还没有 `tools/check_ad_coverage.py` 时，`python -m pytest tools/test_check_ad_coverage.py -q` 为 6 failed，失败行是找不到该脚本。实现后 `python -m pytest tools/test_check_ad_coverage.py tools/test_check_samples.py -q` 为 9 passed。`python tools/loon_lint.py adblock/onetools-cn-ads.plugin` 输出 `ok adblock\onetools-cn-ads.plugin`，退出码 0。`python tools/check_ad_coverage.py` 输出 21 行 `ok <id>`，退出码 0。
+
+自查：把来源数判断从 `< 2` 改成 `< 3`，`test_complete_fixture_passes` 失败（退出码 1，stdout 只剩 `ok adgain`），改回后再次 9 passed。
+
+收录：一个主机必须是两份名单里的规则目标（`DOMAIN` / `DOMAIN-SUFFIX` 或 `||主机^`）。用了样本 `adblock4limbo.list`，加三份公开名单：EasyList China、秋风 AWAvenue、ADgk。网址、抓取日期 2026-11-12、SHA-256 写在 `SOURCES.md` 的 domain-list 段，没用样本标记。第一次写进去的说明里带了样本标记原文，`check_samples.py` 把后面的列表当成样本并报 `MISSING adblock/lists/ADgk.txt`。删掉那句原文后，样本测试恢复。
+
+不收：`anti-ad-domains.txt` 是合并名单，不当第二来源。`acl4ssr-banad.list` 会变成第四份公开列表，而且没有 SDK 域名只靠它补上第二来源。主域名和共用 CDN 不收，包括 `baidu.com`、`qq.com`、`kuaishou.com`、`jd.com`、`yximgs.com`、`cpro.baidustatic.com`、`e.qq.com`（比 gdt.qq.com 宽）、`trace.qq.com`、`adslvfile.qq.com`。`pangolin-sdk-toutiao.com` 整域只在 limbo。穿山甲、字节开屏、Pangle 共用三条已核对的 pangolin 主机；gdt 与 tencent 共用 `gdt.qq.com`。
+
+本段没有新的下载，没有新的失败 URL。没有改 Clash-Client，没有改 `loon_lint.py`，没有 git 写操作。下载来的名单只当文本读。
+
+时间：2026-11-12 02:04 接着做并写完本节。限时 60 分钟，未到点。
