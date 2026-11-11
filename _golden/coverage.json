@@ -1,0 +1,112 @@
+{
+  "files": {
+    "one/dot_matrix_face.dart": {
+      "scenes": ["dot_matrix_face"]
+    },
+    "one/glass.dart": {
+      "scenes": ["a4_fills", "a5_shadows"],
+      "fixtures": ["tokens.json", "layout.json"]
+    },
+    "one/glass_chrome.dart": {
+      "exclude": "GlassBackdrop 只被 app.dart 和 login_screen.dart 实例化。基准场景在 scene.dart 里直接画 Glass.backdrop 渐变，不构建这个控件。glassDockScrollPadding 只被 OneInsets.scroll 引用，没有场景或夹具调用。"
+    },
+    "one/glass_surface.dart": {
+      "scenes": ["glass_panel", "dock_static_0"]
+    },
+    "one/ime_visibility.dart": {
+      "scenes": ["dock_static_0", "dock_pressed"]
+    },
+    "one/liquid_glass.dart": {
+      "exclude": "lib 里 LiquidGlass 只出现在本文件。底栏注释写明已改均匀磨砂，不再用本组件。没有场景或夹具引用它。"
+    },
+    "one/one_palette.dart": {
+      "scenes": ["status_hero_ready"],
+      "fixtures": ["tokens.json"]
+    },
+    "one/one_status_hero.dart": {
+      "scenes": [
+        "status_hero_ready",
+        "status_hero_busy",
+        "status_hero_alert",
+        "status_hero_ready_280",
+        "status_hero_busy_280",
+        "status_hero_alert_280"
+      ]
+    },
+    "one/ultra_glass_dock.dart": {
+      "scenes": ["dock_static_0", "dock_slide_t000", "dock_pressed"],
+      "fixtures": ["dock_edges.json", "layout.json"]
+    },
+    "theme/one_theme.dart": {
+      "scenes": ["a1_typography", "text_field"],
+      "fixtures": ["tokens.json", "typography.json"]
+    },
+    "tokens/one_tokens.dart": {
+      "scenes": ["a6_ripple_hold", "a7_ripple_confirm"],
+      "fixtures": ["tokens.json", "ripple.json"]
+    },
+    "widgets/adaptive_glass_dock.dart": {
+      "exclude": "只转发到 widgets/glass_dock.dart。调用方是 android_oneims_shell.dart，没有基准场景实例化 AdaptiveGlassDock。"
+    },
+    "widgets/choice_toggle.dart": {
+      "scenes": ["choice_toggle"]
+    },
+    "widgets/console_layout.dart": {
+      "exclude": "只做转出口，没有自己的控件。被它导出的控件各自有场景，没有场景 import 这个文件。"
+    },
+    "widgets/feature_failure_notice.dart": {
+      "scenes": ["feature_failure_notice"]
+    },
+    "widgets/glass_action.dart": {
+      "scenes": ["glass_action"]
+    },
+    "widgets/glass_backdrop.dart": {
+      "exclude": "只有一行 export，再导出 GlassBackdrop。没有场景 import 这个文件。"
+    },
+    "widgets/glass_dialog.dart": {
+      "scenes": ["glass_dialog"]
+    },
+    "widgets/glass_dock.dart": {
+      "exclude": "底栏场景 import 的是 one/ultra_glass_dock.dart 的 GlassDock。本文件是 OneDockDestination 外壳，没有场景实例化它。"
+    },
+    "widgets/glass_panel.dart": {
+      "scenes": ["glass_panel"]
+    },
+    "widgets/glass_tile.dart": {
+      "scenes": ["glass_tile"]
+    },
+    "widgets/metric_card.dart": {
+      "scenes": ["metric_card"]
+    },
+    "widgets/nameplate.dart": {
+      "scenes": ["nameplate"]
+    },
+    "widgets/obscurable_field.dart": {
+      "scenes": ["obscurable_field"]
+    },
+    "widgets/one_mark.dart": {
+      "scenes": ["one_mark"]
+    },
+    "widgets/one_status_hero.dart": {
+      "exclude": "基准场景用 one/one_status_hero.dart。本文件把药丸和阶段写死成中文（就绪、处理中、关闭），基准图不放中文。"
+    },
+    "widgets/ow_accent.dart": {
+      "scenes": ["ow_accent"]
+    },
+    "widgets/page_head.dart": {
+      "scenes": ["page_head"]
+    },
+    "widgets/section.dart": {
+      "scenes": ["section"]
+    },
+    "widgets/soft_label.dart": {
+      "scenes": ["soft_label"]
+    },
+    "widgets/stage_row.dart": {
+      "scenes": ["stage_row"]
+    },
+    "widgets/system_controls.dart": {
+      "scenes": ["metric_card", "section", "obscurable_field", "glass_action", "status_hero_ready"]
+    }
+  }
+}

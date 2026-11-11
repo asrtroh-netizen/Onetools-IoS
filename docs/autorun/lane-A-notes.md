@@ -222,3 +222,28 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 2. 底栏贴在默认场景底部。滑动：`selectedIndex` 从 0 改到 2，先 `pump()` 把动画停在 t=0，再按 480ms 的比例 `pump`。不用 `pumpAndSettle`。按下：指针不松，先 `pump(kPressTimeout)`（水波纹出生，这一帧 elapsed 为 0），再 `pump` 200ms。
 3. `layout.json` 的常量和矩形都是测试里读的：`Glass.dockHeight` 等，以及 `tester.getRect` 的 `GlassDock` 和 `kGlassDockIndicatorKey`。检查脚本再从 `glass.dart` / `ultra_glass_dock.dart` 解析常量。文件不在时不要求；在就检查。原有 tokens / typography / dock_edges / ripple 没放宽。
 
+## A10
+
+开工 2026-11-12 03:39 +08，交回 2026-11-12 03:44 +08。命令都在仓库根。未改 OneWIFI，未做 git 写操作。未开 A11。
+
+先红：还没有 `tools/check_golden_coverage.py` 时，`python -m pytest tools/test_check_golden_coverage.py -q` 收集失败，`ModuleNotFoundError: No module named 'check_golden_coverage'`。退出码 2。最后一行 `1 error in 0.13s`。
+
+实现后：
+
+- `python -m pytest tools/test_check_golden_coverage.py -q` → `6 passed in 0.08s`，退出码 0
+- `python tools/check_golden_coverage.py` → `32/32`，退出码 0
+
+分母每次从 `E:\GQ\Ultra\ONEWIFIX\IOS\lib\design` 重列 `.dart`，这次是 32 个。脚本里没有写死 32。测试任多放一个未映射文件，输出从 `1/1` 变成 `1/2`。
+
+自查：从 `_golden/coverage.json` 拿掉 `widgets/page_head.dart`。`python tools/check_golden_coverage.py` 标准输出 `31/32`，标准错误 `UNCOVERED widgets/page_head.dart`，退出码 1。改回后再跑，`32/32`，退出码 0。
+
+排除 7 个，其余 25 个对应到已有场景或夹具：
+
+- `one/liquid_glass.dart`：`LiquidGlass` 只出现在本文件。底栏注释写明已改均匀磨砂，不再用本组件。
+- `one/glass_chrome.dart`：`GlassBackdrop` 只被 `app.dart` 和 `login_screen.dart` 实例化。场景在 `scene.dart` 里直接画 `Glass.backdrop`。`glassDockScrollPadding` 没有场景或夹具调用。
+- `widgets/glass_backdrop.dart`：一行 `export`，再导出 `GlassBackdrop`。没有场景 import 它。
+- `widgets/console_layout.dart`：只做转出口，没有自己的控件。导出的控件各自有场景。
+- `widgets/glass_dock.dart`：底栏场景用 `one/ultra_glass_dock.dart` 的 `GlassDock`。本文件是 `OneDockDestination` 外壳，没有场景实例化它。
+- `widgets/adaptive_glass_dock.dart`：只转发到 `widgets/glass_dock.dart`。调用方是 `android_oneims_shell.dart`。
+- `widgets/one_status_hero.dart`：基准用 `one/one_status_hero.dart`。本文件把药丸和阶段写死成中文（就绪、处理中、关闭）。
+

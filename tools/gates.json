@@ -183,6 +183,18 @@
       "cwd": ".",
       "enabled": true,
       "command": ["python", "-m", "pytest", "tools/test_check_ad_coverage.py", "-q"]
+    },
+    {
+      "id": "A10-golden-coverage",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "tools/check_golden_coverage.py"]
+    },
+    {
+      "id": "A11-contact-sheet",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "tools/make_contact_sheet.py", "--check"]
     }
   ]
 }
