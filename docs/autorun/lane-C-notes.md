@@ -28,4 +28,16 @@ C4、C5 在 2026-11-12 落盘。C1、C2、C3 的下载没做。C6 没做。没�
 - 版本：swift-crypto Clash 3.15.1 / Feather 3.12.3；swift-asn1 Clash 1.7.3 / Feather 1.3.2 与 1.3.1；swift-atomics Swipt 1.3.1 / Feather 1.2.0；`golang.org/x/sys` Clash cli v0.48.0 / Swipt v0.49.0；gomobile 两边都是 v0.1.13。
 - 子模块 `Feather/Zsign`、`Feather/IDeviceKitten`、`Swipt/Swipt/Resources/DeveloperDiskImage` 仍是空目录，未初始化。C1、C2、C3 没做。
 
+## C1（主代理 2026-11-12 01:06 重核）
+
+四个文件的 blob 与 `e9ed4fc9f1544c58d8a9347c1fc9471d8dd7c465` 一致。插值表在 `SkTextFormatParams.h` 第 15–25 行，是 9 与 36、1/24 与 1/32。结论写成「一致」，不改 P4 字体规格。详情在 `_ref/NOTES.md`。
+
 主代理 2026-11-12 00:52 重跑：五个 `bash -n` 退出码 0；`Bundle.main` 各文件计数相加 58；三个子模块目录文件数为 0。`40-verify-windows-work.sh` 里关于 OneUI 没有测试 target 的句子已改成和 E1 之后的 `Package.swift` 一致。脚本仍未在 Mac 上运行。
+
+## C2（2026-11-12 00:56 开始）
+
+只做了 C2。C1、C3、C6 没做。没有改内核、Swipt、Feather，没有下载，没有 git 写操作。结论在 `docs/decisions/W-kernel-loopback.md`。
+
+- 锁定树有 `loopback-address`。`config/config.go:307` 声明，`:1871` 抄进 TUN。该文件与 `Clash-Core/config/config.go` SHA256 前 12 位相同（`D2456054F469`）。
+- 实现是 IP 层反射：`listener/sing_tun/server.go:427-428` 拆地址，`:535` 走 `tun.NewStack`；`third_party/sing-tun/ip_rewrite.go:50-53` 和 `:82-86` 命中后交换源和目的再写回，TCP / UDP / ICMP 同路。测试 `ip_rewrite_loopback_test.go:33-36`。
+- 工作区的选项文本相同，数据面改成 Go 栈：`Clash-Core/listener/sing_tun/server.go:516` 调 `startGoStack`，`bind/clash/go_stack_darwin.go:110-111` 用 `NewIPRewriter`。锁定树没有 `sing-tun-go`；工作区 `third_party/sing-tun/` 没有 `stack_system.go`、`stack_gvisor.go`、`stack_mixed.go`、`stack_mipstack.go`。
