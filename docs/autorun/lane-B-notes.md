@@ -23,3 +23,10 @@
 - `ClashtvOS` 也编 `ConfigTransforms.swift`，但 `project.yml` 里没有 ClashClientUI 包。Mac 上编这个 target 会卡在新加的 import。不改 `project.yml`（不在可写路径）。
 - `Clash-Client/apple/ClashClient/Sources/Mac/VPNTunnelSettings.swift:75` 的 `excludeAPNsRoute:` 没有 `swiptLoopback:`。这是 Mac 结构体的成员初始化，不是运行时配置调用链。
 - T3.5 真机、B3、B4 没做。
+
+## B3（2026-11-12）
+
+- 结论：不可行。详情在 `docs/decisions/W-parser-harness.md`。卡在 `ModuleJQ` / `ModuleJSONText` 的 `#if os(iOS) || os(macOS)`。`swift build --package-path _harness/ModuleParser` 退出码 1，`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`。
+- 计划那句话：三个语法文件只有 Foundation、ModuleIR 依赖 CryptoKit、ModuleParser 依赖 Darwin 和 os，仍然成立。Syntax 文件现在是 6 个，不是 5 个。
+- `import Clash` 退出码 1，`no such module 'Clash'`。头文件不在树里。B4 不做，线 C 改做 C6。
+- 没改 Clash-Client，没改 `_harness/ClashLogic`。
