@@ -134,6 +134,12 @@
         "--package-path",
         "/mnt/e/GQ/Ultra/Onetools-IoS/OneUI"
       ]
+    },
+    {
+      "id": "D3-loon-lint",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "-m", "pytest", "tools/test_loon_lint.py", "-q"]
     }
   ]
 }

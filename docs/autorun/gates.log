@@ -50,3 +50,16 @@ R0-7-swift-smoke result=pass exit=0 key=Build complete! (1.14 secs)
 B1-sync-check result=pass exit=0 key=same Clash-Client\apple\ClashClientUI\Tests\ClashClientUITests\SwiptLoopbackTests.swift
 B1-swift-test result=pass exit=0 key=Build complete! (1.06 secs)
 E1-swift-test result=pass exit=0 key=Build complete! (1.15 secs)
+== 2026-11-12 01:22:04 +0800 ==
+R0-5-branches result=pass exit=0 key=Feather=onetools
+R0-8-material-count result=pass exit=0 key=src=200 dst=200
+R0-8-icons result=pass exit=0 key=lines=121
+D1-export-ad-sdks result=pass exit=0 key=4 passed in 0.27s
+D2-check-samples result=pass exit=0 key=ok XWebAds.plugin b6d218d58a709cd72559fbe9c6d5eed5e6e5e2f003e7329fc34c2477cf785649
+A2-golden-diff result=pass exit=0 key=4 passed in 0.20s
+A1-flutter-test result=pass exit=0 key=00:01 +3: All tests passed!
+R0-7-swift-smoke result=pass exit=0 key=Build complete! (1.15 secs)
+B1-sync-check result=pass exit=0 key=same Clash-Client\apple\ClashClientUI\Tests\ClashClientUITests\SwiptLoopbackTests.swift
+B1-swift-test result=pass exit=0 key=Build complete! (1.12 secs)
+E1-swift-test result=pass exit=0 key=Build complete! (1.16 secs)
+D3-loon-lint result=pass exit=0 key=17 passed in 1.63s

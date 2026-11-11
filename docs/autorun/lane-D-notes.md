@@ -27,6 +27,18 @@
 
 更早一次用 Python urllib 读大响应体，`IncompleteRead(598765 bytes read, 36368 more expected)`。同一做法不再用，改为 `curl.exe --noproxy *`。
 
+## D3
+
+已验证。`tools/loon_lint.py` 只放过 Clash-Client 解析器会留下的写法。每种写法在模块的 `CITATIONS` 里记了源码相对路径、行号、该行必须出现的源文。测试打开这些 Swift 文件核对，不把行号写死在印象里。
+
+先红：还没有 `tools/loon_lint.py` 时，`python -m pytest tools/test_loon_lint.py -q` 为 17 failed，失败行是 `loon_lint.py missing`。实现后有两处出处对不上当时的源码：`section-key` 的 `lowercased().filter` 在 `ModuleParser.swift:938`，不在 937；`rule-domain` 的 `case "DOMAIN"` 在 `ModuleRuleMapping.swift:875`，`DOMAIN-SUFFIX` 单独在 870–874（`withoutLeadingDot`）。改对后 17 passed。自查把 `NOT-A-TYPE` 放进接受名单，`test_unknown_rule_type_fails` 失败（退出码 0，`assert 0 != 0`），删掉后再次 17 passed。
+
+接受的段：`[Argument]`、`[Rule]`、`[Rewrite]`、`[URL Rewrite]`、`[Script]`、`[MITM]`，再加 `#!` 元数据和 `#` / `//` / `;` 注释。策略只收 `kernelPolicy` 能映射的（`DIRECT`、`REJECT`、`REJECT-DROP`、更长的 `REJECT-*`）和字面量 `PROXY`。自定义策略名不收：解析时能存成 named，激活时 `ModuleActivation.swift:1245` 记 `policyNotFound`。按计划 5.5 取最保守的一档。
+
+不收，检查会失败：没有段、段前正文、`[Proxy]`、未知段、`[Map Local]`、`#!type=parser`、`#!system=macOS`、Loon 新语法 `response if … then script(...)`、控件不是 input/select/switch 的参数、读不懂的 MITM、读不懂的改写、没有 script-path、dns 脚本、路径里带 boxjs。`response-body-json-jq` 解析器在 `ModuleLineSyntax.swift:231` 会读，本工具不收，所以不拿 `adblock/samples/` 当通过样本。样本没改、没执行。
+
+时间：2026-11-12 00:55 开始，01:19 写完本节。限时 60 分钟，未到点。
+
 ## 未做
 
-D3、D4 不在本次范围。没有写 `docs/findings/ad-sdk-domains.md`，没有改 Clash-Client，没有 git 写操作。
+D4 不在本次范围。没有写 `adblock/onetools-cn-ads.plugin`、`docs/findings/ad-sdk-domains.md`、`tools/check_ad_coverage.py`。没有改 Clash-Client，没有 git 写操作，没有下载。
