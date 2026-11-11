@@ -106,3 +106,22 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 主代理 2026-11-12 02:12 在 `_golden` 连跑两次不带 `--update-goldens` 的 `flutter test`，都是 `00:02 +15: All tests passed!`，退出码 0。14 张图的 SHA-256 两次相同。a1 仍是 light `E01AC4A4F084965AB597EF552EF014F64555E654CB1199C395ED95912809048F`、dark `02400F310CC76D53FBB53572EAD8398A0137050AD77EDEB9B7BFF15D1AA27A47`。
 - a7_ripple_confirm | 通过 | `test/scenes/a7_ripple_confirm_test.dart`，`goldens/a7_ripple_confirm.light.png`，`goldens/a7_ripple_confirm.dark.png` | `--update-goldens test/scenes/a7_ripple_confirm_test.dart` → `All tests passed!`；不带参数 → `All tests passed!`
 
+## A6
+
+开工 2026-11-12 02:14 +08，交回 2026-11-12 02:28 +08。命令都在 `_golden`，`C:\Flutter\flutter\bin\flutter.bat test`。深浅各一张，1170×2532。未跑整包连跑两次。这 8 个场景没有 `SystemSwitch` / `SystemSpinner`（`GlassActionButton` 没开 `busy`），没装平台视图空实现。
+
+- nameplate | 通过 | `test/scenes/b_nameplate_test.dart`，`goldens/nameplate.light.png`，`goldens/nameplate.dark.png` | 先红：缺图 `non-existent file`；`--update-goldens test/scenes/b_nameplate_test.dart` → `00:00 +2: All tests passed!`；不带参数 → `00:00 +2: All tests passed!`
+- section | 通过 | `test/scenes/b_section_test.dart`，`goldens/section.light.png`，`goldens/section.dark.png` | 先红缺图；`--update-goldens test/scenes/b_section_test.dart` → `00:01 +2: All tests passed!`；不带参数 → `00:00 +2: All tests passed!`
+- glass_tile | 通过 | `test/scenes/b_glass_tile_test.dart`，`goldens/glass_tile.light.png`，`goldens/glass_tile.dark.png` | 先红缺图；`--update-goldens test/scenes/b_glass_tile_test.dart` → `00:01 +2: All tests passed!`；不带参数 → `00:01 +2: All tests passed!`
+- glass_panel | 通过 | `test/scenes/b_glass_panel_test.dart`，`goldens/glass_panel.light.png`，`goldens/glass_panel.dark.png` | 第一次编译失败：`glass.dart` 导出的 `GlassPanel` 与 `widgets/glass_panel.dart` 重名。`hide GlassPanel` 后先红缺图；`--update-goldens test/scenes/b_glass_panel_test.dart` → `00:01 +2: All tests passed!`；不带参数 → `00:00 +2: All tests passed!`
+- metric_card | 通过 | `test/scenes/b_metric_card_test.dart`，`goldens/metric_card.light.png`，`goldens/metric_card.dark.png` | 先红缺图；`--update-goldens test/scenes/b_metric_card_test.dart` → `00:01 +2: All tests passed!`；不带参数 → `00:01 +2: All tests passed!`
+- stage_row | 通过 | `test/scenes/b_stage_row_test.dart`，`goldens/stage_row.light.png`，`goldens/stage_row.dark.png` | 先红缺图；`--update-goldens test/scenes/b_stage_row_test.dart` → `00:00 +2: All tests passed!`；不带参数 → `00:00 +2: All tests passed!`
+- soft_label | 通过 | `test/scenes/b_soft_label_test.dart`，`goldens/soft_label.light.png`，`goldens/soft_label.dark.png` | 先红缺图；`--update-goldens test/scenes/b_soft_label_test.dart` → `00:01 +2: All tests passed!`；不带参数 → `00:00 +2: All tests passed!`
+- glass_action | 通过 | `test/scenes/b_glass_action_test.dart`，`goldens/glass_action.light.png`，`goldens/glass_action.dark.png` | 先红缺图；`--update-goldens test/scenes/b_glass_action_test.dart` → `00:00 +2: All tests passed!`；不带参数 → `00:00 +2: All tests passed!`
+
+### 决定
+
+1. 场景名用 T1.3 的 `nameplate` 等，测试文件用 `b_*_test.dart`。组件是 `package:onewifi_android/design/widgets/` 下的原类，不是仿写。
+2. 需要有界宽度的卡片用 `test/support/b_frame.dart`：水平约束保留、高度不受约束，避免 `Column` 被拉成 844。宽度 250–320，给投影和选中光留边。
+3. 文案只用拉丁字母和数字。`SoftLabel` 没开 `mono`：测试只装了 Montserrat，`monospace` 会成方块。
+
