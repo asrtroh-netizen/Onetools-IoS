@@ -156,3 +156,41 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 1. 门面卡用 `design/one/one_status_hero.dart` 的 `OneStatusHero`，不用 `widgets/one_status_hero.dart`。后者把药丸和阶段写死成中文。场景名对应 `OneChannelState.ready` / `activating`（`isBusy`）/ `inactive`（`isAlert`）。`busyLabel` 传 `Wait`，避开默认的「处理中」。右上角挂了 `Icons.chevron_right`，宽 280 时它掉到标题行下面（内宽 < 300）。
 2. 空平台视图在 `test/support/platform_views.dart`，只给 `glass_dialog` 和两个 busy 场景 `setUp`。渠道是 `SystemChannels.platform_views`，处理函数返回 null。ready / alert 不建 `SystemSpinner`，没装。
 
+## A8
+
+开工 2026-11-12 02:58 +08，交回 2026-11-12 03:07 +08。命令都在 `_golden`，`C:\Flutter\flutter\bin\flutter.bat test`。深浅各一张，默认 `Size(390, 844)` × 像素比 3，1170×2532。未跑整包。未改 OneWIFI，未做 git 写操作。未开 A9。
+
+先红：17 个 `test/scenes/c_*_test.dart` 一起跑。`snack_bar`、`popup_menu` 编译失败（`find` 未导入 `flutter_test`）。其余到达缺图比较，最后一行 `00:07 +0 -33: Some tests failed.`。补上导入后只跑这两个文件，四张都是 `non-existent file`，最后一行 `00:03 +0 -4: Some tests failed.`。
+
+接着 17 个文件：
+
+- `--update-goldens` → 最后一行 `00:06 +34: All tests passed!`，退出码 0
+- 同一条不带 `--update-goldens` → 最后一行 `00:06 +34: All tests passed!`，退出码 0
+
+- text_field | 通过 | `test/scenes/c_text_field_test.dart`，`goldens/text_field.light.png`，`goldens/text_field.dark.png` | 空、聚焦、报错。光标 `EditableText.debugDeterministicCursor`
+- text_button | 通过 | `test/scenes/c_text_button_test.dart`，`goldens/text_button.*.png` | `TextButton` 与 `TextButton.icon`
+- icon_button | 通过 | `test/scenes/c_icon_button_test.dart`，`goldens/icon_button.*.png` | `IconButton`
+- filled_button | 通过 | `test/scenes/c_filled_button_test.dart`，`goldens/filled_button.*.png` | 普通、`FilledButton.icon`、`FilledButton.tonal`、禁用
+- outlined_button | 通过 | `test/scenes/c_outlined_button_test.dart`，`goldens/outlined_button.*.png` | `OutlinedButton` 与 `OutlinedButton.icon`
+- card | 通过 | `test/scenes/c_card_test.dart`，`goldens/card.*.png` | `Card`
+- alert_dialog | 通过 | `test/scenes/c_alert_dialog_test.dart`，`goldens/alert_dialog.*.png` | 直接放 `AlertDialog`，不走 `showDialog`
+- snack_bar | 通过 | `test/scenes/c_snack_bar_test.dart`，`goldens/snack_bar.*.png` | `ScaffoldMessenger.showSnackBar`，再 `pump` 250ms
+- list_tile | 通过 | `test/scenes/c_list_tile_test.dart`，`goldens/list_tile.*.png` | `ListTile`
+- switch_list_tile | 通过 | `test/scenes/c_switch_list_tile_test.dart`，`goldens/switch_list_tile.*.png` | `SwitchListTile`（不是 `.adaptive`）
+- checkbox_list_tile | 通过 | `test/scenes/c_checkbox_list_tile_test.dart`，`goldens/checkbox_list_tile.*.png` | `CheckboxListTile`
+- divider | 通过 | `test/scenes/c_divider_test.dart`，`goldens/divider.*.png` | `Divider`
+- progress | 通过 | `test/scenes/c_progress_test.dart`，`goldens/progress.*.png` | 线形 `value: 0.40`，圆形 `value: 0.65`
+- app_bar | 通过 | `test/scenes/c_app_bar_test.dart`，`goldens/app_bar.*.png` | `AppBar`，`primary: false`，高 `kToolbarHeight`
+- tab_bar | 通过 | `test/scenes/c_tab_bar_test.dart`，`goldens/tab_bar.*.png` | `DefaultTabController` + `TabBar`
+- filter_chip | 通过 | `test/scenes/c_filter_chip_test.dart`，`goldens/filter_chip.*.png` | 选中、未选、禁用
+- popup_menu | 通过 | `test/scenes/c_popup_menu_test.dart`，`goldens/popup_menu.*.png` | 点开 `PopupMenuButton`，再 `pump` 300ms
+
+### 决定
+
+1. 场景名用 T1.3 的 `text_field` 等，测试文件用 `c_*_test.dart`。控件是 Flutter Material 原件，由 `goldenScene` 套 `OneTheme`，没有仿写按钮样式。文案只用拉丁字母和数字。
+2. 这 17 个没有调 `installEmptyPlatformViews`。`SwitchListTile` 用 Material `Switch`，不是 `Switch.adaptive`，不建 `SystemSwitch`。`CircularProgressIndicator` 不是 `.adaptive`，并且写死 `value`，走材质绘制，不建 `SystemSpinner`。测试能走到缺图比较，说明没有缺平台视图通道。
+3. 进度不用空 `value`，避免不定态动画。`SnackBar` 必须带动画才能建，所以用 `ScaffoldMessenger` 弹出，只 `pump` 250ms（入场时长），不用 `pumpAndSettle`（会把 4 秒后的退场也跑掉）。菜单路由时长 300ms，点开后只 `pump` 300ms。
+4. `AppBar` 内部 `Align` 会向最大高度撑满。放进 `SizedBox` 高 `kToolbarHeight`，并设 `primary: false`，避免 `SafeArea` 把工具栏顶出 56。
+
+主代理 2026-11-12 03:32 在 `_golden` 连跑两次不带 `--update-goldens` 的整包 `flutter test`，都是 `00:11 +93: All tests passed!`，退出码 0。92 张图的 SHA-256 两次相同。C 组 34 张都是 1170×2532。浅色 `text_field` 能读到 Name / Required，`filled_button` 能读到 Filled / Icon / Tonal / Disabled。
+

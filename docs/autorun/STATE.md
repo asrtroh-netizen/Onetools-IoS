@@ -3,8 +3,8 @@
 - 起点：2026-11-11 18:00:13 +08:00（发车检查通过、计时 armed）
 - 截止：2026-11-12 06:00:13 +08:00（unix 1794434413）
 - 续跑上限：40
-- 当前阶段：第 2 轮后半。现在 2026-11-12 03:03 +08:00，剩余约 177 分钟。
-- 下一动作：C3 已抽查。A8 仍在写 C 组主题控件，交回后再跑整包 `flutter test`。B4 不做。E3 等图标夹具。
+- 当前阶段：第 2 轮后半。现在 2026-11-12 03:32 +08:00，剩余约 148 分钟。
+- 下一动作：A8 已验收。派 A9：底栏 10 个场景和 `layout.json`。B4 不做。E3 等图标夹具。
 
 ## 第 0 轮
 
@@ -26,7 +26,7 @@
 
 | 线 | 队列 | 现状 |
 |---|---|---|
-| A 基准线 | A1–A3、A5–A7 已验证；A4 阻塞（缺 `icons.json`）；A8 进行中；其后 A9–A11 待做 | 主代理在 `_golden` 连跑两次 `flutter test`，都是 `00:08 +59` 与 `00:07 +59: All tests passed!`，退出码 0，哈希不变。宽 280 的三对图是 840×2532，其余是 1170×2532。门面卡用 `one/one_status_hero.dart` 的 `OneStatusHero`。原组件里写死的中文在测试字体里是缺字方块 |
+| A 基准线 | A1–A3、A5–A8 已验证；A4 阻塞（缺 `icons.json`）；A9 进行中；其后 A10–A11 待做 | 主代理在 `_golden` 连跑两次 `flutter test`，都是 `00:11 +93: All tests passed!`，退出码 0。92 张图 SHA-256 两次相同。C 组 17 个场景的深浅图都是 1170×2532。控件是 Flutter Material 原件，套 `OneTheme`。`SwitchListTile` 不是 `.adaptive`，圆形进度写死 `value` |
 | B Clash 线 | B1 已验证；B2 未编译；B3 不可行；B4 未做 | 主代理重跑 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`。原文件第 1 行是 `#if os(iOS) || os(macOS)`。B4 不做。B1 提交 `658c29c`，B2 提交 `1358825` |
 | C 调研线 | C1、C2、C3、C6 已验证；C4、C5 已验证并提交 `37f542c` | 主代理重数：Zsign 247 文件 / 29 目录 / 73,644,372 字节；IDeviceKitten 25 / 13 / 46,693；DeveloperDiskImage 6 / 0 / 18,046,187。三处都没有 `.git`。`Package.swift` 的 binaryTarget 在 IDeviceKitten 第 21–24 行；Zsign LICENSE 第 1、3 行是 MIT / zhlynn；`Platform.swift:88` 挂载 DeveloperDiskImage。两份 OpenSSL `.lib` 分别是 57,184,898 和 12,535,234 字节。C6 文档开头是「推断，未经解析器实测」 |
 | D 规则线 | D1–D4 已验证 | 主代理重跑：覆盖检查与样本 `pytest` 为 `9 passed`；`loon_lint.py` 为 `ok`；`check_ad_coverage.py` 为 21 行 `ok`。抽查 11 处来源行，域名都在该行。三份公开列表的 SHA-256 与 `SOURCES.md` 一致。插件 12 条规则，覆盖 8 个 SDK；其余 13 个写了未收原因 |
