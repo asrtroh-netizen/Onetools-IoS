@@ -195,6 +195,25 @@
       "cwd": ".",
       "enabled": true,
       "command": ["python", "tools/make_contact_sheet.py", "--check"]
+    },
+    {
+      "id": "P4-signing-test",
+      "cwd": ".",
+      "enabled": true,
+      "command": [
+        "wsl",
+        "-d",
+        "Ubuntu-24.04",
+        "-u",
+        "root",
+        "--",
+        "env",
+        "PATH=/opt/swift/usr/bin:/usr/bin:/bin",
+        "/opt/swift/usr/bin/swift",
+        "test",
+        "--package-path",
+        "/mnt/e/GQ/Ultra/Onetools-IoS/SigningLogic"
+      ]
     }
   ]
 }
