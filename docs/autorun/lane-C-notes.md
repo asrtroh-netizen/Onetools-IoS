@@ -73,3 +73,13 @@ C4、C5 在 2026-11-12 落盘。C1、C2、C3 的下载没做。C6 没做。没�
 - `docs/superpowers/plans/2026-11-11-onetools-p6-adblock.md`（SP-08，P6）
 - `docs/superpowers/plans/2026-11-11-onetools-p7-signing.md`（SP-09，P7）
 
+## P7
+
+打磨队列 P7：双 Go 运行时实验的工程配置草稿。只写了 `docs/drafts/g2-go-runtimes.md`。没有改 Clash-Client、Clash-Core、Swipt，没有改 `docs/autorun/STATE.md`，没有 git 写操作，没有编译，没有下载。上面 SP-09 那一行仍是自签子计划，与这一节不是同一件事。
+
+- 草稿第一行是「未在 Mac 上运行」。不进 Clash-Client 分支。
+- 总计划 T2.6（`docs/superpowers/plans/2026-11-11-onetools-ios-master-plan.md:737`）要的是实验结论：共存（A）或冲突（B）（`:283`、`:742`、`:746`）。这次没跑实验，没有结论。
+- 盘上没有 `LibSwipt.xcframework`，也没有同名二进制。`Swipt/Frameworks` 不存在。`Swipt/.gitignore:2` 忽略 `/Frameworks/`。产物路径写在 `Swipt/internal/cmd/build_libswipt/main.go:21` 和 `Swipt/Swipt.xcodeproj/project.pbxproj:30`。本次没编。
+- `Clash-Client/apple/ClashClient/project.yml` 未改。`Clash` 的 `type: framework` 在 `:164`。`ClashiOS` 对它 `embed: true`（`:155-156`）。`ClashiOSExtension` 对它 `embed: false`（`:259-260`）。
+- 实验要加的 target 名是计划里的 `SwiptCore`（`:193`、`:740`）。`ClashiOS` 依赖并嵌入它（`:740`）。探测函数名按计划抄 `LibSwiptNewLoopbackProbe`（`:741`）。Go 源里是 `Swipt/libswipt/device.go:77` 的 `NewLoopbackProbe`。
+
