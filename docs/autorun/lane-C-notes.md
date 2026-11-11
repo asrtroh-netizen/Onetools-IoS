@@ -41,3 +41,13 @@ C4、C5 在 2026-11-12 落盘。C1、C2、C3 的下载没做。C6 没做。没�
 - 锁定树有 `loopback-address`。`config/config.go:307` 声明，`:1871` 抄进 TUN。该文件与 `Clash-Core/config/config.go` SHA256 前 12 位相同（`D2456054F469`）。
 - 实现是 IP 层反射：`listener/sing_tun/server.go:427-428` 拆地址，`:535` 走 `tun.NewStack`；`third_party/sing-tun/ip_rewrite.go:50-53` 和 `:82-86` 命中后交换源和目的再写回，TCP / UDP / ICMP 同路。测试 `ip_rewrite_loopback_test.go:33-36`。
 - 工作区的选项文本相同，数据面改成 Go 栈：`Clash-Core/listener/sing_tun/server.go:516` 调 `startGoStack`，`bind/clash/go_stack_darwin.go:110-111` 用 `NewIPRewriter`。锁定树没有 `sing-tun-go`；工作区 `third_party/sing-tun/` 没有 `stack_system.go`、`stack_gvisor.go`、`stack_mixed.go`、`stack_mipstack.go`。
+
+## C6（2026-11-12 01:23 开始，01:38 写完）
+
+只做了 C6。B3 已经判定不可行，没有再编译测试台，没有写 B4。没有改 Clash-Client、Swipt、Feather、ONEWIFIX，没有 git 写操作，没有下载，没有执行样本。结论在 `docs/findings/loon-ignored-predicted.md`。
+
+- 入口用 `ModuleParser.parse`，不把 `adblock4limbo.list` 改送 `ModuleRuleSetSyntax.convert`。依据：C6 替代的是 B4，B4 跑的是模块解析器。回退：以后若确认名单走规则集，按 `convert` 重写第 1 节。那条路上 `plainKernelLine` 要求 `DOMAIN` 类只有两段（`ModuleRuleSetSyntax.swift:519-520`），这 548 行带策略，会先返回 nil，再被拼上另一个策略交给 `map`（`:399-400`）。
+- 平台按 iOS。依据：`ModuleIR.swift:34-40` 的 `current` 在 iOS 目标上是 `.ios`，这个应用是 iOS 客户端。回退：改按 Mac 推断时，`weibo.plugin` 和 `XWebAds.plugin` 的 `#!system` 会在 `ModuleParser.swift:972-975` 整份变成 `otherPlatform`。
+- `DOMAIN` / `AND` 过了 Swift 映射之后还要 `kernelCheck`（`ModuleRuleMapping.swift:36-39`）。`AppCore.validateItem` 不在本树，不把这些规则写成忽略。依据：计划 5.5，查不到就不凭印象写成会被内核拒绝。回退：有了 Clash 模块之后用 B4 的真实输出替换这一句。
+- 正则用本机 Swift 6.4.2 Foundation 的 `NSRegularExpression` 核对了 160 条，对应 `ModuleLineSyntax.swift:121`。没有跑解析器。结果是 0 条构造失败。
+
