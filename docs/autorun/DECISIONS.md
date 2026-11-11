@@ -11,3 +11,4 @@
 | 2026-11-11 | Swift 用 `winget install --id Swift.Toolchain` 加 `--skip-dependencies` | 计划里的原命令在装依赖 Python 3.10 时因 0x80070020 失败。本机已有 Python 3.14.6。安装包仍是 swift.org 的 6.4.2 | 卸掉该 Swift，改回带依赖的 winget 命令 |
 | 2026-11-11 | 内核锁定版改从 GitHub API 取 zipball，不走 `git fetch` github.com | `api.github.com` 返回 302，`github.com:443` 超时。计划：单个文件走 API。目标仍是提交 `4b7d5f53cff448f01cd5012b5e3f7eddc7d43e33` | github.com 通了就改回计划里的 `git fetch --depth 1` |
 | 2026-11-11 | Windows 版 Swift 崩溃后，在已有的 WSL `Ubuntu-24.04` 里装 Swift 6.4.2 官方压缩包 | 计划 R0-7：Windows 版跑不了测试才用 WSL。`download.swift.org` 的 ubuntu2404 包头返回 200 | 卸掉 `/opt/swift`，以后只在 Windows 工具链能跑 `swift test` 时改回去 |
+| 2026-11-12 | D2 收下已经下到的 5 个样本，不再等 GitHub API 额度 | 核心接口 remaining=0，重置 `2026-11-11T17:03:37Z`。计划 2.2 是 5 到 10 个，并覆盖开屏、信息流、视频贴片。三个 Loon 插件的单文件提交早于 30 天，但所在仓库 30 天内有推送，原因写在 `SOURCES.md` | 额度恢复后删掉样本，按近 30 天有更新的插件重下 |

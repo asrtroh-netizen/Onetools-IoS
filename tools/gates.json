@@ -29,6 +29,39 @@
         "-c",
         "import pathlib,sys\np=pathlib.Path(r'E:/GQ/Ultra/Onetools-IoS/_ref/ow_icons.txt')\nlines=[ln for ln in p.read_text(encoding='utf-8-sig').splitlines() if ln.strip()]\nprint('lines='+str(len(lines)))\nsys.exit(0 if len(lines)==121 else 1)"
       ]
+    },
+    {
+      "id": "D1-export-ad-sdks",
+      "cwd": ".",
+      "enabled": true,
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "tools/test_export_ad_sdks.py",
+        "-q"
+      ]
+    },
+    {
+      "id": "D2-check-samples",
+      "cwd": ".",
+      "enabled": true,
+      "command": [
+        "python",
+        "tools/check_samples.py"
+      ]
+    },
+    {
+      "id": "A2-golden-diff",
+      "cwd": ".",
+      "enabled": true,
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "tools/test_golden_diff.py",
+        "-q"
+      ]
     }
   ]
 }
