@@ -247,3 +247,22 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 - `widgets/adaptive_glass_dock.dart`：只转发到 `widgets/glass_dock.dart`。调用方是 `android_oneims_shell.dart`。
 - `widgets/one_status_hero.dart`：基准用 `one/one_status_hero.dart`。本文件把药丸和阶段写死成中文（就绪、处理中、关闭）。
 
+## P1
+
+收口 2026-11-12 04:02 +08。命令都在 `_golden`，`C:\Flutter\flutter\bin\flutter.bat test`。未再加场景。未改已有 390 宽金图。未做 git 写操作。
+
+不带 `--update-goldens` 的复跑已经做完，没有再跑第三次：
+
+- `flutter.bat test test/scenes/b_scenes_w320_w430_test.dart test/scenes/d_scenes_w320_w430_test.dart`
+  - 最后一行：`00:19 +128: All tests passed!`
+  - 退出码：0
+- `flutter.bat test test/scenes/c_states_pressed_disabled_focused_test.dart`
+  - 最后一行：`00:06 +30: All tests passed!`
+  - 退出码：0
+
+盘上：`*w320*.png` 64，`*w430*.png` 64。宽 320 是 960×2532，宽 430 是 1290×2532。按下 / 禁用 / 聚焦新图 30 张（五类控件 × 三态 × 深浅），1170×2532。文件名里带 `_pressed.` 的还有原来的 `dock_pressed.light.png` / `dock_pressed.dark.png`，那两张不是这次新图。
+
+此前在仓库根：`python tools/make_contact_sheet.py` → `png=270`；`python tools/make_contact_sheet.py --check` → `png=270 html=270`，退出码 0。04:02 之后没有再改 `index.html`。
+
+主代理 2026-11-12 04:06 在 `_golden` 连跑两次不带 `--update-goldens` 的整包 `flutter test`，都是 `00:25 +271: All tests passed!`，退出码 0。270 张图的 SHA-256 两次相同。宽 320 的 64 张是 960×2532，宽 430 的 64 张是 1290×2532，按下/禁用/聚焦 30 张是 1170×2532，尺寸不对的为 0。`python tools/make_contact_sheet.py --check` 为 `png=270 html=270`，退出码 0。`python tools/check_golden_coverage.py` 仍是 `32/32`。
+

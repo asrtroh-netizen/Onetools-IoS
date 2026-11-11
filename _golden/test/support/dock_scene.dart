@@ -76,10 +76,12 @@ void dockGolden(
   int? slideTo,
   double slideT = 1,
   bool pressed = false,
+  Size size = const Size(390, 844),
 }) {
   goldenScene(
     name,
     () => DockScene(selected: selected),
+    size: size,
     afterSettle: (tester) async {
       final state = tester.state<DockSceneState>(find.byType(DockScene));
       final to = slideTo ?? selected;

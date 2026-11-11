@@ -3,8 +3,8 @@
 - 起点：2026-11-11 18:00:13 +08:00（发车检查通过、计时 armed）
 - 截止：2026-11-12 06:00:13 +08:00（unix 1794434413）
 - 续跑上限：40
-- 当前阶段：打磨队列。现在 2026-11-12 04:03 +08:00，剩余约 117 分钟。
-- 下一动作：自签纯逻辑已验收。P1 的宽 320/430 和按下/禁用/聚焦图已落盘，等不带 `--update-goldens` 的整包 `flutter test` 再提交。A4、E3 图标夹具仍阻塞，B4 不做。
+- 当前阶段：打磨队列。现在 2026-11-12 04:06 +08:00，剩余约 114 分钟。
+- 下一动作：P1 已验收。自签纯逻辑已提交 `5dc7d76`。派 P2（夹具交叉审计）和 P5（把已查到的事实写进子计划）。P3 因 B3 不可行不做。P6–P8 等前面做完。A4、E3 图标夹具仍阻塞，B4 不做。
 
 ## 第 0 轮
 
@@ -26,7 +26,7 @@
 
 | 线 | 队列 | 现状 |
 |---|---|---|
-| A 基准线 | A1–A3、A5–A11 已验证；A4 阻塞（缺 `icons.json`） | 主代理重跑 `python tools/check_golden_coverage.py` 为 `32/32`，配套测试 `6 passed`。`lib/design` 磁盘上 32 个 Dart 文件。`LiquidGlass` 只出现在 `liquid_glass.dart` 本文件。总览页 `png=112 html=112`，顺序与磁盘一致 |
+| A 基准线 | A1–A3、A5–A11、P1 已验证；A4 阻塞（缺 `icons.json`） | 主代理在 `_golden` 连跑两次 `flutter test`，都是 `00:25 +271: All tests passed!`，退出码 0。270 张图 SHA-256 两次相同。宽 320 的 64 张是 960×2532，宽 430 的 64 张是 1290×2532，按下/禁用/聚焦 30 张是 1170×2532。总览页 `png=270 html=270`。覆盖仍是 `32/32` |
 | B Clash 线 | B1 已验证；B2 未编译；B3 不可行；B4 未做 | 主代理重跑 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`。原文件第 1 行是 `#if os(iOS) || os(macOS)`。B4 不做。B1 提交 `658c29c`，B2 提交 `1358825` |
 | C 调研线 | C1、C2、C3、C6 已验证；C4、C5 已验证并提交 `37f542c` | 主代理重数：Zsign 247 文件 / 29 目录 / 73,644,372 字节；IDeviceKitten 25 / 13 / 46,693；DeveloperDiskImage 6 / 0 / 18,046,187。三处都没有 `.git`。`Package.swift` 的 binaryTarget 在 IDeviceKitten 第 21–24 行；Zsign LICENSE 第 1、3 行是 MIT / zhlynn；`Platform.swift:88` 挂载 DeveloperDiskImage。两份 OpenSSL `.lib` 分别是 57,184,898 和 12,535,234 字节。C6 文档开头是「推断，未经解析器实测」 |
 | D 规则线 | D1–D4 已验证 | 主代理重跑：覆盖检查与样本 `pytest` 为 `9 passed`；`loon_lint.py` 为 `ok`；`check_ad_coverage.py` 为 21 行 `ok`。抽查 11 处来源行，域名都在该行。三份公开列表的 SHA-256 与 `SOURCES.md` 一致。插件 12 条规则，覆盖 8 个 SDK；其余 13 个写了未收原因 |
