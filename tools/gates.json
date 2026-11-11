@@ -115,6 +115,25 @@
         "--package-path",
         "/mnt/e/GQ/Ultra/Onetools-IoS/_harness/ClashLogic"
       ]
+    },
+    {
+      "id": "E1-swift-test",
+      "cwd": ".",
+      "enabled": true,
+      "command": [
+        "wsl",
+        "-d",
+        "Ubuntu-24.04",
+        "-u",
+        "root",
+        "--",
+        "env",
+        "PATH=/opt/swift/usr/bin:/usr/bin:/bin",
+        "/opt/swift/usr/bin/swift",
+        "test",
+        "--package-path",
+        "/mnt/e/GQ/Ultra/Onetools-IoS/OneUI"
+      ]
     }
   ]
 }

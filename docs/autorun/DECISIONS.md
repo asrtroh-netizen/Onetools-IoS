@@ -15,3 +15,4 @@
 | 2026-11-12 | D2 收下已经下到的 5 个样本，不再等 GitHub API 额度 | 核心接口 remaining=0，重置 `2026-11-11T17:03:37Z`。计划 2.2 是 5 到 10 个，并覆盖开屏、信息流、视频贴片。三个 Loon 插件的单文件提交早于 30 天，但所在仓库 30 天内有推送，原因写在 `SOURCES.md` | 额度恢复后删掉样本，按近 30 天有更新的插件重下 |
 | 2026-11-12 | 不提交 `_golden/.flutter-plugins-dependencies`，并把它写进 `.gitignore` | 文件头写明不要进版本库，正文是本机绝对路径 | 从 `.gitignore` 删掉该行再 `git add -f` |
 | 2026-11-12 | 线 C 的第一个子代理停掉，换一个写 C4、C5 | 49 轮之后盘上仍只有 `scripts/mac/10-env.sh`，最后一轮时间不再前进 | 已有的 `10-env.sh` 留着，不删 |
+| 2026-11-12 | OneUI 的 `Package.swift` 用 `#if os(macOS)`。非 macOS 只声明 `OneUICore` 和 `OneUICoreTests`，把 target 的 path 扩到 `Sources`，exclude 掉界面目录和 Fonts，资源为 `.copy("OneUI/Resources/Icons")` | 计划 7.E：不是 macOS 时不参与 SwiftUI target。图标已在 `Sources/OneUI/Resources/Icons`，不另复制。macOS 上不能和 OneUI 的 `Sources/OneUI` 共用 path | 把 Linux 分支改回只有测试 target，并把图标拷贝 `Sources/OneUICore/Resources` |
