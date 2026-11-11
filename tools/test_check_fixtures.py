@@ -54,6 +54,46 @@ def test_rejects_bad_dock_edge(tmp_path: Path) -> None:
     assert any("left" in item for item in errors)
 
 
+def test_rejects_bad_layout_height(tmp_path: Path) -> None:
+    fixture_dir = tmp_path / "fixtures"
+    fixture_dir.mkdir()
+    for name in ("tokens.json", "typography.json"):
+        (fixture_dir / name).write_text(
+            (FIXTURES / name).read_text(encoding="utf-8"), encoding="utf-8"
+        )
+    constants = check_fixtures._glass_constants(check_fixtures._read(check_fixtures.GLASS_PATH))
+    slide = check_fixtures._slide_ms(check_fixtures._read(check_fixtures.DOCK_PATH))
+    rect = {"left": 0, "top": 1, "width": 2, "height": 3}
+    indicator = {
+        "left": 4,
+        "top": 5,
+        "width": 6,
+        "height": constants["dockIndicatorHeight"],
+    }
+    payload = {
+        "dock": {
+            "height": constants["dockHeight"],
+            "radius": constants["radiusDock"],
+            "bottomGap": constants["dockBottomGap"],
+            "blur": constants["blurDock"],
+            "tabInset": constants["dockTabInset"],
+            "indicatorHeight": constants["dockIndicatorHeight"],
+            "slideMs": slide,
+        },
+        "scenes": {
+            name: {"light": {"dock": rect, "indicator": indicator}, "dark": {"dock": rect, "indicator": indicator}}
+            for name in check_fixtures.D_SCENES
+        },
+    }
+    layout = fixture_dir / "layout.json"
+    layout.write_text(json.dumps(payload), encoding="utf-8")
+    assert check_fixtures.check(fixture_dir) == []
+    payload["dock"]["height"] = constants["dockHeight"] + 1
+    layout.write_text(json.dumps(payload), encoding="utf-8")
+    errors = check_fixtures.check(fixture_dir)
+    assert any("height" in item and "dockHeight" in item for item in errors)
+
+
 def test_rejects_bad_glass_constant(tmp_path: Path) -> None:
     fixture_dir = tmp_path / "fixtures"
     fixture_dir.mkdir()

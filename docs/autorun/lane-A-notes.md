@@ -194,3 +194,31 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 
 主代理 2026-11-12 03:32 在 `_golden` 连跑两次不带 `--update-goldens` 的整包 `flutter test`，都是 `00:11 +93: All tests passed!`，退出码 0。92 张图的 SHA-256 两次相同。C 组 34 张都是 1170×2532。浅色 `text_field` 能读到 Name / Required，`filled_button` 能读到 Filled / Icon / Tonal / Disabled。
 
+## A9
+
+开工 2026-11-12 03:14 +08，交回 2026-11-12 03:35 +08。命令都在 `_golden`，`C:\Flutter\flutter\bin\flutter.bat test`。深浅各一张，默认 `Size(390, 844)` × 像素比 3，1170×2532（已核 IHDR）。未跑整包。未改 OneWIFI，未做 git 写操作。未开 A10。
+
+十个文件一起：
+
+- `--update-goldens` → 最后一行 `00:03 +20: All tests passed!`，退出码 0
+- 同一条不带 `--update-goldens` → 最后一行 `00:03 +20: All tests passed!`，退出码 0
+
+- dock_static_0 | 通过 | `test/scenes/d_dock_static_0_test.dart`，`goldens/dock_static_0.*.png` | 选中第 0 格
+- dock_static_1 | 通过 | `test/scenes/d_dock_static_1_test.dart`，`goldens/dock_static_1.*.png` | 选中第 1 格
+- dock_static_2 | 通过 | `test/scenes/d_dock_static_2_test.dart`，`goldens/dock_static_2.*.png` | 选中第 2 格
+- dock_static_3 | 通过 | `test/scenes/d_dock_static_3_test.dart`，`goldens/dock_static_3.*.png` | 选中第 3 格
+- dock_slide_t000 | 通过 | `test/scenes/d_dock_slide_t000_test.dart`，`goldens/dock_slide_t000.*.png` | 0→2，`pump()` 后 t=0
+- dock_slide_t025 | 通过 | `test/scenes/d_dock_slide_t025_test.dart`，`goldens/dock_slide_t025.*.png` | 再 `pump` 120ms
+- dock_slide_t050 | 通过 | `test/scenes/d_dock_slide_t050_test.dart`，`goldens/dock_slide_t050.*.png` | 再 `pump` 240ms
+- dock_slide_t075 | 通过 | `test/scenes/d_dock_slide_t075_test.dart`，`goldens/dock_slide_t075.*.png` | 再 `pump` 360ms
+- dock_slide_t100 | 通过 | `test/scenes/d_dock_slide_t100_test.dart`，`goldens/dock_slide_t100.*.png` | 再 `pump` 480ms
+- dock_pressed | 通过 | `test/scenes/d_dock_pressed_test.dart`，`goldens/dock_pressed.*.png` | 按住第 0 格：`kPressTimeout` 后再 `pump` 200ms
+
+`python tools/check_fixtures.py` → `ok tokens.json typography.json dock_edges.json ripple.json layout.json`，退出码 0。`python -m pytest tools/test_check_fixtures.py -q` → `6 passed in 0.12s`。
+
+### 决定
+
+1. 底栏用 `package:onewifi_android/design/one/ultra_glass_dock.dart` 的 `GlassDock`（源码里没有 `UltraGlassDock` 这个类名）。没有仿写底栏。四格文案是 Home / Device / Mail / Proxy，图标是 Material `Icons`。
+2. 底栏贴在默认场景底部。滑动：`selectedIndex` 从 0 改到 2，先 `pump()` 把动画停在 t=0，再按 480ms 的比例 `pump`。不用 `pumpAndSettle`。按下：指针不松，先 `pump(kPressTimeout)`（水波纹出生，这一帧 elapsed 为 0），再 `pump` 200ms。
+3. `layout.json` 的常量和矩形都是测试里读的：`Glass.dockHeight` 等，以及 `tester.getRect` 的 `GlassDock` 和 `kGlassDockIndicatorKey`。检查脚本再从 `glass.dart` / `ultra_glass_dock.dart` 解析常量。文件不在时不要求；在就检查。原有 tokens / typography / dock_edges / ripple 没放宽。
+

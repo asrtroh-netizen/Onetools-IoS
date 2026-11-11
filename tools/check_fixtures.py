@@ -1,8 +1,9 @@
 """Re-read golden fixtures from disk and check them against Dart sources.
 
 Counts are taken from those sources on every run. They are not literals here.
-A3 checks tokens.json and typography.json. icons.json, dock_edges.json, and
-ripple.json are checked only after those files exist.
+A3 checks tokens.json and typography.json. icons.json, dock_edges.json,
+ripple.json, and layout.json are checked only after those files exist.
+layout.json dock constants are re-read from glass.dart and ultra_glass_dock.dart.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ONEWIFI = ROOT.parent / "ONEWIFIX" / "IOS"
 GLASS_PATH = ONEWIFI / "lib" / "design" / "one" / "glass.dart"
+DOCK_PATH = ONEWIFI / "lib" / "design" / "one" / "ultra_glass_dock.dart"
 PALETTE_PATH = ONEWIFI / "lib" / "design" / "one" / "one_palette.dart"
 THEME_PATH = ONEWIFI / "lib" / "design" / "theme" / "one_theme.dart"
 REF = ROOT / "_ref" / "flutter-3.44.9" / "material"
@@ -35,6 +37,7 @@ def check(fixtures: Path) -> list[str]:
         errors.extend(_check_tokens(fixtures / "tokens.json"))
         errors.extend(_check_typography(fixtures / "typography.json"))
         errors.extend(_check_a4_if_present(fixtures))
+        errors.extend(_check_layout_if_present(fixtures))
         return errors
     except (OSError, ValueError) as exc:
         return [str(exc)]
@@ -48,7 +51,7 @@ def main() -> int:
             print(err)
         return 1
     checked = ["tokens.json", "typography.json"]
-    for name in A4_FILES:
+    for name in (*A4_FILES, "layout.json"):
         if (fixtures / name).is_file():
             checked.append(name)
     print("ok " + " ".join(checked))
@@ -1086,6 +1089,123 @@ def _ripple_model() -> dict[str, object]:
             "easeCurve": {"line": ease_line, "value": "Curves.ease"},
         },
     }
+
+
+D_SCENES = (
+    "dock_static_0",
+    "dock_static_1",
+    "dock_static_2",
+    "dock_static_3",
+    "dock_slide_t000",
+    "dock_slide_t025",
+    "dock_slide_t050",
+    "dock_slide_t075",
+    "dock_slide_t100",
+    "dock_pressed",
+)
+
+_DOCK_CONSTS = {
+    "height": "dockHeight",
+    "radius": "radiusDock",
+    "bottomGap": "dockBottomGap",
+    "blur": "blurDock",
+    "tabInset": "dockTabInset",
+    "indicatorHeight": "dockIndicatorHeight",
+}
+
+_RECT_FIELDS = ("left", "top", "width", "height")
+
+
+def _check_layout_if_present(fixtures: Path) -> list[str]:
+    path = fixtures / "layout.json"
+    if not path.is_file():
+        return []
+    return _check_layout(path)
+
+
+def _slide_ms(src: str) -> float:
+    match = re.search(
+        r"static const Duration _slideDuration = Duration\(milliseconds:\s*(\d+)\)",
+        src,
+    )
+    if match is None:
+        raise ValueError("ultra_glass_dock.dart has no _slideDuration")
+    return float(match.group(1))
+
+
+def _check_layout(path: Path) -> list[str]:
+    payload, errors = _load_json(path)
+    if payload is None:
+        return errors
+    if not isinstance(payload, dict):
+        return ["layout.json is not an object"]
+    constants = _glass_constants(_read(GLASS_PATH))
+    slide = _slide_ms(_read(DOCK_PATH))
+    dock = payload.get("dock")
+    if not isinstance(dock, dict):
+        return errors + ["layout.json dock is not an object"]
+    for key, const_name in _DOCK_CONSTS.items():
+        if not _num_eq(dock.get(key), constants[const_name]):
+            errors.append(
+                f"layout.json dock.{key} {dock.get(key)!r} != {const_name} {constants[const_name]}"
+            )
+    if not _num_eq(dock.get("slideMs"), slide):
+        errors.append(f"layout.json dock.slideMs {dock.get('slideMs')!r} != _slideDuration {slide}")
+    scenes = payload.get("scenes")
+    if not isinstance(scenes, dict):
+        return errors + ["layout.json scenes is not an object"]
+    for name in D_SCENES:
+        item = scenes.get(name)
+        if not isinstance(item, dict):
+            errors.append(f"layout.json scenes.{name} missing")
+            continue
+        rects = {}
+        for mode in ("light", "dark"):
+            branch = item.get(mode)
+            if not isinstance(branch, dict):
+                errors.append(f"layout.json scenes.{name}.{mode} missing")
+                continue
+            for part in ("dock", "indicator"):
+                label = f"scenes.{name}.{mode}.{part}"
+                errors.extend(_rect_errors(label, branch.get(part)))
+                rects[(mode, part)] = branch.get(part)
+        for part in ("dock", "indicator"):
+            light = rects.get(("light", part))
+            dark = rects.get(("dark", part))
+            if isinstance(light, dict) and isinstance(dark, dict) and not _same_rect(light, dark):
+                errors.append(f"layout.json scenes.{name}.{part} light/dark differ")
+        indicator = rects.get(("light", "indicator"))
+        if isinstance(indicator, dict) and not _num_eq(
+            indicator.get("height"), constants["dockIndicatorHeight"]
+        ):
+            errors.append(
+                f"layout.json scenes.{name}.indicator.height {indicator.get('height')!r}"
+                f" != dockIndicatorHeight {constants['dockIndicatorHeight']}"
+            )
+    return errors
+
+
+def _rect_errors(label: str, got: object) -> list[str]:
+    if not isinstance(got, dict):
+        return [f"layout.json {label} is not an object"]
+    errors = []
+    for field in _RECT_FIELDS:
+        value = got.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            errors.append(f"layout.json {label}.{field} {value!r} is not a number")
+        elif field in ("width", "height") and float(value) <= 0:
+            errors.append(f"layout.json {label}.{field} {value} <= 0")
+    return errors
+
+
+def _same_rect(left: dict[str, object], right: dict[str, object]) -> bool:
+    for field in _RECT_FIELDS:
+        got = left.get(field)
+        if isinstance(got, bool) or not isinstance(got, (int, float)):
+            return False
+        if not _num_eq(right.get(field), float(got)):
+            return False
+    return True
 
 
 def _ripple_sample(
