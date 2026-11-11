@@ -1,0 +1,69 @@
+{
+  "source": "Swiplets/skip-chinese-ads/src/rules.ts",
+  "count": 21,
+  "sdks": [
+    {
+      "id": "adgain"
+    },
+    {
+      "id": "baidu"
+    },
+    {
+      "id": "beizi"
+    },
+    {
+      "id": "bytedance"
+    },
+    {
+      "id": "cjzf"
+    },
+    {
+      "id": "csj"
+    },
+    {
+      "id": "cxh"
+    },
+    {
+      "id": "cxjs"
+    },
+    {
+      "id": "dcloud"
+    },
+    {
+      "id": "flink"
+    },
+    {
+      "id": "gdt"
+    },
+    {
+      "id": "jd"
+    },
+    {
+      "id": "kuaishou"
+    },
+    {
+      "id": "meishu"
+    },
+    {
+      "id": "pangle"
+    },
+    {
+      "id": "sdm"
+    },
+    {
+      "id": "sigmob"
+    },
+    {
+      "id": "tencent"
+    },
+    {
+      "id": "tobid"
+    },
+    {
+      "id": "ubix"
+    },
+    {
+      "id": "xhLaunchAd"
+    }
+  ]
+}
