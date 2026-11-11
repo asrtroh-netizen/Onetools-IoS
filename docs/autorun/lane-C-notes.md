@@ -83,3 +83,13 @@ C4、C5 在 2026-11-12 落盘。C1、C2、C3 的下载没做。C6 没做。没�
 - `Clash-Client/apple/ClashClient/project.yml` 未改。`Clash` 的 `type: framework` 在 `:164`。`ClashiOS` 对它 `embed: true`（`:155-156`）。`ClashiOSExtension` 对它 `embed: false`（`:259-260`）。
 - 实验要加的 target 名是计划里的 `SwiptCore`（`:193`、`:740`）。`ClashiOS` 依赖并嵌入它（`:740`）。探测函数名按计划抄 `LibSwiptNewLoopbackProbe`（`:741`）。Go 源里是 `Swipt/libswipt/device.go:77` 的 `NewLoopbackProbe`。
 
+## P8
+
+打磨队列 P8：通话规格草稿，对应总计划 SP-10。只写了 `docs/superpowers/plans/2026-11-11-onetools-p9-calls-design.md`。没有改代码，没有改 `docs/autorun/STATE.md`，没有 git 写操作，没有下载。
+
+- 文件第一行是「未在 Mac 上运行。这一步不排期。」
+- `E:\GQ\Ultra\ONEWIFIX\IOS\ios\Runner\Calls\` 存在。9 个文件，按「换行符个数，末尾无换行则加 1」合计 3038 行。`CallPushRegistry.swift` 末尾无换行，145 行（换行符 144）。
+- `CallAudioBridge.swift`、`APNsBridge.swift`、`OtpNotifier.swift`、`OtpLiveActivity.swift` 在 `ONEWIFIX\IOS\ios\Runner\`，不在 `Calls\`。行数 207、218、233、136。
+- 写下规格之前，`onetools://` 在本仓库 2 处：`HANDOFF.md:322`、总计划 `:926`。两处都是在记「没有实现」。规格摘了总计划那一行，写完后再搜会多出规格和本备忘里的复述。
+- 号码网关、SIP 还是自有协议、后端放哪、配对入口、Push 权限、代码归属，六条都标「未决定」。
+
