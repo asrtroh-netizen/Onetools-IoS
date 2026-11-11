@@ -77,3 +77,7 @@ B1-swift-test result=pass exit=0 key=Build complete! (1.11 secs)
 E1-swift-test result=pass exit=0 key=Build complete! (1.20 secs)
 D3-loon-lint result=pass exit=0 key=17 passed in 1.67s
 A3-check-fixtures result=pass exit=0 key=ok tokens.json typography.json dock_edges.json ripple.json
+== 2026-11-12 01:51:15 +0800 ==
+E2-swift-test result=pass exit=0 key=Executed 4 tests, with 0 failures
+E2-fake-key result=fail exit=1 key=swift missing tokens.__probe
+E2-swift-test-restored result=pass exit=0 key=Executed 1 test, with 0 failures
