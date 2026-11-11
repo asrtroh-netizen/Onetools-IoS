@@ -125,3 +125,34 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 2. 需要有界宽度的卡片用 `test/support/b_frame.dart`：水平约束保留、高度不受约束，避免 `Column` 被拉成 844。宽度 250–320，给投影和选中光留边。
 3. 文案只用拉丁字母和数字。`SoftLabel` 没开 `mono`：测试只装了 Montserrat，`monospace` 会成方块。
 
+## A7
+
+开工 2026-11-12 02:33 +08，交回 2026-11-12 02:46 +08。命令都在 `_golden`，`C:\Flutter\flutter\bin\flutter.bat test`。未跑整包。未改 OneWIFI，未做 git 写操作。
+
+`page_head` 单文件先红：缺图 `non-existent file`，最后一行 `00:01 +0 -2: Some tests failed.`。接着十四个文件一起：
+
+- `--update-goldens` 上面这 14 个 `test/scenes/b_*_test.dart` → 最后一行 `00:04 +28: All tests passed!`，退出码 0
+- 同一条不带 `--update-goldens` → 最后一行 `00:04 +28: All tests passed!`，退出码 0
+
+深浅各一张。`status_hero_*_280` 是 840×2532（`Size(280, 844)` × 像素比 3）。其余 11 个场景是 1170×2532。
+
+- page_head | 通过 | `test/scenes/b_page_head_test.dart`，`goldens/page_head.light.png`，`goldens/page_head.dark.png` | `OwPageHead`
+- ow_accent | 通过 | `test/scenes/b_ow_accent_test.dart`，`goldens/ow_accent.*.png` | `OwAccent`、`SelectedEdgeLight`。`glass.dart` 用了 `hide GlassPanel`
+- one_mark | 通过 | `test/scenes/b_one_mark_test.dart`，`goldens/one_mark.*.png` | `OneMark`
+- choice_toggle | 通过 | `test/scenes/b_choice_toggle_test.dart`，`goldens/choice_toggle.*.png` | `ChoiceToggle`。按钮文案写死为「开启 / 关闭」，金图里是缺字方块
+- obscurable_field | 通过 | `test/scenes/b_obscurable_field_test.dart`，`goldens/obscurable_field.*.png` | `ObscurableField`。光标用 `EditableText.debugDeterministicCursor`。眼睛是 `CupertinoIcons`，测试只装了 Montserrat 和 MaterialIcons
+- feature_failure_notice | 通过 | `test/scenes/b_feature_failure_notice_test.dart`，`goldens/feature_failure_notice.*.png` | `FeatureFailureNotice`。标题后缀「不可用」和超时文案「请求超时。」是类里写死的中文
+- glass_dialog | 通过 | `test/scenes/b_glass_dialog_test.dart`，`goldens/glass_dialog.*.png` | `OneGlassDialog`。iOS 上帧是 `UiKitView` `onewifi/system_glass_surface`，测试里装了空平台视图
+- dot_matrix_face | 通过 | `test/scenes/b_dot_matrix_face_test.dart`，`goldens/dot_matrix_face.*.png` | `DotMatrixFace`
+- status_hero_ready | 通过 | `test/scenes/b_status_hero_ready_test.dart`，`goldens/status_hero_ready.*.png` | 宽 390，`OneChannelState.ready`
+- status_hero_busy | 通过 | `test/scenes/b_status_hero_busy_test.dart`，`goldens/status_hero_busy.*.png` | `activating`，会建 `SystemSpinner` / `UiKitView`，只在测试里装空实现
+- status_hero_alert | 通过 | `test/scenes/b_status_hero_alert_test.dart`，`goldens/status_hero_alert.*.png` | `inactive`
+- status_hero_ready_280 | 通过 | `test/scenes/b_status_hero_ready_280_test.dart`，`goldens/status_hero_ready_280.*.png` | `size: Size(280, 844)`
+- status_hero_busy_280 | 通过 | `test/scenes/b_status_hero_busy_280_test.dart`，`goldens/status_hero_busy_280.*.png` | 同上，忙态同样装空平台视图
+- status_hero_alert_280 | 通过 | `test/scenes/b_status_hero_alert_280_test.dart`，`goldens/status_hero_alert_280.*.png` | `size: Size(280, 844)`
+
+### 决定
+
+1. 门面卡用 `design/one/one_status_hero.dart` 的 `OneStatusHero`，不用 `widgets/one_status_hero.dart`。后者把药丸和阶段写死成中文。场景名对应 `OneChannelState.ready` / `activating`（`isBusy`）/ `inactive`（`isAlert`）。`busyLabel` 传 `Wait`，避开默认的「处理中」。右上角挂了 `Icons.chevron_right`，宽 280 时它掉到标题行下面（内宽 < 300）。
+2. 空平台视图在 `test/support/platform_views.dart`，只给 `glass_dialog` 和两个 busy 场景 `setUp`。渠道是 `SystemChannels.platform_views`，处理函数返回 null。ready / alert 不建 `SystemSpinner`，没装。
+

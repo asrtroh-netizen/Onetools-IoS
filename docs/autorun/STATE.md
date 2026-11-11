@@ -3,8 +3,8 @@
 - 起点：2026-11-11 18:00:13 +08:00（发车检查通过、计时 armed）
 - 截止：2026-11-12 06:00:13 +08:00（unix 1794434413）
 - 续跑上限：40
-- 当前阶段：第 2 轮后半。现在 2026-11-12 02:30 +08:00，剩余约 210 分钟。
-- 下一动作：A6 已验收。派 A7：B 组后 8 个组件，以及 status_hero 的 6 个场景。B4 不做。C3 等子模块。E3 等图标夹具。
+- 当前阶段：第 2 轮后半。现在 2026-11-12 02:50 +08:00，剩余约 190 分钟。
+- 下一动作：A7 已验收。派 A8（C 组 17 个主题控件）和 C3（子模块内容与编译前置）。B4 不做。E3 等图标夹具。
 
 ## 第 0 轮
 
@@ -15,7 +15,7 @@
 | R0-3 | 已验证 | 六个仓库 `core.filemode=false`、`core.autocrlf=false`（2026-11-11 23:30 重查） |
 | R0-4 | 已验证 | 顶层 `75b4ab8`「执行前的现状」；当时 `git status --porcelain` 为空 |
 | R0-5 | 已验证 | Clash-Client、Swipt、Feather 的当前分支都是 `onetools`。`gates.log` 有 `R0-5-branches result=pass` |
-| R0-6 | 进行中 | 内核锁定版已从 zipball 解压到 `_ref/kernel-4b7d5f5/`（3362 文件，见 `.mimocode/r0-6-kernel-ready.txt`）。三个仓库的 unshallow / 子模块仍失败，未再重试 |
+| R0-6 | 已就绪 | 内核锁定版已从 zipball 解压到 `_ref/kernel-4b7d5f5/`（3362 文件，见 `.mimocode/r0-6-kernel-ready.txt`）。三个仓库 `git fetch --unshallow` 已在 2026-11-12 01:48 完成，均为 `shallow=false`，分支仍是 `onetools`（见 `.mimocode/r0-6-unshallow-ready.txt`）。子模块未走 `git submodule update`，已用 zipball 就位：IDeviceKitten 25 文件、Zsign 247 文件、DeveloperDiskImage 6 文件（见 `.mimocode/r0-6-submodules-ready.txt`）。这些目录没有 `.git`，不要再对它们跑 submodule update。 |
 | R0-7 | 已验证 | Windows 版 `swift.exe` 访问冲突，见 NEGATIVE。WSL 里 `swift test`：`Test run with 1 test in 0 suites passed`，日志末行 `SMOKE_OK`，版本 `Swift version 6.4.2 (swift-6.4.2-RELEASE)`。包在 `_harness/_smoke` |
 | R0-8 | 已验证 | Material 快照 200=200；`ow_icons.txt` 121 行。提交 `06414ac` |
 | R0-9 | 已验证 | `tools/gates.py` 与 `gates.json` 已在，三条门禁曾通过。本文件已改成真实进度 |
@@ -26,9 +26,9 @@
 
 | 线 | 队列 | 现状 |
 |---|---|---|
-| A 基准线 | A1–A3、A5、A6 已验证；A4 阻塞（缺 `icons.json`）；A7 进行中；其后 A8–A11 待做 | 主代理在 `_golden` 连跑两次 `flutter test`，都是 `00:04 +31: All tests passed!`，退出码 0。B 组前 8 个场景的深浅图哈希两次相同，尺寸都是 1170×2532。引用的是 `design/widgets/` 下的原组件；`glass.dart` 用 `hide GlassPanel` |
+| A 基准线 | A1–A3、A5–A7 已验证；A4 阻塞（缺 `icons.json`）；A8 进行中；其后 A9–A11 待做 | 主代理在 `_golden` 连跑两次 `flutter test`，都是 `00:08 +59` 与 `00:07 +59: All tests passed!`，退出码 0，哈希不变。宽 280 的三对图是 840×2532，其余是 1170×2532。门面卡用 `one/one_status_hero.dart` 的 `OneStatusHero`。原组件里写死的中文在测试字体里是缺字方块 |
 | B Clash 线 | B1 已验证；B2 未编译；B3 不可行；B4 未做 | 主代理重跑 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`。原文件第 1 行是 `#if os(iOS) || os(macOS)`。B4 不做。B1 提交 `658c29c`，B2 提交 `1358825` |
-| C 调研线 | C1、C2、C6 已验证；C4、C5 已验证并提交 `37f542c`；C3 等子模块 | C6 文档开头是「推断，未经解析器实测」。主代理核过：`notAModule` 在 `ModuleParser.swift:1177`，`unreadableLine` 在 `:1077-1078`，文案在 `ModuleCopy.swift:372`。`adblock4limbo.list` 796 行，非注释 548 条（SUFFIX 291、DOMAIN 223、KEYWORD 34），第一条在第 24 行 |
+| C 调研线 | C1、C2、C6 已验证；C4、C5 已验证并提交 `37f542c`；C3 进行中 | Zsign 247 个文件、IDeviceKitten 25、DeveloperDiskImage 6，是 zipball 副本；三个仓库 `shallow=false`。C6 文档开头是「推断，未经解析器实测」。主代理核过：`notAModule` 在 `ModuleParser.swift:1177`，`unreadableLine` 在 `:1077-1078`，文案在 `ModuleCopy.swift:372`。`adblock4limbo.list` 796 行，非注释 548 条（SUFFIX 291、DOMAIN 223、KEYWORD 34），第一条在第 24 行 |
 | D 规则线 | D1–D4 已验证 | 主代理重跑：覆盖检查与样本 `pytest` 为 `9 passed`；`loon_lint.py` 为 `ok`；`check_ad_coverage.py` 为 21 行 `ok`。抽查 11 处来源行，域名都在该行。三份公开列表的 SHA-256 与 `SOURCES.md` 一致。插件 12 条规则，覆盖 8 个 SDK；其余 13 个写了未收原因 |
 | E OneUI 线 | E1 已验证，提交 `cb3fcdc`；E2 已验证；E3 等图标夹具 | 主代理重跑 `swift test --package-path OneUI`：`Executed 4 tests, with 0 failures`。假键 `__probe` 失败于 `swift missing tokens.__probe`，撤掉后再过。`Glass.radiusCard` 18，浅色描边 alpha `0.5950` |
 
@@ -37,5 +37,7 @@
 - 2026-11-11 18:25 带 `127.0.0.1:12348` 的四项全部 exit 128，仓库仍是 shallow，三个子模块未初始化，`_ref/kernel-4b7d5f5` 只有空的 `.git`。
 - 2026-11-11 23:35 直连 `github.com:443` 超时；`api.github.com` 与 `download.swift.org` 返回 200。
 - API zipball 302 到 `codeload.github.com`，curl 一次 `Recv failure`。下一轮再试一次，失败就标阻塞。
-- 2026-11-12 00:19 直连重试 zipball 成功（6907079 字节，curl exit 0）。00:35 已解压到 `_ref/kernel-4b7d5f5/`，3362 个文件。证据：`.mimocode/r0-6-kernel-ready.txt`。三个仓库的 unshallow / 子模块仍未重试。
+- 2026-11-12 00:19 直连重试 zipball 成功（6907079 字节，curl exit 0）。00:35 已解压到 `_ref/kernel-4b7d5f5/`，3362 个文件。证据：`.mimocode/r0-6-kernel-ready.txt`。
+- 2026-11-12 01:14 子模块改走 zipball 完成（不是 git submodule）：IDeviceKitten、Zsign、DeveloperDiskImage 已就位，见 `.mimocode/r0-6-submodules-ready.txt`。这些目录没有 `.git`，不要再跑 submodule update。
+- 2026-11-12 01:15 第一次 unshallow 失败（连接重置 / 超时）。01:47 直连重试成功：Clash-Client 4.4s、Swipt 39.4s、Feather 7.7s，三个仓库均为 `shallow=false`。证据：`.mimocode/r0-6-unshallow-ready.txt`。未改全局 git 或系统代理，未推送。
 
