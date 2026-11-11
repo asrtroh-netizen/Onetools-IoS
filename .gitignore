@@ -1,0 +1,14 @@
+/Clash-Client/
+/Clash-Core/
+/Swipt/
+/Swiplets/
+/Feather/
+/zsign/
+/_ref/kernel-*/
+/_golden/.dart_tool/
+/_golden/build/
+.build/
+__pycache__/
+.pytest_cache/
+/.xj-cursor/
+/.mimocode/

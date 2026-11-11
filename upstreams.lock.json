@@ -1,0 +1,32 @@
+[
+  {
+    "path": "Clash-Client",
+    "url": "https://github.com/ProjectClash/Clash-Client.git",
+    "revision": "e3e647283b1593a61dba622f13cd499deeda9b8b"
+  },
+  {
+    "path": "Clash-Core",
+    "url": "https://github.com/ProjectClash/Clash.git",
+    "revision": "e6334ad18cc7ee7582bf0f3a70681d58a2b61eb5"
+  },
+  {
+    "path": "Swipt",
+    "url": "https://github.com/swipt-automation/swipt.git",
+    "revision": "ab218801d7f80d0260ae2e078032de3cc16d8fdf"
+  },
+  {
+    "path": "Swiplets",
+    "url": "https://github.com/swipt-automation/official-swiplets.git",
+    "revision": "3e37730ebb95e1a665768bd44f29d4b1858f4bcc"
+  },
+  {
+    "path": "Feather",
+    "url": "https://github.com/claration/feather.git",
+    "revision": "31ab6de455f2a6108f6830e343dee826310c03be"
+  },
+  {
+    "path": "zsign",
+    "url": "https://github.com/zhlynn/zsign.git",
+    "revision": "9299685bab7ef99827e06e5dfda93af747386590"
+  }
+]
