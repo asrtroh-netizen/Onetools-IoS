@@ -62,3 +62,33 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 - 第二次最后一行：`00:00 +2: All tests passed!`（退出码 0）
 - 两次前后金图 SHA-256 相同，light `E01AC4A4F084965AB597EF552EF014F64555E654CB1199C395ED95912809048F`，dark `02400F310CC76D53FBB53572EAD8398A0137050AD77EDEB9B7BFF15D1AA27A47`。第二次没有改写文件内容。
 - 本轮补跑（cwd `_golden`）：`git status --porcelain -- goldens` → `?? _golden/goldens/`，退出码 0。整包 `_golden/` 尚未入库，porcelain 显示未跟踪；这不是第二次测试改了金图。
+
+## A3
+
+开工 2026-11-12 00:55 +08。先红：`python -m pytest tools/test_check_fixtures.py -q` 收集失败，`ModuleNotFoundError: No module named 'check_fixtures'`。检查脚本写上之后、夹具还没生成时：`python tools/check_fixtures.py` 输出 `missing tokens.json` / `missing typography.json`，退出码 1。
+
+生成后（cwd `_golden`）：`C:\Flutter\flutter\bin\flutter.bat test test/fixtures/export_test.dart` → `All tests passed!`。然后 `python tools/check_fixtures.py` → `ok tokens.json typography.json`。`python -m pytest tools/test_check_fixtures.py -q` 在补上底栏拒绝之后是 `5 passed`。自查把浅色描边 alpha 改成 `0.6000`、把 `radiusCard` 加 1，检查都失败，改回后再跑通过。没改 a1 金图。
+
+### 决定
+
+1. 五种填充按交接文档 3.3.1：`fill`、`fillStrong`、`barFill`、`modalFill`、`dialogFill`（`glass.dart` 115–126、128–134、216‑218、224‑225）。`blurredBarFill` / `liquidFill` / `liquidDockFill` 不算进这五种。回退：在 `resolved` 下加键，并让 `check_fixtures.py` 按 `glass.dart` 同名函数复算。
+2. ColorScheme 字段从运行时的 `oneBlackWhiteLight` / `oneBlackWhiteDark` 读出，含 `primaryFixed*` 和已弃用的 `background` / `onBackground` / `surfaceVariant`。浅色描边 alpha 是 `Color.a.toStringAsFixed(4)`，结果 `0.5950`（`glass.dart` 229–234 的 `alphaBlend`，`tokens.json` 的 `resolved.light.stroke.alpha`）。
+3. 字号是 MaterialApp 按语言合并之后的全部 15 个 TextTheme 样式，不只是 a1 画出来的 10 个。几何值对 `typography.dart` 2096–2111 行的 `_M3Typography.englishLike`。量高用 `TextPainter`，样例文字是 `A1Typography.sample`。行高会吸到最近的逻辑像素，headlineSmall 是 32（`24 * 1.33 = 31.92`）。
+4. 深色主题用 `themeMode: ThemeMode.dark`，并把 `themeAnimationDuration` 设为 0。只改 `theme:` 时，AnimatedTheme 第一帧仍是上一个浅色 ColorScheme。
+
+## A4
+
+`dock_edges.json`、`ripple.json` 已写入，同一条 `python tools/check_fixtures.py` 输出 `ok tokens.json typography.json dock_edges.json ripple.json`。把第一条过渡的 `samples[5].left` 加 1，检查失败，改回后通过。
+
+`icons.json` 没有写。`_ref/ow_icons.txt` 121 行里，`Icons.eye` 和 `Icons.eye_slash` 在 `_ref/flutter-3.44.9/material/icons.dart` 没有对应的 `static const IconData`。脚本能解析出 119 个码点，这两个名字也不能写成 `Icons.x.codePoint`（编译不过）。两种方式对这两个名字一致地得不到码点，所以停，没有把 121 改成 119，也没改 `ow_icons.txt`。来源是 `obscurable_field.dart` 51 行的 `CupertinoIcons.eye` / `CupertinoIcons.eye_slash`，抽取正则 `Icons.[a-z0-9_]+` 把后缀算进去了。
+
+### 决定
+
+1. 底栏：`count` 4，切换 0→1、0→3、3→0，`t` 为 `i/10`（i = 0…10）。数值来自运行时 `glassDockTabEdges`（`ultra_glass_dock.dart` 213–240）。
+2. 水波纹：常量行号从 `_ref/flutter-3.44.9/material/ink_ripple.dart` 扫出（19–23、26、159、193）。半径和透明度用 Flutter 的 `Tween` / `IntTween` / `Curves.ease` / `Interval`。按住取 0、淡入结束、200、500、未松手时长；松手从 t=0 确认（同一帧按下并松开），取 0、淡入结束、半径时长、400、600。参考盒子是 `OneSizes.minimumTarget`（`one_tokens.dart` 65 行，44）的正方形，目标半径按 `ink_ripple.dart` 43–52 行的对角线公式。浅色水花 alpha 102、深色 64，来自主题 `splashColor`，对应 `theme_data.dart` 502 行。
+3. 检查脚本每次从磁盘重读。A4 文件不在时不要求它们；文件在就检查。图标个数不写死，按 `ow_icons.txt` 的行数和 `icons.dart` 的解析结果比。
+
+## 不在本次任务里
+
+- `OneGlass.swift` 浅色描边仍是 0.6，夹具里是 0.5950。线 E 要改 Swift，这里没动 `OneUI/`。
+- 没有开 A5。

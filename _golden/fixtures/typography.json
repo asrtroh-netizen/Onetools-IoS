@@ -1,0 +1,247 @@
+{
+  "sample": "Hamburgefonstiv 0123456789",
+  "light": {
+    "displayLarge": {
+      "fontSize": 57.0,
+      "fontWeight": 400,
+      "height": 1.12,
+      "letterSpacing": -0.25,
+      "measuredHeight": 64.0,
+      "fontFamily": "Montserrat"
+    },
+    "displayMedium": {
+      "fontSize": 45.0,
+      "fontWeight": 400,
+      "height": 1.16,
+      "letterSpacing": 0.0,
+      "measuredHeight": 52.0,
+      "fontFamily": "Montserrat"
+    },
+    "displaySmall": {
+      "fontSize": 36.0,
+      "fontWeight": 400,
+      "height": 1.22,
+      "letterSpacing": 0.0,
+      "measuredHeight": 44.0,
+      "fontFamily": "Montserrat"
+    },
+    "headlineLarge": {
+      "fontSize": 32.0,
+      "fontWeight": 400,
+      "height": 1.25,
+      "letterSpacing": 0.0,
+      "measuredHeight": 40.0,
+      "fontFamily": "Montserrat"
+    },
+    "headlineMedium": {
+      "fontSize": 28.0,
+      "fontWeight": 400,
+      "height": 1.29,
+      "letterSpacing": 0.0,
+      "measuredHeight": 36.0,
+      "fontFamily": "Montserrat"
+    },
+    "headlineSmall": {
+      "fontSize": 24.0,
+      "fontWeight": 400,
+      "height": 1.33,
+      "letterSpacing": 0.0,
+      "measuredHeight": 32.0,
+      "fontFamily": "Montserrat"
+    },
+    "titleLarge": {
+      "fontSize": 22.0,
+      "fontWeight": 400,
+      "height": 1.27,
+      "letterSpacing": 0.0,
+      "measuredHeight": 28.0,
+      "fontFamily": "Montserrat"
+    },
+    "titleMedium": {
+      "fontSize": 16.0,
+      "fontWeight": 500,
+      "height": 1.5,
+      "letterSpacing": 0.15,
+      "measuredHeight": 24.0,
+      "fontFamily": "Montserrat"
+    },
+    "titleSmall": {
+      "fontSize": 14.0,
+      "fontWeight": 500,
+      "height": 1.43,
+      "letterSpacing": 0.1,
+      "measuredHeight": 20.0,
+      "fontFamily": "Montserrat"
+    },
+    "bodyLarge": {
+      "fontSize": 16.0,
+      "fontWeight": 400,
+      "height": 1.5,
+      "letterSpacing": 0.5,
+      "measuredHeight": 24.0,
+      "fontFamily": "Montserrat"
+    },
+    "bodyMedium": {
+      "fontSize": 14.0,
+      "fontWeight": 400,
+      "height": 1.43,
+      "letterSpacing": 0.25,
+      "measuredHeight": 20.0,
+      "fontFamily": "Montserrat"
+    },
+    "bodySmall": {
+      "fontSize": 12.0,
+      "fontWeight": 400,
+      "height": 1.33,
+      "letterSpacing": 0.4,
+      "measuredHeight": 16.0,
+      "fontFamily": "Montserrat"
+    },
+    "labelLarge": {
+      "fontSize": 14.0,
+      "fontWeight": 500,
+      "height": 1.43,
+      "letterSpacing": 0.1,
+      "measuredHeight": 20.0,
+      "fontFamily": "Montserrat"
+    },
+    "labelMedium": {
+      "fontSize": 12.0,
+      "fontWeight": 500,
+      "height": 1.33,
+      "letterSpacing": 0.5,
+      "measuredHeight": 16.0,
+      "fontFamily": "Montserrat"
+    },
+    "labelSmall": {
+      "fontSize": 11.0,
+      "fontWeight": 500,
+      "height": 1.45,
+      "letterSpacing": 0.5,
+      "measuredHeight": 16.0,
+      "fontFamily": "Montserrat"
+    }
+  },
+  "dark": {
+    "displayLarge": {
+      "fontSize": 57.0,
+      "fontWeight": 400,
+      "height": 1.12,
+      "letterSpacing": -0.25,
+      "measuredHeight": 64.0,
+      "fontFamily": "Montserrat"
+    },
+    "displayMedium": {
+      "fontSize": 45.0,
+      "fontWeight": 400,
+      "height": 1.16,
+      "letterSpacing": 0.0,
+      "measuredHeight": 52.0,
+      "fontFamily": "Montserrat"
+    },
+    "displaySmall": {
+      "fontSize": 36.0,
+      "fontWeight": 400,
+      "height": 1.22,
+      "letterSpacing": 0.0,
+      "measuredHeight": 44.0,
+      "fontFamily": "Montserrat"
+    },
+    "headlineLarge": {
+      "fontSize": 32.0,
+      "fontWeight": 400,
+      "height": 1.25,
+      "letterSpacing": 0.0,
+      "measuredHeight": 40.0,
+      "fontFamily": "Montserrat"
+    },
+    "headlineMedium": {
+      "fontSize": 28.0,
+      "fontWeight": 400,
+      "height": 1.29,
+      "letterSpacing": 0.0,
+      "measuredHeight": 36.0,
+      "fontFamily": "Montserrat"
+    },
+    "headlineSmall": {
+      "fontSize": 24.0,
+      "fontWeight": 400,
+      "height": 1.33,
+      "letterSpacing": 0.0,
+      "measuredHeight": 32.0,
+      "fontFamily": "Montserrat"
+    },
+    "titleLarge": {
+      "fontSize": 22.0,
+      "fontWeight": 400,
+      "height": 1.27,
+      "letterSpacing": 0.0,
+      "measuredHeight": 28.0,
+      "fontFamily": "Montserrat"
+    },
+    "titleMedium": {
+      "fontSize": 16.0,
+      "fontWeight": 500,
+      "height": 1.5,
+      "letterSpacing": 0.15,
+      "measuredHeight": 24.0,
+      "fontFamily": "Montserrat"
+    },
+    "titleSmall": {
+      "fontSize": 14.0,
+      "fontWeight": 500,
+      "height": 1.43,
+      "letterSpacing": 0.1,
+      "measuredHeight": 20.0,
+      "fontFamily": "Montserrat"
+    },
+    "bodyLarge": {
+      "fontSize": 16.0,
+      "fontWeight": 400,
+      "height": 1.5,
+      "letterSpacing": 0.5,
+      "measuredHeight": 24.0,
+      "fontFamily": "Montserrat"
+    },
+    "bodyMedium": {
+      "fontSize": 14.0,
+      "fontWeight": 400,
+      "height": 1.43,
+      "letterSpacing": 0.25,
+      "measuredHeight": 20.0,
+      "fontFamily": "Montserrat"
+    },
+    "bodySmall": {
+      "fontSize": 12.0,
+      "fontWeight": 400,
+      "height": 1.33,
+      "letterSpacing": 0.4,
+      "measuredHeight": 16.0,
+      "fontFamily": "Montserrat"
+    },
+    "labelLarge": {
+      "fontSize": 14.0,
+      "fontWeight": 500,
+      "height": 1.43,
+      "letterSpacing": 0.1,
+      "measuredHeight": 20.0,
+      "fontFamily": "Montserrat"
+    },
+    "labelMedium": {
+      "fontSize": 12.0,
+      "fontWeight": 500,
+      "height": 1.33,
+      "letterSpacing": 0.5,
+      "measuredHeight": 16.0,
+      "fontFamily": "Montserrat"
+    },
+    "labelSmall": {
+      "fontSize": 11.0,
+      "fontWeight": 500,
+      "height": 1.45,
+      "letterSpacing": 0.5,
+      "measuredHeight": 16.0,
+      "fontFamily": "Montserrat"
+    }
+  }
+}

@@ -140,6 +140,12 @@
       "cwd": ".",
       "enabled": true,
       "command": ["python", "-m", "pytest", "tools/test_loon_lint.py", "-q"]
+    },
+    {
+      "id": "A3-check-fixtures",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "tools/check_fixtures.py"]
     }
   ]
 }

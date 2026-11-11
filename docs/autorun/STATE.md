@@ -3,8 +3,8 @@
 - 起点：2026-11-11 18:00:13 +08:00（发车检查通过、计时 armed）
 - 截止：2026-11-12 06:00:13 +08:00（unix 1794434413）
 - 续跑上限：40
-- 当前阶段：第 2 轮。现在 2026-11-12 01:20 +08:00，剩余约 280 分钟。
-- 下一动作：B3 不可行、C2 已核对。派 C6。A3/A4 与 D3 仍在写，交回后主代理重跑再提交。B4 不做。C3 等子模块。
+- 当前阶段：第 2 轮后半。现在 2026-11-12 01:34 +08:00，剩余约 266 分钟。
+- 下一动作：A3 已验收。A4 的图标夹具阻塞，底栏和水波纹已过检查。派 A5、D4、E2。C6 仍在写。B4 不做。C3 等子模块。E3 等图标夹具。
 
 ## 第 0 轮
 
@@ -26,11 +26,11 @@
 
 | 线 | 队列 | 现状 |
 |---|---|---|
-| A 基准线 | A1、A2 已验证；A3、A4 进行中；其后 A5–A11 待做 | 第 2 轮已派 A3、A4 |
+| A 基准线 | A1–A3 已验证；A4 阻塞（缺 `icons.json`）；A5 进行中；其后 A6–A11 待做 | 主代理重跑 `python tools/check_fixtures.py`：`ok tokens.json typography.json dock_edges.json ripple.json`。抽查与 `glass.dart`、`one_palette.dart` 一致：`radiusCard` 18、`primary` `FF1A1B20`、浅色描边 alpha `0.5950`（`glass.dart:229-234`）、深色描边 0.12（`:230`）。`Icons.eye` / `Icons.eye_slash` 是 `CupertinoIcons` 误抽，不写假的 121 项 |
 | B Clash 线 | B1 已验证；B2 未编译；B3 不可行；B4 未做 | 主代理重跑 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`。原文件第 1 行是 `#if os(iOS) || os(macOS)`。B4 不做。B1 提交 `658c29c`，B2 提交 `1358825` |
 | C 调研线 | C1、C2 已验证；C4、C5 已验证并提交 `37f542c`；C3 等子模块；C6 进行中 | 锁定树 `config.go:307` 有 `loopback-address`。`ip_rewrite.go:82-86` 交换源和目的。C6 已派：推断样本里会被忽略的条目，标「未经解析器实测」 |
-| D 规则线 | D1、D2、D3 已验证；D4 待做 | 主代理重跑 `python -m pytest tools/test_loon_lint.py -q`：`17 passed`。D4 等这一项提交后再派 |
-| E OneUI 线 | E1 已验证，提交 `cb3fcdc`；E2、E3 等 A3、A4 | `swift test --package-path OneUI`：3 个测试通过。`Sources/OneUI` 界面文件没有改动 |
+| D 规则线 | D1–D3 已验证；D4 进行中 | 主代理重跑 `python -m pytest tools/test_loon_lint.py -q`：`17 passed`。D4 已派 |
+| E OneUI 线 | E1 已验证，提交 `cb3fcdc`；E2 进行中；E3 等图标夹具 | A3 已过。E2 只做色板、常量、玻璃参数。不做图标码点 |
 
 ## 下载（R0-6）
 

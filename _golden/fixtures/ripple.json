@@ -1,0 +1,194 @@
+{
+  "source": "_ref/flutter-3.44.9/material/ink_ripple.dart",
+  "constants": [
+    {
+      "name": "_kUnconfirmedRippleDuration",
+      "line": 19,
+      "ms": 1000
+    },
+    {
+      "name": "_kFadeInDuration",
+      "line": 20,
+      "ms": 75
+    },
+    {
+      "name": "_kRadiusDuration",
+      "line": 21,
+      "ms": 225
+    },
+    {
+      "name": "_kFadeOutDuration",
+      "line": 22,
+      "ms": 375
+    },
+    {
+      "name": "_kCancelDuration",
+      "line": 23,
+      "ms": 75
+    },
+    {
+      "name": "_kFadeOutIntervalStart",
+      "line": 26,
+      "value": 0.6
+    },
+    {
+      "name": "radiusBeginFactor",
+      "line": 159,
+      "value": 0.3
+    },
+    {
+      "name": "radiusEndExtra",
+      "line": 159,
+      "value": 5.0
+    },
+    {
+      "name": "easeCurve",
+      "line": 193,
+      "value": "Curves.ease"
+    }
+  ],
+  "referenceBox": {
+    "width": 44.0,
+    "height": 44.0,
+    "source": "OneSizes.minimumTarget"
+  },
+  "targetRadius": 31.11269837220809,
+  "splashAlpha": {
+    "light": 102,
+    "dark": 64,
+    "line": 502,
+    "file": "_ref/flutter-3.44.9/material/theme_data.dart"
+  },
+  "hold": {
+    "light": [
+      {
+        "ms": 0,
+        "radius": 9.333809511662427,
+        "alpha": 0,
+        "opacity": 0.0
+      },
+      {
+        "ms": 75,
+        "radius": 10.92177318601048,
+        "alpha": 102,
+        "opacity": 0.4
+      },
+      {
+        "ms": 200,
+        "radius": 17.281207662277865,
+        "alpha": 102,
+        "opacity": 0.4
+      },
+      {
+        "ms": 500,
+        "radius": 30.810270987357445,
+        "alpha": 102,
+        "opacity": 0.4
+      },
+      {
+        "ms": 1000,
+        "radius": 36.11269837220809,
+        "alpha": 102,
+        "opacity": 0.4
+      }
+    ],
+    "dark": [
+      {
+        "ms": 0,
+        "radius": 9.333809511662427,
+        "alpha": 0,
+        "opacity": 0.0
+      },
+      {
+        "ms": 75,
+        "radius": 10.92177318601048,
+        "alpha": 64,
+        "opacity": 0.25098039215686274
+      },
+      {
+        "ms": 200,
+        "radius": 17.281207662277865,
+        "alpha": 64,
+        "opacity": 0.25098039215686274
+      },
+      {
+        "ms": 500,
+        "radius": 30.810270987357445,
+        "alpha": 64,
+        "opacity": 0.25098039215686274
+      },
+      {
+        "ms": 1000,
+        "radius": 36.11269837220809,
+        "alpha": 64,
+        "opacity": 0.25098039215686274
+      }
+    ]
+  },
+  "confirm": {
+    "light": [
+      {
+        "ms": 0,
+        "radius": 9.333809511662427,
+        "alpha": 0,
+        "opacity": 0.0
+      },
+      {
+        "ms": 75,
+        "radius": 24.766963473019842,
+        "alpha": 102,
+        "opacity": 0.4
+      },
+      {
+        "ms": 225,
+        "radius": 36.11269837220809,
+        "alpha": 102,
+        "opacity": 0.4
+      },
+      {
+        "ms": 400,
+        "radius": 36.11269837220809,
+        "alpha": 0,
+        "opacity": 0.0
+      },
+      {
+        "ms": 600,
+        "radius": 36.11269837220809,
+        "alpha": 0,
+        "opacity": 0.0
+      }
+    ],
+    "dark": [
+      {
+        "ms": 0,
+        "radius": 9.333809511662427,
+        "alpha": 0,
+        "opacity": 0.0
+      },
+      {
+        "ms": 75,
+        "radius": 24.766963473019842,
+        "alpha": 64,
+        "opacity": 0.25098039215686274
+      },
+      {
+        "ms": 225,
+        "radius": 36.11269837220809,
+        "alpha": 64,
+        "opacity": 0.25098039215686274
+      },
+      {
+        "ms": 400,
+        "radius": 36.11269837220809,
+        "alpha": 0,
+        "opacity": 0.0
+      },
+      {
+        "ms": 600,
+        "radius": 36.11269837220809,
+        "alpha": 0,
+        "opacity": 0.0
+      }
+    ]
+  }
+}
