@@ -91,4 +91,18 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 ## 不在本次任务里
 
 - `OneGlass.swift` 浅色描边仍是 0.6，夹具里是 0.5950。线 E 要改 Swift，这里没动 `OneUI/`。
-- 没有开 A5。
+- A5 见下节。未开任务 A6。
+
+## A5
+
+开工 2026-11-12 01:38 +08，交回 2026-11-12 02:08 +08。命令都在 `_golden`，`C:\Flutter\flutter\bin\flutter.bat test`。深浅各一张，1170×2532。未跑整包连跑两次。
+
+- a2_weights | 通过 | `test/scenes/a2_weights_test.dart`，`goldens/a2_weights.light.png`，`goldens/a2_weights.dark.png` | 先红：缺图 `non-existent file`；`--update-goldens test/scenes/a2_weights_test.dart` → `All tests passed!`；不带参数 → `All tests passed!`
+- a3_icons | 通过 | `test/scenes/a3_icons_test.dart`，`goldens/a3_icons.light.png`，`goldens/a3_icons.dark.png` | 先红缺图；`--update-goldens test/scenes/a3_icons_test.dart` → `All tests passed!`；不带参数 → `All tests passed!`。119 个 `Icons.*`（7×17），每格 20 和 24，没画 `Icons.eye` / `Icons.eye_slash`，没有空格。
+- a4_fills | 通过 | `test/scenes/a4_fills_test.dart`，`goldens/a4_fills.light.png`，`goldens/a4_fills.dark.png` | 先红缺图；`--update-goldens test/scenes/a4_fills_test.dart` → `All tests passed!`；不带参数 → `All tests passed!`
+- a5_shadows | 通过 | `test/scenes/a5_shadows_test.dart`，`goldens/a5_shadows.light.png`，`goldens/a5_shadows.dark.png` | 先红缺图；`--update-goldens test/scenes/a5_shadows_test.dart` → `All tests passed!`；不带参数 → `All tests passed!`
+- a6_ripple_hold | 图已生成，确认未跑 | `test/scenes/a6_ripple_hold_test.dart`，`goldens/a6_ripple_hold.light.png`，`goldens/a6_ripple_hold.dark.png` | 先红缺图；`--update-goldens test/scenes/a6_ripple_hold_test.dart` → `All tests passed!`。不带参数的复跑没做（02:04 收窄后不再跑）。
+
+主代理 2026-11-12 02:12 在 `_golden` 连跑两次不带 `--update-goldens` 的 `flutter test`，都是 `00:02 +15: All tests passed!`，退出码 0。14 张图的 SHA-256 两次相同。a1 仍是 light `E01AC4A4F084965AB597EF552EF014F64555E654CB1199C395ED95912809048F`、dark `02400F310CC76D53FBB53572EAD8398A0137050AD77EDEB9B7BFF15D1AA27A47`。
+- a7_ripple_confirm | 通过 | `test/scenes/a7_ripple_confirm_test.dart`，`goldens/a7_ripple_confirm.light.png`，`goldens/a7_ripple_confirm.dark.png` | `--update-goldens test/scenes/a7_ripple_confirm_test.dart` → `All tests passed!`；不带参数 → `All tests passed!`
+

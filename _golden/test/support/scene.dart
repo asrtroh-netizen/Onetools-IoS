@@ -5,7 +5,15 @@ import 'package:onewifi_android/design/one/glass.dart';
 import 'package:onewifi_android/design/theme/one_theme.dart';
 
 /// 每个场景出深浅两张图：goldens/<name>.light.png 和 goldens/<name>.dark.png。
-void goldenScene(String name, Widget Function() build, {Size size = const Size(390, 844)}) {
+///
+/// [afterSettle] 在主题安静 500ms 之后、截图之前跑。水波纹要在这里按下并再 pump，
+/// 否则那 500ms 会把动画推过取样点。
+void goldenScene(
+  String name,
+  Widget Function() build, {
+  Size size = const Size(390, 844),
+  Future<void> Function(WidgetTester tester)? afterSettle,
+}) {
   for (final brightness in Brightness.values) {
     testWidgets('$name ${brightness.name}', (tester) async {
       tester.view.devicePixelRatio = 3.0;
@@ -25,6 +33,9 @@ void goldenScene(String name, Widget Function() build, {Size size = const Size(3
           ),
         ));
         await tester.pump(const Duration(milliseconds: 500));
+        if (afterSettle != null) {
+          await afterSettle(tester);
+        }
         await expectLater(
           find.byType(MaterialApp),
           matchesGoldenFile('../../goldens/$name.${brightness.name}.png'),
