@@ -1,0 +1,34 @@
+{
+  "gates": [
+    {
+      "id": "R0-5-branches",
+      "cwd": ".",
+      "enabled": true,
+      "command": [
+        "python",
+        "-c",
+        "import subprocess,sys; root=r'E:/GQ/Ultra/Onetools-IoS'; bad=0\nfor d in ('Clash-Client','Swipt','Feather'):\n r=subprocess.run(['git','-C',root+'/'+d,'branch','--show-current'],capture_output=True,text=True)\n name=r.stdout.strip(); print(d+'='+name)\n if r.returncode!=0 or name!='onetools': bad=1\nsys.exit(bad)"
+      ]
+    },
+    {
+      "id": "R0-8-material-count",
+      "cwd": ".",
+      "enabled": true,
+      "command": [
+        "python",
+        "-c",
+        "import pathlib,sys\nsrc=pathlib.Path(r'C:/Flutter/flutter/packages/flutter/lib/src/material')\ndst=pathlib.Path(r'E:/GQ/Ultra/Onetools-IoS/_ref/flutter-3.44.9/material')\ndef n(p):\n return sum(1 for x in p.rglob('*') if x.is_file())\ns,d=n(src),n(dst)\nprint('src=%s dst=%s'%(s,d))\nsys.exit(0 if s==d and s>0 else 1)"
+      ]
+    },
+    {
+      "id": "R0-8-icons",
+      "cwd": ".",
+      "enabled": true,
+      "command": [
+        "python",
+        "-c",
+        "import pathlib,sys\np=pathlib.Path(r'E:/GQ/Ultra/Onetools-IoS/_ref/ow_icons.txt')\nlines=[ln for ln in p.read_text(encoding='utf-8-sig').splitlines() if ln.strip()]\nprint('lines='+str(len(lines)))\nsys.exit(0 if len(lines)==121 else 1)"
+      ]
+    }
+  ]
+}
