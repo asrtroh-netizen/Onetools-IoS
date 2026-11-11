@@ -266,3 +266,11 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 
 主代理 2026-11-12 04:06 在 `_golden` 连跑两次不带 `--update-goldens` 的整包 `flutter test`，都是 `00:25 +271: All tests passed!`，退出码 0。270 张图的 SHA-256 两次相同。宽 320 的 64 张是 960×2532，宽 430 的 64 张是 1290×2532，按下/禁用/聚焦 30 张是 1170×2532，尺寸不对的为 0。`python tools/make_contact_sheet.py --check` 为 `png=270 html=270`，退出码 0。`python tools/check_golden_coverage.py` 仍是 `32/32`。
 
+## P2
+
+收口 2026-11-12 04:10 +08。先按种子 `20261112` 从四个 Dart 文件盲读 40 个不重复数值，写进 `docs/findings/fixture-cross-audit.md` 之后才打开 `_golden/fixtures/tokens.json`。未改夹具，未改 OneWIFI，未做 git 写操作。
+
+40 个里一致 23 个，不一致 17 个。不一致的 17 个都是 `tokens.json` 没有对应键，没有同一键两边数值不同。
+
+主代理 2026-11-12 04:19 按行号复核源码字面量，并抽查 12 个一致键。第 33 条的 480 毫秒在 `layout.json` 的 `dock.slideMs`，不在 `tokens.json`。
+
