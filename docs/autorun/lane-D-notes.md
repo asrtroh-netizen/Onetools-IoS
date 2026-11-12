@@ -54,3 +54,15 @@
 本段没有新的下载，没有新的失败 URL。没有改 Clash-Client，没有改 `loon_lint.py`，没有 git 写操作。下载来的名单只当文本读。
 
 时间：2026-11-12 02:04 接着做并写完本节。限时 60 分钟，未到点。
+
+## MD-1
+
+检查单在 `docs/findings/mac-m7-loon-checklist.md`。第一行写明未在 Mac 上运行，推断稿不能当成实测。`docs/findings/loon-ignored.md` 仍不存在（B4 未做）。`docs/findings/mac-parser-rehearsal.md` 写本节时不在，与 MB-1 互相引用：未编过解析器不要跑实测。没有调用解析器，没有改 `adblock/`。
+
+样本对过 `adblock/samples/SOURCES.md:15-62` 五个 sample 段，以及五份正文里 C6 点名的行。C6 全文是 `docs/findings/loon-ignored-predicted.md:1-48`。
+
+## MD-2
+
+21 个 SDK 的对照简表附在上面那份检查单末尾。未改 `docs/findings/ad-sdk-domains.md`。2026-11-12 重跑 `python tools/check_ad_coverage.py`，stdout 为 21 行 `ok <id>`，顺序与 `adblock/sdk-list.json` 相同：8 个 ruled（baidu、bytedance、csj、gdt、kuaishou、pangle、sigmob、tencent），13 个 no-rule。插件仍是 12 条规则。没有新增来源。
+
+主代理复核：五份样本的 SHA-256 和行数与检查单一致；`python tools/check_ad_coverage.py` 再次为 21 行 `ok`，退出码 0。M7 的行号改为 `mac-stage.md` 第 131–133 行。bytedance 段从第 74 行起，sigmob 段从第 208 行起。未调用解析器，未改 `adblock/`。
