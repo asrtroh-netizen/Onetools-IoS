@@ -212,3 +212,26 @@ N13-onewifix                 pass     HEAD=7a8839e
 8. **不要** 对 zipball 就位的子模块跑 `git submodule update`，那些目录没有 `.git`。
 
 环境仍是：Halo 上 Windows Swift 不可用，走 WSL；不要改系统代理和全局 git。
+
+---
+
+## 7. MiMo 这一班（2026-11-12，未到 18:00）
+
+第一行结论不变：阻塞停。`icons.json` 仍缺，E3 图标码点仍阻塞。N1–N14 的条文没改。这一班在全部待派单元做完后收尾，不是因为到点。
+
+| 单元 | 状态 | 提交 |
+|---|---|---|
+| MA-1、MA-2 | 已核对。未改夹具 | `cc31e45` |
+| MB-1 | 已写入，未在 Mac 上运行 | `69d7774` |
+| MB-2 | 语法通过，未编译。五个 Swift 文件 `swiftc -parse` 退出码 0 | 同一提交 |
+| MC-1 至 MC-4 | 脚本 `bash -n` 退出码 0。不再调用 `git submodule update`。G2 与通话六项仍未决定 | `25fab74` |
+| MD-1、MD-2 | 已写入，未运行。未调用解析器 | `2ce4375` |
+| ME-1、ME-2 | 已验证。OneUI 9 项测试、G3 草稿 4 项测试。四项实现未选定 | `36f1e70` |
+
+主代理对 MA 的抽查：P2 那 17 条的源码行仍是表上的字面量；`layout.json` 第 19 行 `dock.slideMs` 是 `480.0`；声称一致的夹具键对得上（例如 `tokens.json` 第 134 行 `strokeWidth`、第 49 行 `FFF0F0F7`、第 243 行 `0.1200`）。`14FFFFFF`、`0FFFFFFF`、`0AFFFFFF`、`66FFFFFF`、`52FFFFFF`、`3DFFFFFF`、`8CFFFFFF`、`B8FFFFFF`、`47FFFFFF`、`1AFFFFFF`、`00000000` 以及 `0.3400`、`0.3800`、`0.8500`、`0.6500`、`0.0600`、`0.0500`、`0.0300` 在五份已有夹具里都没有。磁盘上没有 `icons.json`。
+
+合同外、本班不改夹具的缺口：`Glass.liquidDockIndicatorFill` 的 `0.10` / `0.08`（`glass.dart` 第 154–155 行）被底栏第 286 行使用，A3 的五种填充排除名单没有点名它。`liquidDockFill` 虽被排除，底栏第 99 行仍在调用。
+
+收尾门禁：`python tools/gates.py` 于 2026-11-12 12:07:36 +08:00 跑完，清单里各项 `result=pass`，记在 `docs/autorun/gates.log` 末段。其中 `A1-flutter-test` 为 `00:30 +271: All tests passed!`。按今早同一算法重算 270 张金图，sha256 仍是 `51d437c1c04373e13b9c6362d7dfdd876cebb5e2e3ec4cbd67c06be386fe3a33`，`HASH_SAME`。没有再跑第二遍 `flutter test`：这一班没改金图和夹具。OneUI 的产品代码有改动，同一轮 `E1-swift-test` 与 `E2-swift-test` 退出码都是 0；提交前同命令的输出是 `Executed 9 tests, with 0 failures`。G3 草稿是 `Executed 4 tests, with 0 failures`，不在 `gates.json` 里。`ONEWIFIX/IOS` 的 HEAD 仍是 `7a8839e`，工作区干净。
+
+仍然冻结：不造 `icons.json`；不在 Linux 上重试 B3；不完整编译 B2；不改 `project.yml`；不选定文字、模糊、投影、水波纹触摸；G2 没有结论；通话六项未决定；不推送；不对 zipball 目录跑 `git submodule update`。上文第 3 节里「G3 只过了 `swiftc -parse`」说的是今早；ME-2 之后多了从夹具读取期望的测试，实现仍未选定。

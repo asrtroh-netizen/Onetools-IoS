@@ -5,8 +5,8 @@
 - 今早起点：2026-11-12 09:45:00 +08:00（仓库在 `886992d`，工作区干净）
 - 截止仍是：2026-11-12 18:00:00 +08:00（unix 1794477600）
 - 上一轮：12 小时自动执行，起点 2026-11-11 18:00:13 +08:00，截止 2026-11-12 06:00:13 +08:00（unix 1794434413），最后提交 `886992d`（04:43:50 +08:00）。AFK 循环已停，不写 DONE/PAUSE，不重启钩子。
-- 当前阶段：MA、MB、MC、MD、ME 已复核。不推送。派活书里的必做单元到此做完。
-- 现在：MC 提交 `25fab74`，MB 提交 `69d7774`，MD 提交 `2ce4375`，ME 提交 `36f1e70`。MA-1、MA-2 的盘点在本提交。Q0–Q5 不重做。Q1 提交 `b50bcd7`；Q2 提交 `65082e1`。
+- 当前阶段：派活书的单元已做完，MP-1 收尾。未到 18:00。下一步仍是等 Mac，以及等你决定图标夹具怎么处理。不推送，不写 DONE/PAUSE。
+- 现在：MA `cc31e45`，MC `25fab74`，MB `69d7774`，MD `2ce4375`，ME `36f1e70`。Q0–Q5 不重做。Q1 提交 `b50bcd7`；Q2 提交 `65082e1`。
 - 网络：路由器 DNS 把 `raw.githubusercontent.com` 解析成 `0.0.0.0`。已把正在使用的「以太网」IPv4 DNS 从 `192.168.1.1` 改为 `1.1.1.1`、`8.8.8.8`，没改系统代理和全局 git。改完 `raw.githubusercontent.com` 与 `github.com` 均返回 200。回退：把该网卡 DNS 设回 `192.168.1.1`。记录在 `.mimocode/dns-fix-2026-11-12.txt`。
 
 ## 本轮队列
@@ -30,8 +30,9 @@
 | MB-2 | 语法通过，未编译 | 主代理用 WSL Swift 6.4.2 对五个 Swift 文件再跑 `swiftc -parse`，退出码都是 0。完整编译未做。同一提交 |
 | MC-1 至 MC-4 | 脚本语法已过；步骤未在 Mac 上运行 | 五个 `scripts/mac/*.sh` 的 `bash -n` 退出码都是 0。`git submodule update` 没有作为命令。G2 与通话六项仍未决定。提交 `25fab74` |
 | MD-1、MD-2 | 已写入，未运行 | `docs/findings/mac-m7-loon-checklist.md`。`check_ad_coverage.py` 为 21 行 `ok`，退出码 0。未调用解析器。提交 `2ce4375` |
-| MA-1、MA-2 | 已核对 | `docs/findings/fixture-completeness.md`。P2 的 17 条里只有 480 在 `layout.json` 的 `dock.slideMs`；其余 16 条按合同不收。同一洗牌的第 41–80 条：一致 32，在另一份夹具 1，未收录 7。没有同一键数值不同。未改夹具，未造 `icons.json`。主代理按行号核过源码字面量，并抽查夹具键。 |
+| MA-1、MA-2 | 已核对 | `docs/findings/fixture-completeness.md`。P2 的 17 条里只有 480 在 `layout.json` 的 `dock.slideMs`；其余 16 条按合同不收。同一洗牌的第 41–80 条：一致 32，在另一份夹具 1，未收录 7。没有同一键数值不同。未改夹具，未造 `icons.json`。主代理按行号核过源码字面量，并抽查夹具键。提交 `cc31e45` |
 | ME-1、ME-2 | 已验证 | OneUI `Executed 9 tests, with 0 failures`；G3 `Executed 4 tests, with 0 failures`。图标仍阻塞，四项实现未选定。提交 `36f1e70` |
+| MP-1 | 已写入 | 2026-11-12 12:07 的 `python tools/gates.py` 全部 pass。`flutter test` 为 `00:30 +271: All tests passed!`。270 张金图 sha256 仍是 `51d437c1c04373e13b9c6362d7dfdd876cebb5e2e3ec4cbd67c06be386fe3a33`，`HASH_SAME`。没有再跑第二遍。ONEWIFIX HEAD 仍是 `7a8839e`。报告第一行仍是阻塞停。 |
 
 ## 第 0 轮（上一轮已验证，保留证据）
 
