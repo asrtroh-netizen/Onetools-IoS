@@ -8,24 +8,36 @@
 $rg = 'C:\Users\Administrator\AppData\Local\OpenAI\Codex\bin\a7d4c4900eafc659\rg.exe'
 ```
 
-子模块目录是空的，标「未初始化」，没有文件数、体积或许可：
+子模块已用 zipball 就位（不是 `git submodule update`），清点见已验收的 [C3 `docs/findings/submodules.md`](submodules.md) 和 `.mimocode/r0-6-submodules-ready.txt`。这些目录没有 `.git`，不要再对它们跑 submodule update。本轮 2026-11-12 09:50 按与 C3 相同的方式重数，结果一致：
 
-| 路径 | 状态 | 出处 |
+| 路径 | 状态（2026-11-12 重数） | 出处 |
 |---|---|---|
-| `Feather/Zsign` | 未初始化（只有 `.` 和 `..`） | `Feather/.gitmodules` 的 `path = Zsign` |
-| `Feather/IDeviceKitten` | 未初始化（只有 `.` 和 `..`） | `Feather/.gitmodules` 的 `path = IDeviceKitten` |
-| `Swipt/Swipt/Resources/DeveloperDiskImage` | 未初始化（只有 `.` 和 `..`） | `Swipt/.gitmodules` 的 `path = Swipt/Resources/DeveloperDiskImage`（相对 Swipt 仓库） |
+| `Feather/Zsign` | 247 个文件，73,644,372 字节，没有 `.git` | `docs/findings/submodules.md`「Zsign」；`Feather/.gitmodules` 的 `path = Zsign` |
+| `Feather/IDeviceKitten` | 25 个文件，46,693 字节，没有 `.git` | 同上「IDeviceKit」；`Feather/.gitmodules` 的 `path = IDeviceKitten` |
+| `Swipt/Swipt/Resources/DeveloperDiskImage` | 6 个文件，18,046,187 字节，没有 `.git` | 同上「DeveloperDiskImage」；`Swipt/.gitmodules` 的 `path = Swipt/Resources/DeveloperDiskImage` |
 
-重跑：
+2026-11-12 上午的并入清单初稿曾把这三处写成「未初始化」。那是 C3 完成之前的扫描，已经过时，以 `submodules.md` 为准。
+
+重跑（PowerShell，在仓库根目录）：
 
 ```powershell
-& $rg --files Feather/Zsign Feather/IDeviceKitten Swipt/Swipt/Resources/DeveloperDiskImage
+function Count-Tree($p) {
+  $files = Get-ChildItem -LiteralPath $p -Recurse -Force -File -ErrorAction Stop
+  [pscustomobject]@{
+    Path = $p
+    Files = $files.Count
+    Bytes = ($files | Measure-Object Length -Sum).Sum
+    HasGit = Test-Path (Join-Path $p '.git')
+  }
+}
+Count-Tree 'Feather/Zsign'
+Count-Tree 'Feather/IDeviceKitten'
+Count-Tree 'Swipt/Swipt/Resources/DeveloperDiskImage'
 ```
 
-预期：没有文件。
+预期：文件数与字节数为上表三行，`HasGit` 均为 `False`。不要用「没有任何文件」当作预期。
 
 ---
-
 ## 1. Bundle.main
 
 58 处。Clash-Client 20，Swipt 22，Feather 16。搜索范围是三个仓库里的 `*.swift`，排除 `build/` 和 `.build/`。
@@ -75,7 +87,7 @@ $rg = 'C:\Users\Administrator\AppData\Local\OpenAI\Codex\bin\a7d4c4900eafc659\rg
 | 位置 | 资源 |
 |---|---|
 | `Swipt/Swipt/Automation/SwipletInterface.swift:297` | `main.jsbundle` |
-| `Swipt/Swipt/Platform/Platform.swift:88` | `DeveloperDiskImage`（子模块目录，未初始化） |
+| `Swipt/Swipt/Platform/Platform.swift:88` | `DeveloperDiskImage`（zipball 已就位，见 `docs/findings/submodules.md`） |
 | `Feather/Feather/FeatherApp.swift:207` | `signing-assets` |
 | `Feather/Feather/Backend/Server/ServerInstaller+TLS.swift:91` | `url(forResource:withExtension:)` |
 | `Feather/Feather/Utilities/Handlers/TweakHandler.swift:36` | `ellekit.deb` |
