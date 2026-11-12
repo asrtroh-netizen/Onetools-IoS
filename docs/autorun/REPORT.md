@@ -3,9 +3,9 @@
 阻塞停（A4/N5 的 `icons.json`、E3 图标码点仍缺；其余本机能验证的已验证或标未编译）。
 
 - 12 小时段：2026-11-11 18:00:13–2026-11-12 06:00:13 +08:00。该段结束时最后提交是 `886992d`（04:43:50）。当时没有 `docs/autorun/REPORT.md`，N14 未满足。
-- 本轮：计划 `docs/superpowers/plans/2026-11-12-onetools-complete-polish-18.md`，起点 2026-11-12 09:45，截止 18:00:00 +08:00。Q0 提交 `99b49e5`（09:48:17）。Q1 全量门禁 09:49:24–09:51:15，退出码 0。完整命令输出在 `docs/autorun/closeout-2026-11-12/`。
+- 本轮：计划 `docs/superpowers/plans/2026-11-12-onetools-complete-polish-18.md`，起点 2026-11-12 09:45，截止 18:00:00 +08:00。Q0 `99b49e5`，Q1 `b50bcd7`（门禁 09:49:24–09:51:15，退出码 0，证据在 `docs/autorun/closeout-2026-11-12/`），Q2 `65082e1`（本文件首次提交），Q3 `f28e45c`（部分 E3），Q4 `68fadb5`（五线审查），Q5 `7e39df4`（并入清单订正）。
 - 没有改系统代理或全局 git，没有推送，没有跑 `git submodule update`，没有写 `DONE`/`PAUSE`（AFK 已结束）。
-- 本报告先按 Q1 当时的仓库状态写。Q3 及之后的产物在到点前补进同一份文件，不改 N1–N14 的条文。
+- Q3–Q5 已补进本文件，不改 N1–N14 的条文。第一行结论不变：图标夹具仍阻塞。
 
 ---
 
@@ -21,12 +21,12 @@
 | N4 | 已验证 | `python tools/check_golden_coverage.py` 输出 `32/32`，exit=0。 |
 | N5 | 五份已验证，`icons.json` 阻塞 | `python tools/check_fixtures.py` 输出 `ok tokens.json typography.json dock_edges.json ripple.json layout.json`，exit=0。磁盘上没有 `icons.json`。该脚本只检查已存在的 A4 文件，所以缺图标时仍可能输出 `ok`。N5 的完整条文要求六个夹具齐全：图标夹具按 2026-11-12 决定阻塞（不写成 119、不造假 121）。N2 的 121 行 `ow_icons.txt` 未改。 |
 | N6 | 已验证 | `python -m pytest tools -q`：`46 passed in 3.37s`，exit=0。日志：`closeout-2026-11-12/N6-pytest-tools.log`。 |
-| N7 | 对 `tokens.json` 已验证；字号/底栏/水波纹的 Swift 对应在本报告写下时尚未落地（Q3）；图标码点阻塞 | `swift test --package-path OneUI`（E1 与 E2 各跑一次，同一包）：`Executed 4 tests, with 0 failures`，exit=0。其中 `testEveryTokensJsonKeyMatchesSwiftCatalog` 通过。图标码点没有 Swift 实现，见 A4 决定。 |
+| N7 | 对 `tokens.json`、`typography.json`、`dock_edges.json`、`ripple.json` 已验证；图标码点阻塞 | Q1 时 `swift test --package-path OneUI` 为 `Executed 4 tests, with 0 failures`。Q3（09:54–09:55）之后为 `Executed 7 tests, with 0 failures`，退出码 0。往 `typography.json` 加 `__probe` 失败：`swift missing typography.__probe`，退出码 1；夹具已按 sha256 `bccea24b1bb311ea6280f5db025912beb6acc113cf3dc14a6652e2bcc91a29ea` 撤掉后再过。图标码点没有 Swift 实现，见 A4 决定。不算 E3 全部通过。 |
 | N8 | 环回已验证；P3 其余代码语法通过、未编译 | `python tools/sync_harness.py --check`：`same ...SwiptLoopbackTests.swift`，exit=0。`swift test --package-path _harness/ClashLogic`：`Executed 5 tests, with 0 failures`，exit=0。B2 按设计不在本机完整编译（需要 Xcode）。B3 在 Linux 不可行，B4 未做，P3 阻塞。 |
 | N9 | 已验证 | Skia：`_ref/NOTES.md` 结论与交接文档 §3.3.2 一致（提交 `f549fcb`）。内核环回：`docs/decisions/W-kernel-loopback.md`（与 B3 结论一同提交 `b71db82`）。子模块：`docs/findings/submodules.md`（`3eb8715`），zipball 就位，Zsign 247 文件 / 73,644,372 字节，IDeviceKitten 25 / 46,693，DeveloperDiskImage 6 / 18,046,187；本轮 09:50 重数一致，三处都没有 `.git`。 |
 | N10 | 已验证（结论：不可行） | `docs/decisions/W-parser-harness.md`。Linux 上 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`，原文件第 1 行是 `#if os(iOS) \|\| os(macOS)`。 |
 | N11 | 已验证 | `python tools/loon_lint.py adblock/onetools-cn-ads.plugin`：`ok`。`python tools/check_ad_coverage.py`：21 行 `ok`（末行 `ok xhLaunchAd`）。D4 覆盖测试 `6 passed`。插件 12 条规则覆盖 8 个 SDK，其余 13 个写了未收原因；每条规则至少两个来源（anti-AD 与 ACL4SSR 未用作第二来源，见决定）。 |
-| N12 | 已验证（脚本未在 Mac 上运行） | C4 提交 `37f542c`：脚本曾过 `bash -n`。脚本与手册开头标「未在 Mac 上运行」。并入清单 `docs/findings/integration-inventory.md` 仍有过时的「子模块未初始化」表述，与已验收的 C3 不符；本轮 Q5 将订正，不在本段把清单说成已订正。 |
+| N12 | 已验证（脚本未在 Mac 上运行）；清单过时段落已订正 | C4 提交 `37f542c`：脚本曾过 `bash -n`，仍标「未在 Mac 上运行」。Q5（`7e39df4`）把 `docs/findings/integration-inventory.md` 的子模块段落改为指向 `docs/findings/submodules.md`，并写入 09:50 重数（247 / 25 / 6），不跑 `git submodule update`。 |
 | N13 | 已验证 | `git -C E:\GQ\Ultra\ONEWIFIX\IOS status --porcelain` 为空；HEAD=`7a8839e871d7ff776712129df57452eebede6aee`（短 `7a8839e`）。`closeout-2026-11-12/N13-onewifix.txt`。 |
 | N14 | 本文件即证据 | 各条命令的完整输出在 `docs/autorun/closeout-2026-11-12/`（含 `gates/*.log`、`flutter-test-2.log`、`SUMMARY.txt`）。`docs/autorun/gates.log` 有同一轮追加。 |
 
@@ -107,7 +107,7 @@ N13-onewifix                 pass     HEAD=7a8839e
 | C2 | 已验证 | `b71db82` |
 | C3 | 已验证 | `3eb8715` |
 | C4 | 已验证（脚本未运行） | `37f542c` |
-| C5 | 已验证；清单有过时段落 | `37f542c`；Q5 订正 |
+| C5 | 已验证；过时段落已订正 | `37f542c`；Q5 `7e39df4` |
 | C6 | 已验证（推断，未经解析器实测） | `e420389` |
 | P5 | 已验证 | `7b63afb` |
 | P7 | 草稿已核对，未运行，未改工程 | `a1e216d`。G2 结论未定 |
@@ -128,7 +128,7 @@ N13-onewifix                 pass     HEAD=7a8839e
 |---|---|---|
 | E1 | 已验证 | `cb3fcdc`；本轮 4 个测试通过 |
 | E2 | 已验证 | `6a4ad75` |
-| E3 | 图标阻塞；部分 E3（字号、底栏、水波纹）在 Q3 | 不算全部通过 |
+| E3 | 部分通过（图标仍阻塞） | `f28e45c`。字号、底栏、水波纹已验证；图标码点未写。不算全部通过 |
 | P4 | 已验证 | `5dc7d76`；本轮 13 个测试通过 |
 | P6 | 语法通过，未编译；四项实现未选定 | `886992d` |
 
@@ -138,12 +138,12 @@ N13-onewifix                 pass     HEAD=7a8839e
 |---|---|---|
 | Q0 | 已验证 | `99b49e5` |
 | Q1 | 已验证 | 全量门禁，见第 1 节；本提交纳入证据目录 |
-| Q2 | 已验证 | 本文件。Q1 证据提交 `b50bcd7` |
-| Q3 | 未开始 | 部分 E3 |
-| Q4 | 未开始 | 只读五线审查 |
-| Q5 | 未开始 | 订正并入清单 |
-| Q6 | 未开始 | 其他打磨 |
-| Q7 | 未开始 | 到点更新 |
+| Q2 | 已验证 | 本文件首次提交 `65082e1`。Q1 证据 `b50bcd7` |
+| Q3 | 部分通过 | `f28e45c`。7 项 `swift test` 通过；假键探测失败后已撤掉。图标仍阻塞 |
+| Q4 | 已验证 | `68fadb5`。`docs/autorun/reviews/2026-11-12-lane-*.md` |
+| Q5 | 已验证 | `7e39df4` |
+| Q6 | 无新增 | 审查未要求改检查行为。本机可做且不违反禁区的打磨已做完。Mac 项与图标策略仍等。 |
+| Q7 | 已更新（09:58） | 本文件已写入 Q3–Q5。到 18:00 若仓库无新变化即可保持。 |
 
 ---
 
@@ -190,7 +190,7 @@ N13-onewifix                 pass     HEAD=7a8839e
 
 1. **12 小时截止时没有报告。** 自动循环在 06:00:13 停了，N14 未交。本轮把报告补上。以后收尾应把「写报告」放到截止前至少 40 分钟，不要只依赖 AFK 最后一轮。
 2. **`check_fixtures.py` 在缺 `icons.json` 时仍输出 `ok`。** 这是脚本「有文件才查 A4」的既有行为，不是本轮改的。报告和验收不能把这一行当成 N5 全部通过。若以后补图标夹具，再让脚本在缺文件时失败也可以，但不要为了过关而改 N5 条文。
-3. **并入清单过时。** `docs/findings/integration-inventory.md` 仍写子模块「未初始化」，与已验收的 `docs/findings/submodules.md` 不符。Q5 订正，不跑 `git submodule update`。
+3. **并入清单过时（已订正）。** 初稿写子模块「未初始化」。Q5（`7e39df4`）已改为指向 `docs/findings/submodules.md`，不跑 `git submodule update`。
 4. **Flutter 测试耗时。** 日志里的 `00:25`、`00:27` 是分:秒（约半分钟），不是 25 分钟。先前按 25 分钟估全量门禁偏大。本轮两次合计约在 09:49:27–09:51:15 的窗口内完成（整次 Q1 约 1 分 51 秒）。
 5. **图标夹具的结构性缺口。** Cupertino 的 `Icons.eye` / `Icons.eye_slash` 进了 `ow_icons.txt`，Material 解析得不到码点。要做完 A4/E3，需要你改冻结证据或单独列出 Cupertino 图标；执行侧不能自行放宽。
 6. **解析器测试台只能在 Apple 平台编。** 总计划若写「Windows 上验证解析器」，应改成「Mac 上用原工程」，或接受 Linux 上不可行。
