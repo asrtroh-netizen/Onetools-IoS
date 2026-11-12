@@ -1,0 +1,8 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', 'tools/sync_harness.py', '--check']
+started=2026-11-12 09:50:21 +0800
+ended=2026-11-12 09:50:21 +0800
+exit=0
+
+same Clash-Client\apple\ClashClientUI\Sources\ClashClientUI\Features\Tunnel\ClashTunnelRouteShaping.swift
+same Clash-Client\apple\ClashClientUI\Tests\ClashClientUITests\SwiptLoopbackTests.swift

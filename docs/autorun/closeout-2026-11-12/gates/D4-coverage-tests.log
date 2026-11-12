@@ -1,0 +1,8 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', '-m', 'pytest', 'tools/test_check_ad_coverage.py', '-q']
+started=2026-11-12 09:50:32 +0800
+ended=2026-11-12 09:50:34 +0800
+exit=0
+
+......                                                                   [100%]
+6 passed in 0.88s

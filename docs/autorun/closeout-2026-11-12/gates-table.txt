@@ -1,0 +1,22 @@
+id                           result   key
+------------------------------------------------------------------------
+R0-5-branches                pass     Feather=onetools
+R0-8-material-count          pass     src=200 dst=200
+R0-8-icons                   pass     lines=121
+D1-export-ad-sdks            pass     4 passed in 0.33s
+D2-check-samples             pass     ok XWebAds.plugin b6d218d58a709cd72559fbe9c6d5eed5e6e5e2f003e7329fc34c2477cf785649
+A2-golden-diff               pass     4 passed in 0.82s
+A1-flutter-test              pass     00:27 +271: All tests passed!
+R0-7-swift-smoke             pass     Build complete! (1.25 secs)
+B1-sync-check                pass     same Clash-Client\apple\ClashClientUI\Tests\ClashClientUITests\SwiptLoopbackTests.swift
+B1-swift-test                pass     Build complete! (1.16 secs)
+E2-swift-test                pass     Build complete! (1.15 secs)
+E1-swift-test                pass     Build complete! (1.16 secs)
+D3-loon-lint                 pass     17 passed in 1.67s
+A3-check-fixtures            pass     ok tokens.json typography.json dock_edges.json ripple.json layout.json
+D4-ad-coverage               pass     ok xhLaunchAd
+D4-plugin-lint               pass     ok adblock\onetools-cn-ads.plugin
+D4-coverage-tests            pass     6 passed in 0.88s
+A10-golden-coverage          pass     32/32
+A11-contact-sheet            pass     png=270 html=270
+P4-signing-test              pass     Build complete! (1.13 secs)

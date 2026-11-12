@@ -1,0 +1,8 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', '-m', 'pytest', 'tools/test_export_ad_sdks.py', '-q']
+started=2026-11-12 09:49:26 +0800
+ended=2026-11-12 09:49:27 +0800
+exit=0
+
+....                                                                     [100%]
+4 passed in 0.33s

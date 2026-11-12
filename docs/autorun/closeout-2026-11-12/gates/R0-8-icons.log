@@ -1,0 +1,7 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', '-c', "import pathlib,sys\np=pathlib.Path(r'E:/GQ/Ultra/Onetools-IoS/_ref/ow_icons.txt')\nlines=[ln for ln in p.read_text(encoding='utf-8-sig').splitlines() if ln.strip()]\nprint('lines='+str(len(lines)))\nsys.exit(0 if len(lines)==121 else 1)"]
+started=2026-11-12 09:49:26 +0800
+ended=2026-11-12 09:49:26 +0800
+exit=0
+
+lines=121

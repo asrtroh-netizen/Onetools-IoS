@@ -1,0 +1,7 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', 'tools/check_golden_coverage.py']
+started=2026-11-12 09:50:34 +0800
+ended=2026-11-12 09:50:34 +0800
+exit=0
+
+32/32

@@ -1,0 +1,9 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', '-c', "import subprocess,sys; root=r'E:/GQ/Ultra/Onetools-IoS'; bad=0\nfor d in ('Clash-Client','Swipt','Feather'):\n r=subprocess.run(['git','-C',root+'/'+d,'branch','--show-current'],capture_output=True,text=True)\n name=r.stdout.strip(); print(d+'='+name)\n if r.returncode!=0 or name!='onetools': bad=1\nsys.exit(bad)"]
+started=2026-11-12 09:49:25 +0800
+ended=2026-11-12 09:49:26 +0800
+exit=0
+
+Clash-Client=onetools
+Swipt=onetools
+Feather=onetools

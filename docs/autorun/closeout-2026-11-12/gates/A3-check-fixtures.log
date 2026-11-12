@@ -1,0 +1,7 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', 'tools/check_fixtures.py']
+started=2026-11-12 09:50:32 +0800
+ended=2026-11-12 09:50:32 +0800
+exit=0
+
+ok tokens.json typography.json dock_edges.json ripple.json layout.json

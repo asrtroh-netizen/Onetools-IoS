@@ -1,0 +1,8 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['C:\\Python314\\python.exe', '-m', 'pytest', 'tools', '-q']
+started=2026-11-12 09:51:09 +0800
+ended=2026-11-12 09:51:13 +0800
+exit=0
+
+..............................................                           [100%]
+46 passed in 3.37s

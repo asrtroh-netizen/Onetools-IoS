@@ -1,0 +1,33 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['wsl', '-d', 'Ubuntu-24.04', '-u', 'root', '--', 'env', 'PATH=/opt/swift/usr/bin:/usr/bin:/bin', '/opt/swift/usr/bin/swift', 'test', '--package-path', '/mnt/e/GQ/Ultra/Onetools-IoS/OneUI']
+started=2026-11-12 09:50:27 +0800
+ended=2026-11-12 09:50:29 +0800
+exit=0
+
+Test Suite 'All tests' started at 2026-11-12 09:50:30.583
+Test Suite 'Debug-linux-x86_64.xctest' started at 2026-11-12 09:50:30.585
+Test Suite 'OneTokenFixtureTests' started at 2026-11-12 09:50:30.585
+Test Case 'OneTokenFixtureTests.testEveryTokensJsonKeyMatchesSwiftCatalog' started at 2026-11-12 09:50:30.585
+Test Case 'OneTokenFixtureTests.testEveryTokensJsonKeyMatchesSwiftCatalog' passed (0.011 seconds)
+Test Suite 'OneTokenFixtureTests' passed at 2026-11-12 09:50:30.596
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.011 (0.011) seconds
+Test Suite 'OneUICoreSkeletonTests' started at 2026-11-12 09:50:30.596
+Test Case 'OneUICoreSkeletonTests.testIconsResourceIsReadable' started at 2026-11-12 09:50:30.596
+Test Case 'OneUICoreSkeletonTests.testIconsResourceIsReadable' passed (0.03 seconds)
+Test Case 'OneUICoreSkeletonTests.testModuleIsLoadable' started at 2026-11-12 09:50:30.626
+Test Case 'OneUICoreSkeletonTests.testModuleIsLoadable' passed (0.0 seconds)
+Test Case 'OneUICoreSkeletonTests.testPackageManifestDeclaresIcons' started at 2026-11-12 09:50:30.626
+Test Case 'OneUICoreSkeletonTests.testPackageManifestDeclaresIcons' passed (0.003 seconds)
+Test Suite 'OneUICoreSkeletonTests' passed at 2026-11-12 09:50:30.630
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.034 (0.034) seconds
+Test Suite 'Debug-linux-x86_64.xctest' passed at 2026-11-12 09:50:30.630
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.045 (0.045) seconds
+Test Suite 'All tests' passed at 2026-11-12 09:50:30.630
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.045 (0.045) seconds
+◇ Test run started.
+↳ Testing Library Version: 6.4.2 (288a2328ff84644)
+↳ Target Platform: x86_64-unknown-linux-gnu
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+Building for debugging...
+[Computing dependencies]
+Build complete! (1.16 secs)

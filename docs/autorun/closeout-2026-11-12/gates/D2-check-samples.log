@@ -1,0 +1,11 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', 'tools/check_samples.py']
+started=2026-11-12 09:49:27 +0800
+ended=2026-11-12 09:49:27 +0800
+exit=0
+
+ok youtube-ads.sgmodule d0902612cfcfd2fb3f80e17aeacb0b088a62808442809c355bc68af1e0dfaba3
+ok adblock4limbo.list 5fec42de94e30ae0a27ae0528e7c3f88bac57ffab4f0d31f99ee73a299f54909
+ok weibo.plugin 6fb8f00e4d2b02b347388c824ea5ae9621c3ac9777ec88ee6823776b48f66a0e
+ok WeChatMiniAds.plugin f8ef8e7cfa747bbb4ed57f9752fc0544a1f08187b8f1a4dca58aa3a0543c50c7
+ok XWebAds.plugin b6d218d58a709cd72559fbe9c6d5eed5e6e5e2f003e7329fc34c2477cf785649

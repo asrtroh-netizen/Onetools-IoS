@@ -1,0 +1,51 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['wsl', '-d', 'Ubuntu-24.04', '-u', 'root', '--', 'env', 'PATH=/opt/swift/usr/bin:/usr/bin:/bin', '/opt/swift/usr/bin/swift', 'test', '--package-path', '/mnt/e/GQ/Ultra/Onetools-IoS/SigningLogic']
+started=2026-11-12 09:50:34 +0800
+ended=2026-11-12 09:50:37 +0800
+exit=0
+
+Test Suite 'All tests' started at 2026-11-12 09:50:37.671
+Test Suite 'Debug-linux-x86_64.xctest' started at 2026-11-12 09:50:37.672
+Test Suite 'BatchTests' started at 2026-11-12 09:50:37.672
+Test Case 'BatchTests.testAllItemsSucceed' started at 2026-11-12 09:50:37.672
+Test Case 'BatchTests.testAllItemsSucceed' passed (0.001 seconds)
+Test Case 'BatchTests.testEmptyInputDoesNoWork' started at 2026-11-12 09:50:37.673
+Test Case 'BatchTests.testEmptyInputDoesNoWork' passed (0.0 seconds)
+Test Case 'BatchTests.testEveryItemCanFail' started at 2026-11-12 09:50:37.673
+Test Case 'BatchTests.testEveryItemCanFail' passed (0.0 seconds)
+Test Case 'BatchTests.testOneFailureIsRecordedAndTheRestContinue' started at 2026-11-12 09:50:37.674
+Test Case 'BatchTests.testOneFailureIsRecordedAndTheRestContinue' passed (0.0 seconds)
+Test Suite 'BatchTests' passed at 2026-11-12 09:50:37.674
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+Test Suite 'ExpiryReminderTests' started at 2026-11-12 09:50:37.674
+Test Case 'ExpiryReminderTests.testCertificateAndProfileOnExactDaysBothSend' started at 2026-11-12 09:50:37.674
+Test Case 'ExpiryReminderTests.testCertificateAndProfileOnExactDaysBothSend' passed (0.0 seconds)
+Test Case 'ExpiryReminderTests.testExactlyOneDaySendsOneReminder' started at 2026-11-12 09:50:37.674
+Test Case 'ExpiryReminderTests.testExactlyOneDaySendsOneReminder' passed (0.0 seconds)
+Test Case 'ExpiryReminderTests.testExactlySevenDaysSendsOneReminder' started at 2026-11-12 09:50:37.674
+Test Case 'ExpiryReminderTests.testExactlySevenDaysSendsOneReminder' passed (0.0 seconds)
+Test Case 'ExpiryReminderTests.testExpiredBeforeTodaySendsNothing' started at 2026-11-12 09:50:37.675
+Test Case 'ExpiryReminderTests.testExpiredBeforeTodaySendsNothing' passed (0.0 seconds)
+Test Case 'ExpiryReminderTests.testExpiresTodaySendsNothing' started at 2026-11-12 09:50:37.675
+Test Case 'ExpiryReminderTests.testExpiresTodaySendsNothing' passed (0.0 seconds)
+Test Case 'ExpiryReminderTests.testOtherDistancesSendNothing' started at 2026-11-12 09:50:37.675
+Test Case 'ExpiryReminderTests.testOtherDistancesSendNothing' passed (0.0 seconds)
+Test Case 'ExpiryReminderTests.testSameCertificateOnTheSameDaySendsOnlyOneReminder' started at 2026-11-12 09:50:37.675
+Test Case 'ExpiryReminderTests.testSameCertificateOnTheSameDaySendsOnlyOneReminder' passed (0.0 seconds)
+Test Case 'ExpiryReminderTests.testSixDaysSendsNothing' started at 2026-11-12 09:50:37.675
+Test Case 'ExpiryReminderTests.testSixDaysSendsNothing' passed (0.0 seconds)
+Test Case 'ExpiryReminderTests.testTimeOfDayDoesNotChangeTheCalendarDistance' started at 2026-11-12 09:50:37.675
+Test Case 'ExpiryReminderTests.testTimeOfDayDoesNotChangeTheCalendarDistance' passed (0.0 seconds)
+Test Suite 'ExpiryReminderTests' passed at 2026-11-12 09:50:37.676
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'Debug-linux-x86_64.xctest' passed at 2026-11-12 09:50:37.676
+	 Executed 13 tests, with 0 failures (0 unexpected) in 0.003 (0.003) seconds
+Test Suite 'All tests' passed at 2026-11-12 09:50:37.676
+	 Executed 13 tests, with 0 failures (0 unexpected) in 0.003 (0.003) seconds
+◇ Test run started.
+↳ Testing Library Version: 6.4.2 (288a2328ff84644)
+↳ Target Platform: x86_64-unknown-linux-gnu
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+Building for debugging...
+[Computing dependencies]
+Build complete! (1.13 secs)

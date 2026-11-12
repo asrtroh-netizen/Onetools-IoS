@@ -1,0 +1,32 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['wsl', '-d', 'Ubuntu-24.04', '-u', 'root', '--', 'env', 'PATH=/opt/swift/usr/bin:/usr/bin:/bin', '/opt/swift/usr/bin/swift', 'test', '--package-path', '/mnt/e/GQ/Ultra/Onetools-IoS/_harness/ClashLogic']
+started=2026-11-12 09:50:21 +0800
+ended=2026-11-12 09:50:23 +0800
+exit=0
+
+Test Suite 'All tests' started at 2026-11-12 09:50:24.495
+Test Suite 'Debug-linux-x86_64.xctest' started at 2026-11-12 09:50:24.496
+Test Suite 'SwiptLoopbackTests' started at 2026-11-12 09:50:24.496
+Test Case 'SwiptLoopbackTests.testAKeyNeverWrittenCountsAsOn' started at 2026-11-12 09:50:24.496
+Test Case 'SwiptLoopbackTests.testAKeyNeverWrittenCountsAsOn' passed (0.002 seconds)
+Test Case 'SwiptLoopbackTests.testAddsTheAddressWhenOnAndAbsent' started at 2026-11-12 09:50:24.498
+Test Case 'SwiptLoopbackTests.testAddsTheAddressWhenOnAndAbsent' passed (0.0 seconds)
+Test Case 'SwiptLoopbackTests.testDoesNotAddItTwice' started at 2026-11-12 09:50:24.498
+Test Case 'SwiptLoopbackTests.testDoesNotAddItTwice' passed (0.0 seconds)
+Test Case 'SwiptLoopbackTests.testKeepsWhatTheUserWroteAndAppends' started at 2026-11-12 09:50:24.498
+Test Case 'SwiptLoopbackTests.testKeepsWhatTheUserWroteAndAppends' passed (0.0 seconds)
+Test Case 'SwiptLoopbackTests.testLeavesTheListAloneWhenOff' started at 2026-11-12 09:50:24.499
+Test Case 'SwiptLoopbackTests.testLeavesTheListAloneWhenOff' passed (0.0 seconds)
+Test Suite 'SwiptLoopbackTests' passed at 2026-11-12 09:50:24.499
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+Test Suite 'Debug-linux-x86_64.xctest' passed at 2026-11-12 09:50:24.499
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+Test Suite 'All tests' passed at 2026-11-12 09:50:24.499
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+◇ Test run started.
+↳ Testing Library Version: 6.4.2 (288a2328ff84644)
+↳ Target Platform: x86_64-unknown-linux-gnu
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+Building for debugging...
+[Computing dependencies]
+Build complete! (1.16 secs)

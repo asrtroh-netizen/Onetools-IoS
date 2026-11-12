@@ -1,0 +1,7 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', 'tools/loon_lint.py', 'adblock/onetools-cn-ads.plugin']
+started=2026-11-12 09:50:32 +0800
+ended=2026-11-12 09:50:32 +0800
+exit=0
+
+ok adblock\onetools-cn-ads.plugin

@@ -1,0 +1,8 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', '-m', 'pytest', 'tools/test_loon_lint.py', '-q']
+started=2026-11-12 09:50:29 +0800
+ended=2026-11-12 09:50:32 +0800
+exit=0
+
+.................                                                        [100%]
+17 passed in 1.67s

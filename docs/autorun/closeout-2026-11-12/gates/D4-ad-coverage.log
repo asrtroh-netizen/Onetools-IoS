@@ -1,0 +1,27 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', 'tools/check_ad_coverage.py']
+started=2026-11-12 09:50:32 +0800
+ended=2026-11-12 09:50:32 +0800
+exit=0
+
+ok adgain
+ok baidu
+ok beizi
+ok bytedance
+ok cjzf
+ok csj
+ok cxh
+ok cxjs
+ok dcloud
+ok flink
+ok gdt
+ok jd
+ok kuaishou
+ok meishu
+ok pangle
+ok sdm
+ok sigmob
+ok tencent
+ok tobid
+ok ubix
+ok xhLaunchAd

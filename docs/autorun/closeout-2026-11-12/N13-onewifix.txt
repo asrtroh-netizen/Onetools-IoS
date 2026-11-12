@@ -1,0 +1,8 @@
+closeout N13 2026-11-12 09:51:15 +0800
+path=E:\GQ\Ultra\ONEWIFIX\IOS
+HEAD=7a8839e871d7ff776712129df57452eebede6aee
+short=7a8839e
+expected_prefix=7a8839e
+porcelain_exit=0
+porcelain: (empty)
+result=pass

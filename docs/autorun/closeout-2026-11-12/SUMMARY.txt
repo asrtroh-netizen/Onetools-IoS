@@ -1,0 +1,29 @@
+Q1 closeout started 2026-11-12 09:49:24 +0800
+goldens-before count=270 sha256=51d437c1c04373e13b9c6362d7dfdd876cebb5e2e3ec4cbd67c06be386fe3a33
+R0-5-branches: result=pass exit=0 key=Feather=onetools
+R0-8-material-count: result=pass exit=0 key=src=200 dst=200
+R0-8-icons: result=pass exit=0 key=lines=121
+D1-export-ad-sdks: result=pass exit=0 key=4 passed in 0.33s
+D2-check-samples: result=pass exit=0 key=ok XWebAds.plugin b6d218d58a709cd72559fbe9c6d5eed5e6e5e2f003e7329fc34c2477cf785649
+A2-golden-diff: result=pass exit=0 key=4 passed in 0.82s
+A1-flutter-test: result=pass exit=0 key=00:27 +271: All tests passed!
+R0-7-swift-smoke: result=pass exit=0 key=Build complete! (1.25 secs)
+B1-sync-check: result=pass exit=0 key=same Clash-Client\apple\ClashClientUI\Tests\ClashClientUITests\SwiptLoopbackTests.swift
+B1-swift-test: result=pass exit=0 key=Build complete! (1.16 secs)
+E2-swift-test: result=pass exit=0 key=Build complete! (1.15 secs)
+E1-swift-test: result=pass exit=0 key=Build complete! (1.16 secs)
+D3-loon-lint: result=pass exit=0 key=17 passed in 1.67s
+A3-check-fixtures: result=pass exit=0 key=ok tokens.json typography.json dock_edges.json ripple.json layout.json
+D4-ad-coverage: result=pass exit=0 key=ok xhLaunchAd
+D4-plugin-lint: result=pass exit=0 key=ok adblock\onetools-cn-ads.plugin
+D4-coverage-tests: result=pass exit=0 key=6 passed in 0.88s
+A10-golden-coverage: result=pass exit=0 key=32/32
+A11-contact-sheet: result=pass exit=0 key=png=270 html=270
+P4-signing-test: result=pass exit=0 key=Build complete! (1.13 secs)
+goldens-after-gates count=270 sha256=51d437c1c04373e13b9c6362d7dfdd876cebb5e2e3ec4cbd67c06be386fe3a33 same_as_before=True
+A1-flutter-test-2: result=pass exit=0 key=00:27 +271: All tests passed!
+goldens-after-second count=270 sha256=51d437c1c04373e13b9c6362d7dfdd876cebb5e2e3ec4cbd67c06be386fe3a33 HASH_SAME=True
+N6-pytest-tools: result=pass exit=0 key=46 passed in 3.37s
+N1-upstreams: result=pass details=N1-upstreams.txt
+N13-onewifix: result=pass HEAD=7a8839e871d7ff776712129df57452eebede6aee porcelain_empty=True
+Q1 closeout ended 2026-11-12 09:51:15 +0800 failed_count=0

@@ -1,0 +1,7 @@
+$ cwd=E:\GQ\Ultra\Onetools-IoS
+$ ['python', '-c', "import pathlib,sys\nsrc=pathlib.Path(r'C:/Flutter/flutter/packages/flutter/lib/src/material')\ndst=pathlib.Path(r'E:/GQ/Ultra/Onetools-IoS/_ref/flutter-3.44.9/material')\ndef n(p):\n return sum(1 for x in p.rglob('*') if x.is_file())\ns,d=n(src),n(dst)\nprint('src=%s dst=%s'%(s,d))\nsys.exit(0 if s==d and s>0 else 1)"]
+started=2026-11-12 09:49:26 +0800
+ended=2026-11-12 09:49:26 +0800
+exit=0
+
+src=200 dst=200

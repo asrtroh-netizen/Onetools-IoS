@@ -1,0 +1,58 @@
+closeout N1 2026-11-12 09:51:13 +0800
+## Clash-Client
+lock=e3e647283b1593a61dba622f13cd499deeda9b8b
+HEAD=1358825c463f0f8b22583c1453e70fd7918c96c6 exit=0
+branch=onetools exit=0
+onetools=1358825c463f0f8b22583c1453e70fd7918c96c6
+porcelain_exit=0
+porcelain: (empty)
+lock_object=commit exit=0
+lock_is_ancestor_of_onetools exit=0
+
+## Clash-Core
+lock=e6334ad18cc7ee7582bf0f3a70681d58a2b61eb5
+HEAD=e6334ad18cc7ee7582bf0f3a70681d58a2b61eb5 exit=0
+branch=main exit=0
+onetools=(no onetools branch)
+porcelain_exit=0
+porcelain: (empty)
+lock_object=commit exit=0
+
+## Swipt
+lock=ab218801d7f80d0260ae2e078032de3cc16d8fdf
+HEAD=ab218801d7f80d0260ae2e078032de3cc16d8fdf exit=0
+branch=onetools exit=0
+onetools=ab218801d7f80d0260ae2e078032de3cc16d8fdf
+porcelain_exit=0
+porcelain: (empty)
+lock_object=commit exit=0
+lock_is_ancestor_of_onetools exit=0
+
+## Swiplets
+lock=3e37730ebb95e1a665768bd44f29d4b1858f4bcc
+HEAD=3e37730ebb95e1a665768bd44f29d4b1858f4bcc exit=0
+branch=main exit=0
+onetools=(no onetools branch)
+porcelain_exit=0
+porcelain: (empty)
+lock_object=commit exit=0
+
+## Feather
+lock=31ab6de455f2a6108f6830e343dee826310c03be
+HEAD=31ab6de455f2a6108f6830e343dee826310c03be exit=0
+branch=onetools exit=0
+onetools=31ab6de455f2a6108f6830e343dee826310c03be
+porcelain_exit=0
+porcelain: (empty)
+lock_object=commit exit=0
+lock_is_ancestor_of_onetools exit=0
+
+## zsign
+lock=9299685bab7ef99827e06e5dfda93af747386590
+HEAD=9299685bab7ef99827e06e5dfda93af747386590 exit=0
+branch=master exit=0
+onetools=(no onetools branch)
+porcelain_exit=0
+porcelain: (empty)
+lock_object=commit exit=0
+
