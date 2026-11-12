@@ -1,12 +1,26 @@
-# OneTools 12 小时自动执行 · 状态
+# OneTools 完成与打磨 · 状态
 
-- 起点：2026-11-11 18:00:13 +08:00（发车检查通过、计时 armed）
-- 截止：2026-11-12 06:00:13 +08:00（unix 1794434413）
-- 续跑上限：40
-- 当前阶段：打磨队列。现在 2026-11-12 04:38 +08:00，剩余约 82 分钟。
-- 下一动作：P6、P7、P8 的草稿已核对。能在这台机器上做的打磨项都已验收或标成阻塞。A4、E3 图标夹具仍阻塞，B4 不做，P3 因 B3 不可行阻塞。文字、模糊、投影、水波纹触摸和双 Go 共存要等 Mac 上的实验。
+- 本轮计划：`docs/superpowers/plans/2026-11-12-onetools-complete-polish-18.md`
+- 本轮起点：2026-11-12 09:45:00 +08:00（仓库在 `886992d`，工作区干净）
+- 本轮截止：2026-11-12 18:00:00 +08:00（unix 1794477600）
+- 上一轮：12 小时自动执行，起点 2026-11-11 18:00:13 +08:00，截止 2026-11-12 06:00:13 +08:00（unix 1794434413），最后提交 `886992d`（04:43:50 +08:00）。AFK 循环已停，不写 DONE/PAUSE，不重启钩子。
+- 当前阶段：Q0 已在写计划与本文件。下一动作：提交计划后立刻跑 Q1 全量门禁（`python tools/gates.py` 加第二次 `flutter test` 和 N1/N6/N13）。
+- 现在：2026-11-12 09:50 +08:00，剩余约 8 小时 10 分。
 
-## 第 0 轮
+## 本轮队列
+
+| 编号 | 状态 | 说明 |
+|---|---|---|
+| Q0 | 进行中 | 新计划与本文件 |
+| Q1 | 未开始 | 全量门禁，含两次 `flutter test` |
+| Q2 | 未开始 | 写 `docs/autorun/REPORT.md`（N14） |
+| Q3 | 未开始 | 部分 E3（字号、底栏、水波纹；图标仍阻塞） |
+| Q4 | 未开始 | 只读五线审查 → `docs/autorun/reviews/` |
+| Q5 | 未开始 | 订正 `integration-inventory.md` 过时的子模块段落 |
+| Q6 | 未开始 | 其他本机可做的打磨 |
+| Q7 | 未开始 | 18:00 前更新报告和本文件 |
+
+## 第 0 轮（上一轮已验证，保留证据）
 
 | 编号 | 状态 | 证据 |
 |---|---|---|
@@ -20,19 +34,25 @@
 | R0-8 | 已验证 | Material 快照 200=200；`ow_icons.txt` 121 行。提交 `06414ac` |
 | R0-9 | 已验证 | `tools/gates.py` 与 `gates.json` 已在，三条门禁曾通过。本文件已改成真实进度 |
 
-## 五条线
+## 五条线（上一轮验收 + 本轮动作）
 
-第 1 轮已派出 A、C、D。队列顺序仍是计划第 7 节。
-
-| 线 | 队列 | 现状 |
+| 线 | 上一轮 | 本轮 |
 |---|---|---|
-| A 基准线 | A1–A3、A5–A11、P1、P2 已验证；A4 阻塞（缺 `icons.json`） | 种子 `20261112` 盲读 40 个数值，对 `tokens.json` 一致 23、未收录 17，没有同一键数值不同。主代理按行号复核源码字面量，并抽查 12 个一致键。480 毫秒在 `layout.json` 的 `dock.slideMs`，不在 `tokens.json` |
-| B Clash 线 | B1 已验证；B2 未编译；B3 不可行；B4 未做 | 主代理重跑 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`。原文件第 1 行是 `#if os(iOS) || os(macOS)`。B4 不做。B1 提交 `658c29c`，B2 提交 `1358825` |
-| C 调研线 | C1、C2、C3、C6 已验证；C4、C5 已验证并提交 `37f542c`；SP-04 到 SP-09 已复核；P7 草稿已核对 | 双 Go 草稿在 `docs/drafts/g2-go-runtimes.md`，第一行是「未在 Mac 上运行」。`Swipt/Frameworks` 不存在，没有 `LibSwipt.xcframework`。`project.yml:164` 是 `type: framework`，`ClashiOS` 对 Clash 是 `embed: true`（`:155-156`），扩展是 `embed: false`（`:259-260`）。`device.go:77` 是 `NewLoopbackProbe`。没改 `project.yml`。G2 结论还没有。通话规格在 `docs/superpowers/plans/2026-11-11-onetools-p9-calls-design.md`：`Calls` 目录 9 个文件、3038 行；四个点名文件在 `Runner` 下，不在 `Calls` 里。六项都标「未决定」。总计划第 156 行记了归属答复，第 351 行和第 922 行仍未勾上 |
-| D 规则线 | D1–D4 已验证 | 主代理重跑：覆盖检查与样本 `pytest` 为 `9 passed`；`loon_lint.py` 为 `ok`；`check_ad_coverage.py` 为 21 行 `ok`。抽查 11 处来源行，域名都在该行。三份公开列表的 SHA-256 与 `SOURCES.md` 一致。插件 12 条规则，覆盖 8 个 SDK；其余 13 个写了未收原因 |
-| E OneUI 线 | E1 已验证，提交 `cb3fcdc`；E2 已验证；E3 等图标夹具；P4 自签纯逻辑已验证；P6 数值草稿已核对 | 主代理重跑 `swift test --package-path SigningLogic`：`Executed 13 tests, with 0 failures`，退出码 0。`experiments/G3/` 四个 Swift 文件一起 `swiftc -parse` 退出码 0，只 `import Foundation`。模糊常数与夹具一致：`blurPanel` 18、`blurBar` 24、`blurDock` 12、`blurLiquid` 10。文字、模糊、投影、水波纹触摸都没选实现 |
+| A 基准线 | A1–A3、A5–A11、P1、P2 已验证；A4 阻塞（缺 `icons.json`） | 参加 Q1。A4 保持阻塞，不造假 icons.json。N5 在报告里拆成五份已验证和 icons.json 阻塞 |
+| B Clash 线 | B1 已验证；B2 未编译；B3 不可行；B4 未做；P3 阻塞 | 参加 Q1 与审查。不完整编译 B2，不在 Linux 上重试 B3 |
+| C 调研线 | C1–C6、SP-04 到 SP-09、P5 已验证；P7、P8 草稿已核对。G2 结论和通话六项未决定 | Q5 订正并入清单；审查。不声称 G2 结论，不决定 P8 六项 |
+| D 规则线 | D1–D4 已验证 | 参加 Q1 与审查 |
+| E OneUI 线 | E1、E2、P4 已验证；E3 等图标夹具；P6 数值草稿语法通过，四项实现未选定 | Q3 做部分 E3（字号、底栏、水波纹）。图标码点仍阻塞。不选定 P6 实现 |
 
-## 下载（R0-6）
+上一轮细节（不删）：
+
+- A：种子 `20261112` 盲读 40 个数值，对 `tokens.json` 一致 23、未收录 17，没有同一键数值不同。主代理按行号复核源码字面量，并抽查 12 个一致键。480 毫秒在 `layout.json` 的 `dock.slideMs`，不在 `tokens.json`。
+- B：主代理重跑 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`。原文件第 1 行是 `#if os(iOS) || os(macOS)`。B4 不做。B1 提交 `658c29c`，B2 提交 `1358825`。
+- C：双 Go 草稿在 `docs/drafts/g2-go-runtimes.md`，第一行是「未在 Mac 上运行」。`Swipt/Frameworks` 不存在，没有 `LibSwipt.xcframework`。`project.yml:164` 是 `type: framework`，`ClashiOS` 对 Clash 是 `embed: true`（`:155-156`），扩展是 `embed: false`（`:259-260`）。`device.go:77` 是 `NewLoopbackProbe`。没改 `project.yml`。通话规格在 `docs/superpowers/plans/2026-11-11-onetools-p9-calls-design.md`：`Calls` 目录 9 个文件、3038 行；四个点名文件在 `Runner` 下，不在 `Calls` 里。六项都标「未决定」。
+- D：主代理重跑：覆盖检查与样本 `pytest` 为 `9 passed`；`loon_lint.py` 为 `ok`；`check_ad_coverage.py` 为 21 行 `ok`。抽查 11 处来源行，域名都在该行。三份公开列表的 SHA-256 与 `SOURCES.md` 一致。插件 12 条规则，覆盖 8 个 SDK；其余 13 个写了未收原因。
+- E：主代理重跑 `swift test --package-path SigningLogic`：`Executed 13 tests, with 0 failures`，退出码 0。`experiments/G3/` 四个 Swift 文件一起 `swiftc -parse` 退出码 0，只 `import Foundation`。模糊常数与夹具一致：`blurPanel` 18、`blurBar` 24、`blurDock` 12、`blurLiquid` 10。文字、模糊、投影、水波纹触摸都没选实现。
+
+## 下载（R0-6，上一轮）
 
 - 2026-11-11 18:25 带 `127.0.0.1:12348` 的四项全部 exit 128，仓库仍是 shallow，三个子模块未初始化，`_ref/kernel-4b7d5f5` 只有空的 `.git`。
 - 2026-11-11 23:35 直连 `github.com:443` 超时；`api.github.com` 与 `download.swift.org` 返回 200。
@@ -40,4 +60,3 @@
 - 2026-11-12 00:19 直连重试 zipball 成功（6907079 字节，curl exit 0）。00:35 已解压到 `_ref/kernel-4b7d5f5/`，3362 个文件。证据：`.mimocode/r0-6-kernel-ready.txt`。
 - 2026-11-12 01:14 子模块改走 zipball 完成（不是 git submodule）：IDeviceKitten、Zsign、DeveloperDiskImage 已就位，见 `.mimocode/r0-6-submodules-ready.txt`。这些目录没有 `.git`，不要再跑 submodule update。
 - 2026-11-12 01:15 第一次 unshallow 失败（连接重置 / 超时）。01:47 直连重试成功：Clash-Client 4.4s、Swipt 39.4s、Feather 7.7s，三个仓库均为 `shallow=false`。证据：`.mimocode/r0-6-unshallow-ready.txt`。未改全局 git 或系统代理，未推送。
-
