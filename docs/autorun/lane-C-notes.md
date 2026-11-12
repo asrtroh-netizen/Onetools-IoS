@@ -93,3 +93,15 @@ C4、C5 在 2026-11-12 落盘。C1、C2、C3 的下载没做。C6 没做。没�
 - 写下规格之前，`onetools://` 在本仓库 2 处：`HANDOFF.md:322`、总计划 `:926`。两处都是在记「没有实现」。规格摘了总计划那一行，写完后再搜会多出规格和本备忘里的复述。
 - 号码网关、SIP 还是自有协议、后端放哪、配对入口、Push 权限、代码归属，六条都标「未决定」。
 
+## MC-1 至 MC-4（2026-11-12）
+
+只追加这一节。上文里「子模块空目录」「脚本执行 git submodule update」「OneUI 没有测试 target」是当时记录。以本节之后的脚本和子计划为准。没有 git 写操作，没有改 `project.yml`，没有在 Mac 上跑脚本，没有跑 `xcodebuild` / `make` / `bun` / bootstrap。
+
+- MC-1：`scripts/mac/30-swipt.sh` 与 `35-feather.sh` 改为检查 zipball 标记文件（247 / 25 / 6，没有 `.git`）。文件在就跳过拉取并打印现状；文件不在就失败。不要跑 `git submodule update`。`10-env.sh` 不再写 IDeviceKit 子模块没拉下来。`docs/superpowers/plans/2026-11-11-mac-stage.md` 的 M4 已同步。五个脚本用 `"C:\Program Files\Git\bin\bash.exe" -n` 检查，退出码都是 0。
+- MC-2：SP-04、SP-05 改为部分 E3 已核对（7 项测试，图标仍阻塞）。14 个界面文件仍未改。4.2–4.9 界面层、xcodebuild、G4 仍未做，仍标「未在 Mac 上运行」。SP-06、SP-07 不再写空目录和脚本拉子模块。SP-08 没有这类过时句，未改。SP-09 本来就写着 SigningLogic 13 项，未改。M2 补上 SigningLogic 13 项和部分 E3 的 7 项。`40-verify-windows-work.sh` 回显 REPORT.md 第 3 节未编译清单、ClashtvOS 注意事项，并写入 `swift test --package-path SigningLogic`。改完再 `bash -n`，五个退出码仍是 0。
+- MC-3：`docs/drafts/g2-go-runtimes.md` 补上 Mac 步骤。第一行仍是「未在 Mac 上运行」。再核对：`Swipt/Frameworks` 不存在，没有 `LibSwipt.xcframework`；`project.yml` 的 `type: framework` 在 `:164`，`embed: true` 在 `:155-156`，`embed: false` 在 `:259-260`；`device.go:77` 是 `NewLoopbackProbe`。没有 G2 结论，没有改 Clash-Client 工程。
+- MC-4：`docs/findings/calls-decisions.md` 六项都是未决定。`HANDOFF.md:116` 的 Skia 加粗量改为指向 `_ref/NOTES.md:21` 的「一致」，字号规格没改。
+
+主代理复核：五个 `scripts/mac/*.sh` 再跑 `bash -n`，退出码都是 0。`git submodule update` 只出现在「不要跑」的说明里，没有作为命令。未跑 `xcodebuild`。`_ref/NOTES.md:21` 的结论是「一致」。
+
+

@@ -8,7 +8,7 @@
 
 - `Clash-Client/apple/ClashClient/project.yml:5` 仍是 `iOS: '15.0'`。在这份 `project.yml` 里搜 `OneUI`、`SwiptCore`、`FeatherUI` 没有命中。总计划 5.0 要改成 `16.4` 并加上 `OneUI`，这两处都还没改。
 - Mac 脚本在 `scripts/mac/`：`10-env.sh`、`20-clash-client.sh`、`30-swipt.sh`、`35-feather.sh`、`40-verify-windows-work.sh`。五个文件的第 2 行都是「未在 Mac 上运行」。`docs/autorun/lane-C-notes.md:22` 和 `:35`：五个 `bash -n` 退出码都是 0。脚本没有在 Mac 上跑。
-- `scripts/mac/30-swipt.sh:3-4` 写的是撰写时 `DeveloperDiskImage` 为空、未初始化。这句停在撰写当时。当前盘面以 `docs/findings/submodules.md` 为准，脚本本文没改，也没在 Mac 上执行。
+- `scripts/mac/30-swipt.sh` 第 2 行仍是「未在 Mac 上运行」。脚本检查 `Swipt/Swipt/Resources/DeveloperDiskImage` 的 zipball 标记文件（对照记录 6 个文件，没有 `.git`，见 `docs/findings/submodules.md` 与 `.mimocode/r0-6-submodules-ready.txt`）。文件在就跳过拉取并打印现状；文件不在就失败。不要跑 `git submodule update`。脚本没有在 Mac 上执行。
 - DeveloperDiskImage 不编译。`Swipt/Swipt/Resources/DeveloperDiskImage/README.md:7` 只写替换文件。`docs/findings/submodules.md:44` 写明没有编译命令。`:40-42` 是当前快照：6 个文件，没有 `Restore.plist`，没有 Makefile / Package.swift / 脚本。
 - 锁定内核有 `loopback-address`。`_ref/kernel-4b7d5f5/config/config.go:307` 是 `LoopbackAddress`，YAML 键 `loopback-address`。
 - 锁定树 `_ref/kernel-4b7d5f5/third_party/sing-tun/ip_rewrite.go:50-53`：目的地址在环回列表里就返回 `IPRewriteReflect`。`:82-86` 命中后调 `swapPacketAddresses` 并写回。`:114-124` 交换源地址和目的地址：IPv4 是字节 12:16 与 16:20，IPv6 是 8:24 与 24:40。

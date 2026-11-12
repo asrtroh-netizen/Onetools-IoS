@@ -12,7 +12,7 @@
 - `#else` 从 `:34` 起。`:43` 是 `path: "Sources"`。`:44-51` exclude 掉 `OneUI/Components`、`Gallery`、`Glass`、`Theme`、`Tokens`、`Resources/Fonts`。`:53` 资源是 `.copy("OneUI/Resources/Icons")`。`:38` 只产品化 `OneUICore`。
 - 同一决定写在 `docs/autorun/DECISIONS.md:18`。
 - 测试 `OneUI/Tests/OneUICoreTests/OneUICoreSkeletonTests.swift:6` 读 `OneUICoreMarker.moduleName`（定义在 `OneUI/Sources/OneUICore/OneUICoreMarker.swift:2`）。`:10-15` 检查清单里的 Icons 资源声明。`:18-29` 只在 Linux 上读 `Icons/MaterialIcons-Regular.otf`。
-- `docs/autorun/lane-E-notes.md:3`：E1 的 `swift test` 退出码 0，`Executed 3 tests, with 0 failures`。`:5` 写明现有 14 个界面文件未改。
+- `docs/autorun/lane-E-notes.md:3`：E1 当时的 `swift test` 退出码 0，`Executed 3 tests, with 0 failures`。`:5` 写明现有 14 个界面文件未改。这 14 个文件现在仍未改。当前包的测试数不是这 3 项，见 4.1 的部分 E3（7 项）。
 - 本机用来跑 `swift test` 的工具链记录是 WSL `Swift version 6.4.2 (swift-6.4.2-RELEASE)`，见 `docs/autorun/STATE.md:19`。E1/E2 的重跑记录本身没有再打印这一行版本号。
 - 这 14 个界面文件仍在：`Sources/OneUI/Glass/GlassSurface.swift`，`Components/Nameplate.swift`、`Metrics.swift`、`StatusHero.swift`、`Actions.swift`、`DotMatrixFace.swift`、`Tiles.swift`、`Containers.swift`，`Gallery/OneGallery.swift`，`Theme/Compat.swift`、`OneTheme.swift`，`Tokens/OneFont.swift`、`OnePalette.swift`、`OneMetrics.swift`。
 
@@ -20,20 +20,27 @@
 
 - 总计划 `docs/superpowers/plans/2026-11-11-onetools-ios-master-plan.md:807-808` 的两条 `xcodebuild` 没跑。
 - 4.0 要删掉这 14 个文件里已删字重和系统玻璃的引用。文件未改，这步未做。
-- `scripts/mac/40-verify-windows-work.sh:2` 写着「未在 Mac 上运行」。`:22` 把上述 `xcodebuild` 写成预期命令。`docs/autorun/lane-C-notes.md:22` 和 `:35`：五个 `scripts/mac/*.sh` 只过了 `bash -n`，退出码 0，没有在 Mac 上跑。
+- `scripts/mac/40-verify-windows-work.sh` 第 2 行仍是「未在 Mac 上运行」。脚本里的 `xcodebuild` 是预期命令，没跑。五个 `scripts/mac/*.sh` 只过了 `bash -n`，没有在 Mac 上跑。
 
 ## 4.1 数值层
 
-已核对的只有色板、设计常量和玻璃。总计划 4.1 还要的字号、底栏、图标三份夹具，这一步没接上。
+色板、设计常量和玻璃是 E2，当时 4 项测试。字号、底栏插值、水波纹曲线是部分 E3（Q3，提交 `f28e45c`），已核对，不要再实现一遍。图标夹具仍阻塞。合计 7 项测试。界面层、`xcodebuild`、G4 仍未做，未在 Mac 上运行。
 
 - 实现在 `OneUI/Sources/OneUICore/Tokens/OnePalette.swift`、`OneTokens.swift`、`Glass.swift`。`Glass.swift:47` 的 `radiusCard` 是 18，`:50` 的 `radiusHero` 是 `radiusCard + 4`。
 - 测试是 `OneUI/Tests/OneUICoreTests/OneTokenFixtureTests.swift:6` 的 `testEveryTokensJsonKeyMatchesSwiftCatalog`。
 - `lane-E-notes.md:7`：实现后 `Executed 4 tests, with 0 failures`，退出码 0。期望从 `_golden/fixtures/tokens.json` 读，遍历每一个键。把 `radiusCard` 改成 19 后退出码 1，已改回。`:9`：2026-11-12 01:50 再跑仍是 4 个测试、0 失败。夹具根上临时加 `__probe` 后失败信息是 `swift missing tokens.__probe`，撤掉后再过。
-- Linux 上这 4 个测试对应骨架里的 3 个（含 `:18` 的图标资源测试）加这 1 个夹具测试。
+- Linux 上 E2 当时的 4 个测试对应骨架里的 3 个（含 `:18` 的图标资源测试）加这 1 个夹具测试。那是 Q3 之前的计数。
+
+部分 E3 已核对（不是 E3 全部通过）：
+
+- `OneUI/Sources/OneUICore/Tokens/TypeScale.swift`、`Motion/DockEdges.swift`、`Motion/InkRippleModel.swift` 已在。测试是 `OneUI/Tests/OneUICoreTests/PartialE3FixtureTests.swift:6`、`:10`、`:14`，分别遍历 `typography.json`、`dock_edges.json`、`ripple.json`。
+- `docs/autorun/REPORT.md` 的 N7 与 `docs/autorun/lane-E-notes.md:15`：Q3 之后 `swift test --package-path OneUI` 为 `Executed 7 tests, with 0 failures`（上面 4 项加这 3 项）。往 `typography.json` 加 `__probe` 的失败信息是 `swift missing typography.__probe`，已撤掉。
+- `_golden/fixtures/` 仍有 `layout.json`，没有 `icons.json`。`layout.json` 还没有逐键测试。图标逐项断言未做。
 
 未做：
 
-- `_golden/fixtures/` 里有 `typography.json`、`dock_edges.json`、`tokens.json`、`ripple.json`、`layout.json`，没有 `icons.json`。OneUICore 测试没有对字号、底栏、图标逐项断言。
+- 图标码点，见 4.3。
+- 14 个界面文件未改。4.2 的文字界面、4.4–4.5 的触摸和模糊界面、`xcodebuild`、G4 都未做，未在 Mac 上运行。
 
 ## 4.2 文字层
 
@@ -45,7 +52,7 @@
 
 未做：
 
-- `OneUI` 的 Swift 源码里没有 `TypeScale.swift`，也没有 `Sources/OneUI/Text/OneText.swift`。`a1_typography`、`a2_weights` 的 Swift 对拍未做。
+- 数值层 `OneUI/Sources/OneUICore/Tokens/TypeScale.swift` 已在，见 4.1，不要再写一遍。界面层 `Sources/OneUI/Text/OneText.swift` 仍没有。`a1_typography`、`a2_weights` 的 Swift 对拍未做。未在 Mac 上运行。
 
 ## 4.3 图标
 
@@ -63,4 +70,4 @@
 
 ## 4.4 水波纹、4.5 模糊和玻璃面
 
-未做。`OneUI` 源码里没有 `Motion/InkRippleModel.swift`、`Motion/DockEdges.swift`、`Ink/InkRipple.swift`、`Glass/BackdropBlurView.swift`。`_golden/fixtures/dock_edges.json` 和 `ripple.json` 在盘上，Swift 侧没有读它们的测试。真机对拍未做。
+数值层已核对，界面层未做。`OneUI/Sources/OneUICore/Motion/InkRippleModel.swift` 和 `Motion/DockEdges.swift` 已在，夹具测试见 4.1，不要再实现一遍。仍没有 `Ink/InkRipple.swift`、`Glass/BackdropBlurView.swift`。真机对拍未做。4.4、4.5 的界面层和 G4 未做，未在 Mac 上运行。

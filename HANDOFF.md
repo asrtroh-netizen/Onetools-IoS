@@ -113,7 +113,7 @@
 - **Skia 合成加粗规则**（`skparagraph/OneLineShaper.cpp`，已核实）：要的字重 ≥ 600，且比字体实际字重高 ≥ 200 时才加粗。
   - 所以 w600 / w700 会合成加粗。
   - **w500 不加粗，直接显示成 Regular**。原版 titleMedium、labelSmall 这些默认 w500 的字，实际看到的都是常规体。
-- 加粗量：Skia `setEmbolden` 在字号 9 到 36 之间插值，描边宽度 = 字号 × (1/24 到 1/32)。**这组数是凭记忆写的，没核实**，要去 Skia `SkScalerContext.cpp` 确认。
+- 加粗量：Skia `setEmbolden` 在字号 9 到 36 之间插值，描边宽度 = 字号 × (1/24 到 1/32)。这组数在 `_ref/NOTES.md:21` 的结论是「一致」（同一行写明 `SkTextFormatParams.h` 第 15–25 行）。
   - iOS 上的实现办法：CoreText `kCTStrokeWidthAttributeName` 设成负值，单位是字号的百分比，例如 16pt 约 -3.9。
   - SwiftUI `Text` 不支持描边属性，需要包一层 UILabel，或者自己写文字渲染。合成加粗会不会改变字宽，也要核实。
 - M3 字号标度（`typography.dart` 2021 版，`leadingDistribution: even`）：

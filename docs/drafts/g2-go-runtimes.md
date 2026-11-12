@@ -85,3 +85,51 @@ OTHER_LDFLAGS:
 - Go 源里对应的是 `Swipt/libswipt/device.go:1` 的 `package libSwipt`，以及 `:77` 的 `func NewLoopbackProbe(remotePairingPort int32) *LoopbackProbe`。类型在 `:71`。没有 xcframework，也没有看到 gomobile 生成的头，所以 `LibSwiptNewLoopbackProbe` 只是计划 `:741` 要调的名字，不是盘上已经存在的符号。
 
 `SwiptUI` 写在 `:194` 和 `:846`，归 P5，等 G2 结论是共存（A）再进 `project.yml`。这份实验草稿要新增的 target 只有 `:740` 的 `SwiptCore`。
+
+## Mac 上按 T2.6 做的步骤
+
+第一行仍是「未在 Mac 上运行」。这一节只写步骤、要观察的东西、以及事后怎么写 `docs/decisions/G2-go-runtimes.md`。判断句不写在这里。那个决策文件现在不存在，这次也不新建。
+
+2026-11-12 又打开过这些文件，行号如下。对不上的话以文件为准，不要沿用记忆。
+
+- `Swipt/Frameworks` 路径不存在。`Swipt/Frameworks/LibSwipt.xcframework` 也不存在。`Swipt/.gitignore:2` 是 `/Frameworks/`。
+- 生成路径在 `Swipt/internal/cmd/build_libswipt/main.go:21`：`outputPath = "Frameworks/LibSwipt.xcframework"`。`Swipt/Makefile:8-9` 的 `lib` 目标执行 `go run ./internal/cmd/build_libswipt`。工程引用在 `Swipt/Swipt.xcodeproj/project.pbxproj:30`，`path = LibSwipt.xcframework`。本次没有跑 `make lib`。
+- `Clash-Client/apple/ClashClient/project.yml` 未改。`ClashiOS` 在 `:38`，`type: application` 在 `:39`，`dependencies:` 在 `:144`。`:155-156` 是 `target: Clash` 与 `embed: true`。`Clash` target 名在 `:163`，`type: framework` 在 `:164`，`platform: iOS` 在 `:165`。`CLASH_CORE_ARCHIVE` 在 `:185`，`OTHER_LDFLAGS` 的 `-Wl,-force_load` 在 `:186-187`。拷头脚本在 `:189-195`，头文件名包括 `ref.h` 和 `Universe.objc.h`。`ClashiOSExtension` 在 `:201`，`type: app-extension` 在 `:202`，`:258-260` 是 `target: Clash` 与 `embed: false`。
+- `Swipt/libswipt/device.go:1` 是 `package libSwipt`。`:71` 是 `type LoopbackProbe`。`:77` 是 `func NewLoopbackProbe(remotePairingPort int32) *LoopbackProbe`。盘上没有 gomobile 生成的头，所以总计划 `:741` 的 `LibSwiptNewLoopbackProbe` 只是计划要调的名字。
+
+不要把 `SwiptCore` 写进当前这份 `project.yml`。总计划 `:740` 的临时分支是实验当天在 Mac 上开的。本草稿不附可粘贴的 target 正文。
+
+1. 先有产物，再做实验。在 Mac 上按 T2.4 让 `scripts/mac/30-swipt.sh` 跑到 `make lib`（该脚本开头仍是「未在 Mac 上运行」，并且不要跑 `git submodule update`）。产物应出现在 `Swipt/Frameworks/LibSwipt.xcframework`。产物还没有时，停在这一步，不要改 `project.yml`。
+2. 对这个文件运行 `file`，路径相对仓库根：`Swipt/Frameworks/LibSwipt.xcframework/ios-arm64/LibSwipt.framework/LibSwipt`。把命令的整行输出抄下来。总计划 `:739` 要按这一行决定下一步怎么包；这一行现在还没有，草稿不替它选。
+3. 在 Clash-Client 的临时分支上，仿照上面核对过的 `Clash` target（`:163-195`）加计划中的 `SwiptCore`，并让 `ClashiOS` 依赖且嵌入。`ClashiOSExtension` 按总计划 `:744` 不加对 `SwiptCore` 的依赖。做完把该分支的 diff 留在实验分支上，不要合进当前工作树的 `project.yml`。
+4. 在 App 启动路径上调一次计划中的 `LibSwiptNewLoopbackProbe`（`:741`），对应 Go 函数是 `device.go:77` 的 `NewLoopbackProbe`。同时照常走 Clash 的配置校验。记下调用是否返回，以及返回前后的日志。
+5. 观察下面各项，原样保留日志，不在本草稿里归纳成一句判断：
+   - 链接日志里有没有重复符号错误（总计划 `:742` 的第一条）。
+   - 启动是否崩溃。
+   - Clash 能否连接；上一步的探测有没有返回。
+   - 两者同时活跃时连续 30 分钟的过程日志。
+   - 控制台里 `Class GoSeqRef is implemented in both` 这类句子，有就整段照抄（`:743`；两个框架都会带 gomobile 的 `ref.h` 和 `Universe.objc.h`，见 `project.yml:194`）。
+   - Instruments 里扩展进程加载的镜像名单，标出有没有 `SwiptCore`（`:744`）。
+   - 主 App 内存占用增量，以及安装包体积增量（`:745`）。
+
+### 怎样写入决策文件
+
+只在 Mac 上贴完上面的日志之后，新建 `docs/decisions/G2-go-runtimes.md`。不要用本草稿代替它。
+
+- 第一行写实验日期、Mac 机器、Clash-Client 临时分支名、当时的 Swipt 提交，并写明已在 Mac 上运行。
+- 接着贴 `file` 的整行，再按下面空表逐项贴日志。右列留到实验当天再填。总计划 `:742` 到 `:746` 的用词只在该文件里、在日志齐了之后填写。
+
+| 观察 | 贴上的日志 | 实验当天填写 |
+|---|---|---|
+| `file` 整行 | | |
+| 链接 | | |
+| 启动 | | |
+| Clash 连接 | | |
+| 探测返回 | | |
+| 30 分钟 | | |
+| 控制台警告原文 | | |
+| 扩展进程镜像名单 | | |
+| 内存增量 | | |
+| 安装包体积增量 | | |
+
+- `:746` 要求：清单里有一条不满足时，把具体报错贴在这个决策文件里。满足与否由当次实验填写。本草稿不填。

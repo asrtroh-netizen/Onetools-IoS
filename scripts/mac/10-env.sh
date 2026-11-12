@@ -1,6 +1,8 @@
 #!/bin/bash
 # 未在 Mac 上运行
-# T2.1：按总计划第 6 节检查 Mac 工具。缺 Rust 只报告，不让本脚本失败：IDeviceKit 子模块还没拉下来，现编与否要到 T2.5 再看 README。
+# T2.1：按总计划第 6 节检查 Mac 工具。缺 rustc 只报告，不让本脚本失败。
+# Feather/IDeviceKitten 已是 zipball（25 个文件，没有 .git，见 docs/findings/submodules.md）。
+# 快照里没有 Cargo.toml / Rust 源；IDevice 是 Package.swift 里的远程 binaryTarget。现编与否到 T2.5 读 README，不在这里失败。不要跑 git submodule update。
 set -euo pipefail
 
 missing=0
@@ -23,7 +25,7 @@ need_cmd xcbeautify
 need_cmd jq
 
 if ! command -v rustc >/dev/null 2>&1; then
-  echo "NOTE 缺少 rustc。总计划第 6 节把 Rust 列为 IDeviceKit 的可能前置；子模块未核实之前不在这里失败。"
+  echo "NOTE 缺少 rustc。总计划第 6 节把 Rust 列为 IDeviceKit 的可能前置。Feather/IDeviceKitten 的 zipball 已就位且没有 Cargo.toml，这里不因缺少 rustc 失败。"
 else
   echo "OK rustc"
   rustc --version
