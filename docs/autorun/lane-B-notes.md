@@ -30,3 +30,13 @@
 - 计划那句话：三个语法文件只有 Foundation、ModuleIR 依赖 CryptoKit、ModuleParser 依赖 Darwin 和 os，仍然成立。Syntax 文件现在是 6 个，不是 5 个。
 - `import Clash` 退出码 1，`no such module 'Clash'`。头文件不在树里。B4 不做，线 C 改做 C6。
 - 没改 Clash-Client，没改 `_harness/ClashLogic`。
+
+## MB-1 / MB-2（2026-11-12）
+
+- MB-1：`docs/findings/mac-parser-rehearsal.md`。第一行「未在 Mac 上运行」。没改 `docs/decisions/W-parser-harness.md`。没有再跑 `swift build --package-path _harness/ModuleParser`。打开核对：`ModuleJQ.swift:1` 与 `ModuleJSONText.swift:1` 是 `#if os(iOS) || os(macOS)`，`#endif` 在 `:342` 与 `:977`；`pthread_get_stackaddr_np` / `pthread_get_stacksize_np` 在 `ModuleJQ.swift:331-332`；`ModuleJSONRewriteSyntax.swift:136`、`:145`、`:227` 仍调用这两个类型。
+- MB-2：`docs/findings/mac-b2-verify.md`。第一行「未在 Mac 上运行」。第二行写明 parse 已在 WSL 跑过、完整编译未做。`1358825` 改了 7 个文件；`Sources/Mac/VPNController.swift` 在 REPORT 第 3 节，不在该提交 diff 里。
+- WSL `swiftc -parse`（`/opt/swift/usr/bin/swiftc`，Swift 6.4.2，经 `wsl -d Ubuntu-24.04`）：`ConfigTransforms.swift`、`ProfileActivationCoordinator.swift`、`Sources/VPNController.swift`、`Sources/Mac/VPNController.swift`、`TunnelSettingsView.swift` 退出码都是 0。不是完整编译。
+- ClashtvOS 仍不改 `project.yml`。两个选项只写在 `mac-b2-verify.md`：给 ClashtvOS 补 ClashClientUI 依赖，或把合并改成不依赖该模块。
+- 请线 C 把该文件「请线 C 折进」一节写进 `scripts/mac/40-verify-windows-work.sh`。线 B 没改那个脚本。MC-2 已写入 REPORT 第 3 节、ClashtvOS 注意事项和 SigningLogic。Clash 的 `xcodebuild` 与 ClashtvOS 的 `set +e` 仍只在检查单里。
+
+主代理复核：WSL Swift 6.4.2 对五个 Swift 文件再跑 `swiftc -parse`，退出码都是 0。`1358825` 的 `--stat` 是 7 个文件。Clash-Client 工作区干净。没有再跑 `swift build --package-path _harness/ModuleParser`，没有改 `project.yml`。
