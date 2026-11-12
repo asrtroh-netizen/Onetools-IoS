@@ -274,3 +274,15 @@ A1 上一轮已经连跑两次 `flutter test`（不带 `--update-goldens`），�
 
 主代理 2026-11-12 04:19 按行号复核源码字面量，并抽查 12 个一致键。第 33 条的 480 毫秒在 `layout.json` 的 `dock.slideMs`，不在 `tokens.json`。
 
+## MA-1
+
+2026-11-12。把 P2 那 17 个「tokens 未收录」对到已有夹具或写明合同不收，写在 `docs/findings/fixture-completeness.md`。没有改 `fixture-cross-audit.md` 的历史表，没有改夹具。
+
+只有第 33 条 `480` 在 `layout.json` 第 19 行 `dock.slideMs`（`480.0`）。其余 16 条合同不收：画家颜色、底栏描边宽 `1.25`、`blurredBarFill` / `liquidDockFill` / `liquidHighlight`、主题卡 `shadowColor`、`OneSizes.control`、`OneColors.transparent`、非中性背景混色 alpha。没有同一键两边数值不同。
+
+扫过 `typography.json`、`dock_edges.json`、`ripple.json` 和 `layout.json` 的 dock 段：合同内的键都在，几何字段与源码一致。合同外仍在用、夹具没有同名键的：`liquidDockIndicatorFill`（`glass.dart` 154–155 行，调用在 `ultra_glass_dock.dart` 286 行），A3 排除名单没点它。`liquidDockFill` 虽然被 A3 排除，底栏第 99 行仍在用。本轮不改夹具。未改 `STATE.md`。
+
+## MA-2
+
+同一种子 `20261112`、同一 Fisher-Yates。先复现 P2 前 40 条（池子 104，值和次序都一致），再取第 41–80 条，写在同一份 findings。这 40 条与那 40 个不重复。一致 32，在另一份夹具 1（`OneSizes.minimumTarget` 44 在 `ripple.json` 的 `referenceBox`），未收录 7。没有同一键两边数值不同。未改夹具。
+
