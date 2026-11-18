@@ -14,6 +14,22 @@ final class PartialE3FixtureTests: XCTestCase {
     func testEveryRippleJsonKeyMatchesSwiftCatalog() throws {
         try assertFixture("ripple.json", matches: InkRippleModel.fixtureTree, root: "ripple")
     }
+
+    func testEveryIconsJsonKeyMatchesSwiftCatalog() throws {
+        XCTAssertEqual(MaterialIconCodepoints.all.count, 121)
+        try assertFixture("icons.json", matches: MaterialIconCodepoints.fixtureTree, root: "icons")
+    }
+
+    func testAll121IconCodepointsExistInBundledFontCmap() throws {
+        let cmap = try loadMaterialIconsCmap()
+        XCTAssertEqual(MaterialIconCodepoints.all.count, 121)
+        for item in MaterialIconCodepoints.all {
+            XCTAssertTrue(
+                cmap.contains(item.codePoint),
+                "Missing glyph in MaterialIcons-Regular.otf for \(item.name) (0x\(String(item.codePoint, radix: 16)))"
+            )
+        }
+    }
 }
 
 private func assertFixture(_ name: String, matches swift: OneTokenValue, root: String) throws {
@@ -91,4 +107,64 @@ private func fixtureURL(_ name: String) throws -> URL {
 private struct FixtureFileError: Error, CustomStringConvertible {
     let description: String
     init(_ description: String) { self.description = description }
+}
+
+private func loadMaterialIconsCmap() throws -> Set<UInt32> {
+    var url = URL(fileURLWithPath: #filePath)
+    let root = URL(fileURLWithPath: "/")
+    while url.standardizedFileURL != root {
+        if url.lastPathComponent == "OneUI" {
+            break
+        }
+        url.deleteLastPathComponent()
+    }
+    let fontURL = url
+        .appendingPathComponent("Sources")
+        .appendingPathComponent("OneUI")
+        .appendingPathComponent("Resources")
+        .appendingPathComponent("Icons")
+        .appendingPathComponent("MaterialIcons-Regular.otf")
+    let data = try Data(contentsOf: fontURL)
+    let numTables = readUInt16BE(data, at: 4)
+    var cmapOffset: Int?
+    for index in 0..<Int(numTables) {
+        let entry = 12 + index * 16
+        let tag = String(decoding: data[entry..<(entry + 4)], as: UTF8.self)
+        if tag == "cmap" {
+            cmapOffset = Int(readUInt32BE(data, at: entry + 8))
+            break
+        }
+    }
+    guard let cmapStart = cmapOffset else {
+        throw FixtureFileError("cmap table not found in MaterialIcons-Regular.otf")
+    }
+    let numSubtables = Int(readUInt16BE(data, at: cmapStart + 2))
+    var codepoints = Set<UInt32>()
+    for sub in 0..<numSubtables {
+        let subOffset = cmapStart + Int(readUInt32BE(data, at: cmapStart + 4 + sub * 8 + 4))
+        let format = readUInt16BE(data, at: subOffset)
+        if format == 12 {
+            let numGroups = Int(readUInt32BE(data, at: subOffset + 12))
+            for group in 0..<numGroups {
+                let groupPos = subOffset + 16 + group * 12
+                let startChar = readUInt32BE(data, at: groupPos)
+                let endChar = readUInt32BE(data, at: groupPos + 4)
+                for cp in startChar...endChar {
+                    codepoints.insert(cp)
+                }
+            }
+        }
+    }
+    return codepoints
+}
+
+private func readUInt16BE(_ data: Data, at offset: Int) -> UInt16 {
+    (UInt16(data[offset]) << 8) | UInt16(data[offset + 1])
+}
+
+private func readUInt32BE(_ data: Data, at offset: Int) -> UInt32 {
+    (UInt32(data[offset]) << 24)
+        | (UInt32(data[offset + 1]) << 16)
+        | (UInt32(data[offset + 2]) << 8)
+        | UInt32(data[offset + 3])
 }

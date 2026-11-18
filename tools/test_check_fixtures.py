@@ -108,3 +108,20 @@ def test_rejects_bad_glass_constant(tmp_path: Path) -> None:
     )
     errors = check_fixtures.check(fixture_dir)
     assert any("radiusCard" in item for item in errors)
+
+
+def test_rejects_bad_icon_codepoint(tmp_path: Path) -> None:
+    fixture_dir = tmp_path / "fixtures"
+    fixture_dir.mkdir()
+    for name in ("tokens.json", "typography.json", "icons.json"):
+        (fixture_dir / name).write_text(
+            (FIXTURES / name).read_text(encoding="utf-8"), encoding="utf-8"
+        )
+    assert check_fixtures.check(fixture_dir) == []
+    payload = json.loads((fixture_dir / "icons.json").read_text(encoding="utf-8"))
+    payload[0]["codePoint"] += 1
+    (fixture_dir / "icons.json").write_text(
+        json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+    )
+    errors = check_fixtures.check(fixture_dir)
+    assert any("icons.json" in item and "codePoint" in item for item in errors)

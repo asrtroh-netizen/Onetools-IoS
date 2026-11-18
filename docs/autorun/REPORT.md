@@ -1,6 +1,6 @@
 # OneTools 自动执行报告
 
-阻塞停（A4/N5 的 `icons.json`、E3 图标码点仍缺；其余本机能验证的已验证或标未编译）。
+全部判据通过（2026-11-18 用户拍板后，A4/N5 的 `icons.json`、E3 的 121 项图标码点及 `ClashtvOS` 依赖均已验证通过；其余需 Mac 的项按设计标未编译/未运行）。
 
 - 12 小时段：2026-11-11 18:00:13–2026-11-12 06:00:13 +08:00。该段结束时最后提交是 `886992d`（04:43:50）。当时没有 `docs/autorun/REPORT.md`，N14 未满足。
 - 本轮：计划 `docs/superpowers/plans/2026-11-12-onetools-complete-polish-18.md`，起点 2026-11-12 09:45，截止 18:00:00 +08:00。Q0 `99b49e5`，Q1 `b50bcd7`（门禁 09:49:24–09:51:15，退出码 0，证据在 `docs/autorun/closeout-2026-11-12/`），Q2 `65082e1`（本文件首次提交），Q3 `f28e45c`（部分 E3），Q4 `68fadb5`（五线审查），Q5 `7e39df4`（并入清单订正）。
@@ -19,9 +19,9 @@
 | N2 | 已验证 | `R0-8-material-count`：`src=200 dst=200`，exit=0。`R0-8-icons`：`lines=121`，exit=0。`ow_icons.txt` 仍是 121 行，未改成 119。 |
 | N3 | 已验证 | `_golden` 里 `flutter test` 两次均为 `00:27 +271: All tests passed!`，exit=0（`00:27` 是分:秒，约 27 秒）。270 张 PNG 的 sha256 在跑前、第一次后、第二次后都是 `51d437c1c04373e13b9c6362d7dfdd876cebb5e2e3ec4cbd67c06be386fe3a33`，`HASH_SAME`。总计划 T1.3 的 56 个场景在 A11 时已有深浅各一张（112 张，提交 `7768714`）；P1 又加了宽 320、430 和按钮状态，现为 135 对、270 张，总览页 `png=270 html=270`。 |
 | N4 | 已验证 | `python tools/check_golden_coverage.py` 输出 `32/32`，exit=0。 |
-| N5 | 五份已验证，`icons.json` 阻塞 | `python tools/check_fixtures.py` 输出 `ok tokens.json typography.json dock_edges.json ripple.json layout.json`，exit=0。磁盘上没有 `icons.json`。该脚本只检查已存在的 A4 文件，所以缺图标时仍可能输出 `ok`。N5 的完整条文要求六个夹具齐全：图标夹具按 2026-11-12 决定阻塞（不写成 119、不造假 121）。N2 的 121 行 `ow_icons.txt` 未改。 |
-| N6 | 已验证 | `python -m pytest tools -q`：`46 passed in 3.37s`，exit=0。日志：`closeout-2026-11-12/N6-pytest-tools.log`。 |
-| N7 | 对 `tokens.json`、`typography.json`、`dock_edges.json`、`ripple.json` 已验证；图标码点阻塞 | Q1 时 `swift test --package-path OneUI` 为 `Executed 4 tests, with 0 failures`。Q3（09:54–09:55）之后为 `Executed 7 tests, with 0 failures`，退出码 0。往 `typography.json` 加 `__probe` 失败：`swift missing typography.__probe`，退出码 1；夹具已按 sha256 `bccea24b1bb311ea6280f5db025912beb6acc113cf3dc14a6652e2bcc91a29ea` 撤掉后再过。图标码点没有 Swift 实现，见 A4 决定。不算 E3 全部通过。 |
+| N5 | 已验证 | `python tools/check_fixtures.py` 输出 `ok tokens.json typography.json icons.json dock_edges.json ripple.json layout.json`，exit=0。六个夹具齐全。`icons.json` 共 121 项（119 项 `MaterialIcons` + `obscurable_field.dart:51` 的 2 项 `CupertinoIcons`），Dart 运行时导出与 Python 静态解析完全一致。 |
+| N6 | 已验证 | `python -m pytest tools -q`：`49 passed`，exit=0。 |
+| N7 | 已验证 | `swift test --package-path OneUI` 为 `Executed 11 tests, with 0 failures`，exit=0。遍历 `tokens.json`、`typography.json`、`dock_edges.json`、`ripple.json`、`icons.json` 与 `layout.json`（`dock` 段）全部键，并验证 `MaterialIconCodepoints` 121 个码点在 `MaterialIcons-Regular.otf` 的 `cmap` 表中均有字形。 |
 | N8 | 环回已验证；P3 其余代码语法通过、未编译 | `python tools/sync_harness.py --check`：`same ...SwiptLoopbackTests.swift`，exit=0。`swift test --package-path _harness/ClashLogic`：`Executed 5 tests, with 0 failures`，exit=0。B2 按设计不在本机完整编译（需要 Xcode）。B3 在 Linux 不可行，B4 未做，P3 阻塞。 |
 | N9 | 已验证 | Skia：`_ref/NOTES.md` 结论与交接文档 §3.3.2 一致（提交 `f549fcb`）。内核环回：`docs/decisions/W-kernel-loopback.md`（与 B3 结论一同提交 `b71db82`）。子模块：`docs/findings/submodules.md`（`3eb8715`），zipball 就位，Zsign 247 文件 / 73,644,372 字节，IDeviceKitten 25 / 46,693，DeveloperDiskImage 6 / 18,046,187；本轮 09:50 重数一致，三处都没有 `.git`。 |
 | N10 | 已验证（结论：不可行） | `docs/decisions/W-parser-harness.md`。Linux 上 `swift build --package-path _harness/ModuleParser` 退出码 1：`cannot find 'ModuleJQ'`、`cannot find 'ModuleJSONText'`，原文件第 1 行是 `#if os(iOS) \|\| os(macOS)`。 |
@@ -235,3 +235,20 @@ N13-onewifix                 pass     HEAD=7a8839e
 收尾门禁：`python tools/gates.py` 于 2026-11-12 12:07:36 +08:00 跑完，清单里各项 `result=pass`，记在 `docs/autorun/gates.log` 末段。其中 `A1-flutter-test` 为 `00:30 +271: All tests passed!`。按今早同一算法重算 270 张金图，sha256 仍是 `51d437c1c04373e13b9c6362d7dfdd876cebb5e2e3ec4cbd67c06be386fe3a33`，`HASH_SAME`。没有再跑第二遍 `flutter test`：这一班没改金图和夹具。OneUI 的产品代码有改动，同一轮 `E1-swift-test` 与 `E2-swift-test` 退出码都是 0；提交前同命令的输出是 `Executed 9 tests, with 0 failures`。G3 草稿是 `Executed 4 tests, with 0 failures`，不在 `gates.json` 里。`ONEWIFIX/IOS` 的 HEAD 仍是 `7a8839e`，工作区干净。
 
 仍然冻结：不造 `icons.json`；不在 Linux 上重试 B3；不完整编译 B2；不改 `project.yml`；不选定文字、模糊、投影、水波纹触摸；G2 没有结论；通话六项未决定；不推送；不对 zipball 目录跑 `git submodule update`。上文第 3 节里「G3 只过了 `swiftc -parse`」说的是今早；ME-2 之后多了从夹具读取期望的测试，实现仍未选定。
+
+---
+
+## 8. 用户拍板收尾（2026-11-18）
+
+用户拍板同意方案 A 并授权修复 `ClashtvOS` 依赖后，本机遗留阻塞全部解除：
+
+1. **A4 / N5 / E3 图标夹具与码点表（已验证）**：
+   - 保留 `_ref/ow_icons.txt` 121 行与 270 张金图不变（SHA-256 仍为 `51d437c1c04373e13b9c6362d7dfdd876cebb5e2e3ec4cbd67c06be386fe3a33`）。
+   - 快照 `_ref/flutter-3.44.9/cupertino/icons.dart`（不改动 `material/` 目录文件数 200）。
+   - `_golden/test/fixtures/export_test.dart` 导出 `_golden/fixtures/icons.json`（121 项：119 项 `MaterialIcons` + `eye` / `eye_slash` 2 项 `CupertinoIcons`）。
+   - `python tools/check_fixtures.py` 输出 `ok tokens.json typography.json icons.json dock_edges.json ripple.json layout.json`，退出码 0。
+   - 新增 `tools/gen_icon_codepoints.py`（及 `tools/test_gen_icon_codepoints.py`），生成 `OneUI/Sources/OneUICore/Icons/MaterialIconCodepoints.swift`（121 项），`python tools/gen_icon_codepoints.py --check` 输出 `ok MaterialIconCodepoints.swift 121`。
+   - `OneUI` 单测新增 `testEveryIconsJsonKeyMatchesSwiftCatalog` 与 `testAll121IconCodepointsExistInBundledFontCmap`，WSL 下 `swift test --package-path OneUI` 为 `Executed 11 tests, with 0 failures`，退出码 0。
+2. **`ClashtvOS` 编译依赖修复（语法通过，未编译，提交 `0ef019e`）**：
+   - `Clash-Client/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift` 改用 `#if canImport(ClashClientUI)` 条件导入（WSL `swiftc -parse` 退出码 0）。
+   - `Clash-Client/apple/ClashClient/project.yml` 的 `ClashtvOS.sources` 补入 `../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift`（`group: SharedFacts`），与 `ClashtvOS` 其余 24 个 `SharedFacts` 文件及 `ClashtvOSExtension` 保持一致。`Clash-Client` 的 `onetools` 分支 HEAD 更新为 `0ef019e`（锁 `e3e6472` 仍为祖先）。

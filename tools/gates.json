@@ -214,6 +214,12 @@
         "--package-path",
         "/mnt/e/GQ/Ultra/Onetools-IoS/SigningLogic"
       ]
+    },
+    {
+      "id": "E3-icon-codepoints",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "tools/gen_icon_codepoints.py", "--check"]
     }
   ]
 }

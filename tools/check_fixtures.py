@@ -21,6 +21,8 @@ DOCK_PATH = ONEWIFI / "lib" / "design" / "one" / "ultra_glass_dock.dart"
 PALETTE_PATH = ONEWIFI / "lib" / "design" / "one" / "one_palette.dart"
 THEME_PATH = ONEWIFI / "lib" / "design" / "theme" / "one_theme.dart"
 REF = ROOT / "_ref" / "flutter-3.44.9" / "material"
+CUPERTINO_ICONS_PATH = ROOT / "_ref" / "flutter-3.44.9" / "cupertino" / "icons.dart"
+OBSCURABLE_FIELD_PATH = ONEWIFI / "lib" / "design" / "widgets" / "obscurable_field.dart"
 A1_PATH = ROOT / "_golden" / "test" / "scenes" / "a1_typography_test.dart"
 
 FILL_NAMES = ("fill", "fillStrong", "barFill", "modalFill", "dialogFill")
@@ -769,7 +771,7 @@ def _check_icons(path: Path) -> list[str]:
     if not isinstance(payload, list):
         return ["icons.json is not a list"]
     names = _icon_names()
-    parsed = _icon_codepoints()
+    parsed, families = _icon_codepoints()
     missing = [name for name in names if name not in parsed]
     if missing:
         errors.append("icons.dart has no code point for " + ", ".join(missing))
@@ -789,6 +791,13 @@ def _check_icons(path: Path) -> list[str]:
             errors.append(
                 f"icons.json {name} codePoint {item.get('codePoint')!r} != {parsed[name]}"
             )
+        if item.get("family") != families[name]:
+            errors.append(
+                f"icons.json {name} family {item.get('family')!r} != {families[name]!r}"
+            )
+        extra = set(item) - {"name", "codePoint", "family"}
+        if extra:
+            errors.append(f"icons.json {name} extra keys {sorted(extra)}")
     return errors
 
 
@@ -807,13 +816,29 @@ def _icon_names() -> list[str]:
     return names
 
 
-def _icon_codepoints() -> dict[str, int]:
+def _icon_codepoints() -> tuple[dict[str, int], dict[str, str]]:
     text = _read(REF / "icons.dart")
     found = re.findall(
         r"static const IconData (\w+) = IconData\(\s*(0x[0-9a-fA-F]+)",
         text,
     )
-    return {name: int(code, 16) for name, code in found}
+    codepoints = {name: int(code, 16) for name, code in found}
+    families = {name: "MaterialIcons" for name in codepoints}
+    cupertino_used = set(re.findall(r"CupertinoIcons\.(\w+)", _read(OBSCURABLE_FIELD_PATH)))
+    if cupertino_used and CUPERTINO_ICONS_PATH.is_file():
+        cup_text = _read(CUPERTINO_ICONS_PATH)
+        cup_found = {
+            name: int(code, 16)
+            for name, code in re.findall(
+                r"static const IconData (\w+) = IconData\(\s*(0x[0-9a-fA-F]+)",
+                cup_text,
+            )
+        }
+        for name in cupertino_used:
+            if name not in codepoints and name in cup_found:
+                codepoints[name] = cup_found[name]
+                families[name] = "CupertinoIcons"
+    return codepoints, families
 
 
 def _check_dock(path: Path) -> list[str]:

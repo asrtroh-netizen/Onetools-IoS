@@ -1,0 +1,607 @@
+[
+  {
+    "name": "add",
+    "codePoint": 57415,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "adjust",
+    "codePoint": 57441,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "alt_route",
+    "codePoint": 57472,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "alt_route_outlined",
+    "codePoint": 61041,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "arrow_back",
+    "codePoint": 57490,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "article_outlined",
+    "codePoint": 61075,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "backspace_outlined",
+    "codePoint": 61109,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "backup_outlined",
+    "codePoint": 61110,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "badge_outlined",
+    "codePoint": 61112,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "business",
+    "codePoint": 57627,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "calendar_today",
+    "codePoint": 57634,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "call",
+    "codePoint": 57638,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "call_end",
+    "codePoint": 57639,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "call_made_rounded",
+    "codePoint": 62979,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "call_outlined",
+    "codePoint": 61210,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "call_received_rounded",
+    "codePoint": 62983,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "call_rounded",
+    "codePoint": 62984,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "cancel_outlined",
+    "codePoint": 61224,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "cell_tower_outlined",
+    "codePoint": 984519,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "check_circle",
+    "codePoint": 57689,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "check_circle_outline",
+    "codePoint": 57690,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "check_circle_rounded",
+    "codePoint": 63029,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "chevron_right",
+    "codePoint": 57695,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "circle",
+    "codePoint": 57699,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "close",
+    "codePoint": 57706,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "content_paste_go",
+    "codePoint": 984278,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "copy",
+    "codePoint": 57744,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "dashboard",
+    "codePoint": 57777,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "dashboard_outlined",
+    "codePoint": 61345,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "data_usage",
+    "codePoint": 57781,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "delete",
+    "codePoint": 57785,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "delete_outline",
+    "codePoint": 57787,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "devices_other_outlined",
+    "codePoint": 61370,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "dialpad_outlined",
+    "codePoint": 61373,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "dialpad_rounded",
+    "codePoint": 63146,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "dns",
+    "codePoint": 57829,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "download",
+    "codePoint": 57857,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "download_outlined",
+    "codePoint": 61426,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "edit_location_alt_outlined",
+    "codePoint": 61449,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "edit_outlined",
+    "codePoint": 61453,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "emergency_outlined",
+    "codePoint": 984564,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "error",
+    "codePoint": 57911,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "error_outline",
+    "codePoint": 57912,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "event",
+    "codePoint": 57918,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "event_available",
+    "codePoint": 57919,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "extension_outlined",
+    "codePoint": 61503,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "eye",
+    "codePoint": 62500,
+    "family": "CupertinoIcons"
+  },
+  {
+    "name": "eye_slash",
+    "codePoint": 63074,
+    "family": "CupertinoIcons"
+  },
+  {
+    "name": "favorite_border",
+    "codePoint": 57948,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "file_copy",
+    "codePoint": 57961,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "filter_alt_outlined",
+    "codePoint": 61544,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "fingerprint",
+    "codePoint": 57991,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "forum_outlined",
+    "codePoint": 61616,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "forward_to_inbox_outlined",
+    "codePoint": 61621,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "history",
+    "codePoint": 58132,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "history_rounded",
+    "codePoint": 63471,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "hub_outlined",
+    "codePoint": 984598,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "insights_outlined",
+    "codePoint": 61746,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "ios_share_outlined",
+    "codePoint": 61752,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "ios_share_rounded",
+    "codePoint": 63526,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "key",
+    "codePoint": 984363,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "key_outlined",
+    "codePoint": 984612,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "link",
+    "codePoint": 58240,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "link_off_outlined",
+    "codePoint": 61800,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "link_outlined",
+    "codePoint": 61801,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "lock_outlined",
+    "codePoint": 61847,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "logout",
+    "codePoint": 58291,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "memory",
+    "codePoint": 58331,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "memory_outlined",
+    "codePoint": 61889,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "mic_none_rounded",
+    "codePoint": 63675,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "more_horiz",
+    "codePoint": 58370,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "notifications_active_outlined",
+    "codePoint": 62004,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "notifications_none",
+    "codePoint": 58449,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "notifications_outlined",
+    "codePoint": 62007,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "password",
+    "codePoint": 58490,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "phone_forwarded",
+    "codePoint": 58536,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "phone_iphone_rounded",
+    "codePoint": 983167,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "pin_outlined",
+    "codePoint": 62122,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "play_arrow",
+    "codePoint": 58571,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "power_settings_new",
+    "codePoint": 58595,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "public",
+    "codePoint": 58608,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "public_outlined",
+    "codePoint": 62164,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "receipt_long_outlined",
+    "codePoint": 62191,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "refresh",
+    "codePoint": 58644,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "refresh_rounded",
+    "codePoint": 983273,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "replay",
+    "codePoint": 58659,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "ring_volume_outlined",
+    "codePoint": 62236,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "router",
+    "codePoint": 58690,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "router_outlined",
+    "codePoint": 62245,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "save_outlined",
+    "codePoint": 62260,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "schedule",
+    "codePoint": 58710,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "science_outlined",
+    "codePoint": 62269,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "security_outlined",
+    "codePoint": 62284,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "send_outlined",
+    "codePoint": 62293,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "settings",
+    "codePoint": 58751,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "settings_backup_restore_outlined",
+    "codePoint": 62308,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "settings_outlined",
+    "codePoint": 62318,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "shield",
+    "codePoint": 58774,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "shield_outlined",
+    "codePoint": 62329,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "sim_card_outlined",
+    "codePoint": 62364,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "smartphone_outlined",
+    "codePoint": 62377,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "sms",
+    "codePoint": 58825,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "sms_outlined",
+    "codePoint": 62381,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "source",
+    "codePoint": 58836,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "speed",
+    "codePoint": 58848,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "stop_circle_outlined",
+    "codePoint": 62441,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "storage_outlined",
+    "codePoint": 62444,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "swap_horiz",
+    "codePoint": 58917,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "sync",
+    "codePoint": 58927,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "translate",
+    "codePoint": 59003,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "tune",
+    "codePoint": 59011,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "tune_rounded",
+    "codePoint": 983640,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "update",
+    "codePoint": 59026,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "upload_file_outlined",
+    "codePoint": 62584,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "verified_user_outlined",
+    "codePoint": 62589,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "visibility_off_outlined",
+    "codePoint": 62624,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "visibility_outlined",
+    "codePoint": 62625,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "warning",
+    "codePoint": 59083,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "warning_rounded",
+    "codePoint": 983713,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "wifi_off_outlined",
+    "codePoint": 62667,
+    "family": "MaterialIcons"
+  },
+  {
+    "name": "wifi_tethering",
+    "codePoint": 59117,
+    "family": "MaterialIcons"
+  }
+]
