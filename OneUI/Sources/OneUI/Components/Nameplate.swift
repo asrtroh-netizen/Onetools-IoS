@@ -70,9 +70,7 @@ public struct CardHeadRow<Trailing: View>: View {
     public var body: some View {
         HStack(spacing: OneMetrics.space8) {
             if let systemImage {
-                Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(OnePalette.onSurface)
+                MaterialIcon(name: systemImage, size: 18, color: OnePalette.onSurface)
             }
             Text(title)
                 .font(OneText.titleMedium())
@@ -90,3 +88,5 @@ extension CardHeadRow where Trailing == EmptyView {
         self.init(title, systemImage: systemImage) { EmptyView() }
     }
 }
+
+

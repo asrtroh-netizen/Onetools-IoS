@@ -45,6 +45,7 @@ final class BatchTests: XCTestCase {
         XCTAssertTrue(report.successes.isEmpty)
         XCTAssertTrue(report.failures.isEmpty)
     }
+
 }
 
 private struct SignError: LocalizedError {

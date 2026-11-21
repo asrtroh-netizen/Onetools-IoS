@@ -395,7 +395,7 @@ packages:
   onewifi_android:
     dependency: "direct main"
     description:
-      path: "../../ONEWIFIX/IOS"
+      path: "../_ref/kernel-onewifi-ios-7a8839e"
       relative: true
     source: path
     version: "0.1.28+33"

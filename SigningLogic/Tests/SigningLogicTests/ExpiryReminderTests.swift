@@ -97,4 +97,25 @@ final class ExpiryReminderTests: XCTestCase {
             ExpiryReminder(id: "profile", notice: .oneDay),
         ])
     }
+
+    func testDaylightSavingTransitionUsesCalendarDays() {
+        var daylightCalendar = Calendar(identifier: .gregorian)
+        daylightCalendar.timeZone = TimeZone(identifier: "America/New_York")!
+        let today = daylightCalendar.date(from: DateComponents(year: 2026, month: 3, day: 8, hour: 23))!
+        let expiration = daylightCalendar.date(from: DateComponents(year: 2026, month: 3, day: 15, hour: 0))!
+        XCTAssertEqual(
+            ExpiryReminderPlanner.reminders(for: [ExpirySubject(id: "dst", expiresOn: expiration)], on: today, calendar: daylightCalendar),
+            [ExpiryReminder(id: "dst", notice: .sevenDays)])
+    }
+
+    func testExpiredDuplicateDoesNotSuppressLaterValidReminder() {
+        let today = day(2026, 11, 12)
+        let subjects = [
+            ExpirySubject(id: "same", expiresOn: day(2026, 11, 1)),
+            ExpirySubject(id: "same", expiresOn: day(2026, 11, 13))
+        ]
+        XCTAssertEqual(
+            ExpiryReminderPlanner.reminders(for: subjects, on: today, calendar: calendar),
+            [ExpiryReminder(id: "same", notice: .oneDay)])
+    }
 }

@@ -6,7 +6,7 @@ dependencies:
   flutter:
     sdk: flutter
   onewifi_android:
-    path: ../../ONEWIFIX/IOS
+    path: ../_ref/kernel-onewifi-ios-7a8839e
 dev_dependencies:
   flutter_test:
     sdk: flutter

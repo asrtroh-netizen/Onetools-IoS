@@ -4,11 +4,14 @@ import UIKit
 /// 尺寸标度：8pt 栅格 + 圆角 + 描边，与 `glass.dart` / `one_tokens.dart` 一一对应。
 /// Flutter 版有 Glass 与 OneSpacing/OneRadii 两套同值别名，这里只留一套。
 public enum OneMetrics {
-    // 圆角（全部用 .continuous，统一了 Flutter 版 circular / superellipse 混用的问题）
+    // Ordinary controls use circular geometry. Dialogs, menus and chips opt into
+    // continuous curvature at their call sites.
     public static let radiusCard: CGFloat = 18
     public static let radiusTile: CGFloat = 14
     public static let radiusChip: CGFloat = 10
     public static let radiusHero: CGFloat = 22
+    public static let radiusDock: CGFloat = 28
+    public static let dockHeight: CGFloat = 56
 
     // 间距
     public static let space2: CGFloat = 2
@@ -35,13 +38,14 @@ public enum OneMetrics {
 
 // MARK: - 状态色
 
-/// 语义色。Flutter 版 `PlateTone` 有 6 个值，但 blue 早已等于 green、purple 等于 teal，
-/// 这里收敛成实际存在的 4 种，避免「选了蓝色却显示绿色」。
-public enum OneTone: Sendable, Hashable {
+/// 语义色。Flutter 版 `PlateTone` 保留 6 个公开名称，兼容其中两组相同色值。
+public enum PlateTone: Sendable, Hashable {
     case neutral
     /// 通畅 / 就绪 / 进行中。
+    case blue
     case green
     /// 信息 / 品牌青。
+    case purple
     case teal
     /// 失败。
     case red
@@ -49,8 +53,8 @@ public enum OneTone: Sendable, Hashable {
     var base: UIColor? {
         switch self {
         case .neutral: nil
-        case .green: UIColor(hex: 0x34D399)
-        case .teal: UIColor(hex: 0x2DD4BF)
+        case .blue, .green: UIColor(hex: 0x34D399)
+        case .purple, .teal: UIColor(hex: 0x2DD4BF)
         case .red: UIColor(hex: 0xF87171)
         }
     }
@@ -79,6 +83,9 @@ public enum OneTone: Sendable, Hashable {
         return Color.dynamic(base.withAlphaComponent(light), base.withAlphaComponent(dark))
     }
 }
+
+/// Compatibility name used by existing SwiftUI call sites.
+public typealias OneTone = PlateTone
 
 // MARK: - 投影
 

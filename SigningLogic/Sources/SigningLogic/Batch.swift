@@ -1,6 +1,6 @@
 import Foundation
 
-public struct BatchSuccess<Item, Value> {
+public struct BatchSuccess<Item, Value>: Sendable where Item: Sendable, Value: Sendable {
     public let item: Item
     public let value: Value
 
@@ -10,7 +10,7 @@ public struct BatchSuccess<Item, Value> {
     }
 }
 
-public struct BatchFailure<Item> {
+public struct BatchFailure<Item>: Sendable where Item: Sendable {
     public let item: Item
     public let errorDescription: String
 
@@ -20,7 +20,7 @@ public struct BatchFailure<Item> {
     }
 }
 
-public struct BatchReport<Item, Value> {
+public struct BatchReport<Item, Value>: Sendable where Item: Sendable, Value: Sendable {
     public let successes: [BatchSuccess<Item, Value>]
     public let failures: [BatchFailure<Item>]
 
@@ -52,7 +52,9 @@ public enum Batch {
     }
 
     private static func message(for error: Error) -> String {
-        if let localized = error as? LocalizedError, let description = localized.errorDescription {
+        if let localized = error as? LocalizedError,
+           let description = localized.errorDescription,
+           !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return description
         }
         return error.localizedDescription

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ExpirySubject: Equatable {
+public struct ExpirySubject: Equatable, Sendable {
     public let id: String
     public let expiresOn: Date
 
@@ -10,12 +10,12 @@ public struct ExpirySubject: Equatable {
     }
 }
 
-public enum ExpiryNotice: Equatable {
+public enum ExpiryNotice: Equatable, Sendable {
     case sevenDays
     case oneDay
 }
 
-public struct ExpiryReminder: Equatable {
+public struct ExpiryReminder: Equatable, Sendable {
     public let id: String
     public let notice: ExpiryNotice
 

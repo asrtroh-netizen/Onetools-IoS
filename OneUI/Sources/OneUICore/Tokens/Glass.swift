@@ -79,7 +79,7 @@ public enum Glass {
     public static let fillStrongAlphaLight: Double = 0.72
     public static let fillStrongAlphaDark: Double = 0.62
     public static let strokeAlphaDark: Double = 0.12
-    public static let strokeWhiteAlphaLight: Double = 0.55
+    public static let strokeWhiteAlphaLight: Double = 0.595
     public static let strokeInkAlphaLight: Double = 0.10
     public static let accentLuminanceLimit: Double = 0.7
     public static let neutralSaturationLimit: Double = 0.15
@@ -222,10 +222,8 @@ public enum Glass {
         if dark {
             return OneColor.white.withAlpha(strokeAlphaDark)
         }
-        return OneColor.alphaBlend(
-            OneColor.white.withAlpha(strokeWhiteAlphaLight),
-            onto: scheme(dark: dark).onSurface.withAlpha(strokeInkAlphaLight)
-        )
+        // Pre-composed Flutter hairline: #EEEEEE at 0.595 opacity.
+        return OneColor(argb: "FFEEEEEE").withAlpha(strokeWhiteAlphaLight)
     }
 
     private static func accentChannels(dark: Bool) -> OneChannels {

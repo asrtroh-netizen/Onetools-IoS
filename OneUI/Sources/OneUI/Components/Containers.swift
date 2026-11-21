@@ -109,7 +109,7 @@ public struct OneSection<Content: View, Actions: View>: View {
                     if let systemImage, let tone {
                         TitleIcon(systemImage: systemImage, tone: tone)
                     } else if let systemImage {
-                        Image(systemName: systemImage).font(.system(size: 17, weight: .medium))
+                        MaterialIcon(name: systemImage, size: 17, color: OnePalette.onSurface)
                     }
                     Text(title)
                         .font(OneText.titleMedium())
@@ -151,9 +151,7 @@ public struct TitleIcon: View {
     }
 
     public var body: some View {
-        Image(systemName: systemImage)
-            .font(.system(size: side * 0.52, weight: .semibold))
-            .foregroundStyle(tone.ink)
+        MaterialIcon(name: systemImage, size: side * 0.52, color: tone.ink)
             .frame(width: side, height: side)
             .glassSurface(.sheer, radius: OneMetrics.radiusChip,
                           tint: tone.tint(light: 0.12, dark: 0.16),
@@ -197,3 +195,63 @@ extension PageHead where Actions == EmptyView {
         self.init(title, desc: desc) { EmptyView() }
     }
 }
+
+// 原版 API 别名，保留业务页使用的 Ow* 命名。
+public typealias OwPageHead<Actions: View> = PageHead<Actions>
+public typealias OwSection<Content: View, Actions: View> = OneSection<Content, Actions>
+public typealias GlassListCard<Content: View> = GlassCard<Content>
+
+/// One 品牌几何标志。
+public struct OneMark: View {
+    public var size: CGFloat
+    public init(size: CGFloat = 40) { self.size = size }
+    public var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.24, style: .continuous).fill(OnePalette.onSurface)
+            Text("O").font(.system(size: size * 0.48, weight: .black, design: .rounded)).foregroundStyle(OnePalette.surface)
+        }.frame(width: size, height: size).accessibilityLabel(Text("One"))
+    }
+}
+
+/// 密码输入框，采用 Material 眼睛图标并保持 44pt 触点。
+public struct ObscurableField: View {
+    let title: String
+    @Binding var text: String
+    @State private var obscured = true
+    public init(_ title: String, text: Binding<String>) { self.title = title; self._text = text }
+    public var body: some View {
+        HStack(spacing: OneMetrics.space8) {
+            Group { if obscured { SecureField(title, text: $text) } else { TextField(title, text: $text) } }
+            Button { obscured.toggle() } label: { MaterialIcon(name: obscured ? "visibility_outlined" : "visibility_off_outlined", size: 20, color: OnePalette.onSurfaceVariant).frame(width: 44, height: 44) }.buttonStyle(.plain)
+        }.padding(.horizontal, OneMetrics.space16).glassSurface(.sheer, radius: OneMetrics.radiusTile, elevated: false)
+    }
+}
+
+public struct FeatureFailureNotice: View {
+    let title: String; let message: String; let retry: (() -> Void)?
+    public init(_ title: String = "暂时不可用", message: String, retry: (() -> Void)? = nil) { self.title = title; self.message = message; self.retry = retry }
+    public var body: some View {
+        HStack(alignment: .top, spacing: OneMetrics.space12) {
+            MaterialIcon(name: "error_outline", size: 24, color: OnePalette.error)
+            VStack(alignment: .leading, spacing: OneMetrics.space4) { Text(title).font(OneText.titleSmall()); Text(message).font(OneText.bodySmall()).foregroundStyle(OnePalette.onSurfaceVariant); if let retry { Button("重试", action: retry).font(OneText.labelLarge()) } }
+            Spacer(minLength: 0)
+        }.padding(OneMetrics.space16).glassSurface(.card, radius: OneMetrics.radiusTile, tint: OnePalette.errorContainer.opacity(0.42), elevated: false)
+    }
+}
+
+public struct OneGlassDialog<Content: View>: View {
+    let title: String; let content: Content; let onCancel: (() -> Void)?; let onConfirm: (() -> Void)?
+    public init(_ title: String, onCancel: (() -> Void)? = nil, onConfirm: (() -> Void)? = nil, @ViewBuilder content: () -> Content) { self.title = title; self.onCancel = onCancel; self.onConfirm = onConfirm; self.content = content() }
+    public var body: some View {
+        VStack(alignment: .leading, spacing: OneMetrics.space16) { Text(title).font(OneText.titleLarge()); content; HStack { Spacer(); if let onCancel { OneTextButton("取消", action: onCancel) }; if let onConfirm { OneFilledButton("确定", action: onConfirm) } } }
+            .padding(OneMetrics.space24).glassSurface(.frosted, radius: 22, tint: OneGlass.dialog, elevated: true)
+    }
+}
+
+public struct OneGlassPopupFrame<Content: View>: View {
+    let content: Content
+    public init(@ViewBuilder content: () -> Content) { self.content = content() }
+    public var body: some View { content.padding(OneMetrics.space16).glassSurface(.frosted, radius: 22, tint: OneGlass.modal, elevated: true) }
+}
+
+

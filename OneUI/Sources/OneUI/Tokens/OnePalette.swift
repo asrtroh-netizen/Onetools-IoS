@@ -86,7 +86,13 @@ public enum OneGlass {
     public static let fillStrong = Color.dynamic(light: 0xF3F3FA, 0.72, dark: 0x191C20, 0.62)
 
     /// 发丝描边。浅色是「白 .55 叠在 onSurface .10 上」的预合成结果。
-    public static let stroke = Color.dynamic(light: 0xEEEEEE, 0.6, dark: 0xFFFFFF, 0.12)
+    public static let stroke = Color.dynamic(light: 0xEEEEEE, 0.595, dark: 0xFFFFFF, 0.12)
+
+    /// Floating bar fill uses the resolved surface roles directly.
+    public static let barFill = Color.dynamic(light: 0xF9F9FF, 0.86, dark: 0x191C20, 0.86)
+
+    /// Accent is the resolved black/white foreground, independent of tint.
+    public static let accent = Color.dynamic(light: 0x1A1B20, dark: 0xE2E2E9)
 
     /// 模态面 / 对话框。
     public static let modal = Color.dynamic(light: 0xF3F3FA, 0.92, dark: 0x191C20, 0.92)

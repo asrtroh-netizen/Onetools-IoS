@@ -13,7 +13,7 @@
 #   未改 ClashtvOS 的 project.yml（已有决定）。
 # - experiments/G3/：Package.swift、Sources/G3Numbers/{Text,Blur,Shadow,Ripple}Numbers.swift、NOTES.md。
 #   只过了 swiftc -parse。文字、模糊、投影、水波纹触摸都未选定实现。
-# - OneUI 现有 14 个界面文件（Sources/OneUI/ 下组件、主题、Gallery 等）。
+# - OneUI 视图层文件（Sources/OneUI/ 下组件、主题、Gallery 等）。
 #   Linux 上不参与 swift test。界面层等 Mac 上的 G3 实验。4.2–4.9 界面层、xcodebuild、G4 仍未做。
 #
 # ClashtvOS 注意事项（REPORT.md 第 5 节第 7 条）：
@@ -22,9 +22,9 @@
 #
 # 单测：
 # - swift test --package-path _harness/ClashLogic
-# - swift test --package-path SigningLogic（WSL：13 项，0 失败；ExpiryReminderTests 9，BatchTests 4）
-# - swift test --package-path OneUI 是对照。部分 E3（f28e45c）之后 WSL 为 Executed 7 tests, with 0 failures。
-#   图标仍阻塞。Mac 主机上会走 Package.swift 的 macOS 分支，不是预期路径。预期是下面的 xcodebuild。
+# - swift test --package-path SigningLogic（WSL：15 项，0 失败；ExpiryReminderTests 11，BatchTests 4）
+# - swift test --package-path OneUI 覆盖 OneUICore 与 OneUICoreTests。
+#   图标码点已在 2026-11-18 验证通过。Mac 主机上会走 Package.swift 的 macOS 分支，预期路径是下面的 xcodebuild。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -33,25 +33,25 @@ cd "$ROOT"
 echo "未编译清单（docs/autorun/REPORT.md 第 3 节）。本脚本不编译这些文件："
 echo "- B2 / P3：Clash-Client onetools 上的 ConfigTransforms.swift、ProfileActivationCoordinator.swift、VPNController.swift、Sources/Mac/VPNController.swift、TunnelSettingsView.swift，以及三种语言的 Localizable.strings（1358825）。未改 ClashtvOS 的 project.yml。"
 echo "- experiments/G3/：Package.swift、Text/Blur/Shadow/RippleNumbers.swift、NOTES.md。只过了 swiftc -parse。四项实现未选定。"
-echo "- OneUI 14 个界面文件仍未改。4.2–4.9 界面层、xcodebuild、G4 仍未做。"
+echo "- OneUI 视图层文件需在 Mac 上验证。4.2–4.9 界面层、xcodebuild、G4 仍未做。"
 echo "NOTE ClashtvOS：ConfigTransforms.swift 若 import ClashClientUI，未依赖该包的 ClashtvOS 会编不过。不要在本脚本里改 project.yml。"
 
 echo "预期命令：swift test --package-path _harness/ClashLogic"
 swift test --package-path _harness/ClashLogic
 
 echo "预期命令：swift test --package-path SigningLogic"
-echo "WSL 已核对 13 项、0 失败（ExpiryReminderTests 9 项，BatchTests 4 项）。"
+echo "WSL 已核对 15 项、0 失败（ExpiryReminderTests 11 项，BatchTests 4 项）。"
 swift test --package-path SigningLogic
 
 echo "对照命令：swift test --package-path OneUI"
-echo "部分 E3（f28e45c）之后 WSL 为 Executed 7 tests, with 0 failures：骨架 3、tokens 1、字号/底栏/水波纹各 1。图标仍阻塞，不是 E3 全部通过。macOS 分支含 iOS 15 的 OneUI、OneUICore 和 OneUICoreTests。总计划 P4：Mac 主机上的 swift test 会去编 macOS，所以这条不是预期路径。"
+echo "OneUI 命令覆盖 OneUICore 与 OneUICoreTests。图标码点已在 2026-11-18 验证通过。macOS 分支含 iOS 15 的 OneUI、OneUICore 和 OneUICoreTests。总计划 P4：Mac 主机上的 swift test 会去编 macOS，所以这条不是预期路径。"
 set +e
 swift test --package-path OneUI
 oneui_swift_status=$?
 set -e
 echo "swift test --package-path OneUI 退出码 ${oneui_swift_status}。总计划把这条当对照，OneUI 的预期命令是下面的 xcodebuild。"
 
-echo "预期命令：xcodebuild build -scheme OneUI，以及 xcodebuild test -scheme OneUI-Package。未在 Mac 上运行过。14 个界面文件仍未改。"
+echo "预期命令：xcodebuild build -scheme OneUI，以及 xcodebuild test -scheme OneUI-Package。未在 Mac 上运行过。"
 set +e
 set +o pipefail
 sim="$(xcrun simctl list devices available | sed -n 's/^[[:space:]]*\(iPhone[^)]*\) ([0-9A-Fa-f-]\{36\}).*/\1/p' | head -n 1)"

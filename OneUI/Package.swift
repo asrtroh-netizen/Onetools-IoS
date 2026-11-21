@@ -19,6 +19,7 @@ let package = Package(
     targets: [
         .target(
             name: "OneUI",
+            dependencies: ["OneUICore"],
             resources: [
                 .copy("Resources/Fonts"),
                 .copy("Resources/Icons"),
@@ -47,6 +48,8 @@ let package = Package(
                 "OneUI/Glass",
                 "OneUI/Theme",
                 "OneUI/Tokens",
+                "OneUI/Icons",
+                "OneUI/Motion",
                 "OneUI/Resources/Fonts",
             ],
             resources: [
