@@ -50,7 +50,7 @@ public struct InkRipple: ViewModifier {
         }
         .contentShape(Rectangle())
         if enabled {
-            decorated.gesture(gesture)
+            decorated.simultaneousGesture(gesture)
         } else {
             decorated
         }
@@ -89,6 +89,10 @@ public struct InkRipple: ViewModifier {
 
 public extension View {
     func inkRipple(_ overlayColor: Color? = nil, enabled: Bool = true) -> some View {
+        modifier(InkRipple(overlayColor: overlayColor, enabled: enabled))
+    }
+
+    func inkRipple(overlayColor: Color?, enabled: Bool = true) -> some View {
         modifier(InkRipple(overlayColor: overlayColor, enabled: enabled))
     }
 }

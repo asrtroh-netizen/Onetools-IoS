@@ -72,6 +72,9 @@ public enum OnePalette {
     /// 门面卡主按钮：白底黑字药丸，刻意不随主题漂移。
     public static let heroButton = Color.white
     public static let onHeroButton = Color.black
+
+    /// 强调前景（浅 `#1A1B20` / 深 `#E2E2E9`，与 `Glass.accent` 一致）。
+    public static let accent = Color.dynamic(light: 0x1A1B20, dark: 0xE2E2E9)
 }
 
 // MARK: - 玻璃填充 / 描边

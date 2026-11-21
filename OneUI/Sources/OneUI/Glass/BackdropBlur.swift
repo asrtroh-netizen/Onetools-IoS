@@ -1,9 +1,12 @@
 import SwiftUI
 import UIKit
 
-/// Runtime-isolated backdrop blur. Private CoreAnimation layers are optional,
-/// so unsupported OS versions always receive Apple's public material fallback.
+/// Runtime-isolated backdrop blur. Uses private `CABackdropLayer` + `CAFilter("gaussianBlur")`
+/// when present in self-signed builds for exact Flutter `ImageFilter.blur(sigma)` parity,
+/// and degrades cleanly to Apple's public `UIVisualEffectView` whenever unavailable.
 public struct OneBackdropBlurView: UIViewRepresentable {
+    public static var preferPublicMaterialFallback: Bool = false
+
     public let sigma: CGFloat
 
     public init(sigma: CGFloat) { self.sigma = sigma }
@@ -21,15 +24,21 @@ public struct OneBackdropBlurView: UIViewRepresentable {
 
 private final class BackdropBlurContainer: UIView {
     var sigma: CGFloat {
-        didSet { applyBackdropIfAvailable() }
+        didSet {
+            if abs(oldValue - sigma) > 0.01 {
+                applyBackdrop()
+            }
+        }
     }
 
     private let fallback = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
+    private var privateBackdropLayer: CALayer?
 
     init(sigma: CGFloat) {
         self.sigma = sigma
         super.init(frame: .zero)
         isOpaque = false
+        backgroundColor = .clear
         addSubview(fallback)
         fallback.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -38,23 +47,52 @@ private final class BackdropBlurContainer: UIView {
             fallback.topAnchor.constraint(equalTo: topAnchor),
             fallback.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        applyBackdropIfAvailable()
+        applyBackdrop()
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    private func applyBackdropIfAvailable() {
-        guard let backdrop = NSClassFromString("CABackdropLayer") else {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        privateBackdropLayer?.frame = bounds
+    }
+
+    private func applyBackdrop() {
+        guard !OneBackdropBlurView.preferPublicMaterialFallback,
+              sigma > 0,
+              let backdropClass = NSClassFromString("CABackdropLayer") as? CALayer.Type,
+              let filterClass = NSClassFromString("CAFilter") as? NSObject.Type else {
+            privateBackdropLayer?.removeFromSuperlayer()
+            privateBackdropLayer = nil
             fallback.isHidden = false
             return
         }
-        // The private layer is only selected when present at runtime. KVC keeps
-        // this source compatible with SDKs that do not expose its declarations.
-        // Public fallback remains the rendering path when the private layer
-        // cannot be safely constructed by this SDK. The lookup above is kept
-        // isolated so a future host can install its own layer implementation.
-        _ = backdrop
-        fallback.isHidden = false
+
+        let selector = NSSelectorFromString("filterWithType:")
+        guard filterClass.responds(to: selector),
+              let unmanaged = filterClass.perform(selector, with: "gaussianBlur") else {
+            privateBackdropLayer?.removeFromSuperlayer()
+            privateBackdropLayer = nil
+            fallback.isHidden = false
+            return
+        }
+
+        let blurFilter = unmanaged.takeUnretainedValue() as AnyObject
+        blurFilter.setValue(NSNumber(value: Double(sigma)), forKey: "inputRadius")
+        blurFilter.setValue(NSNumber(value: true), forKey: "inputNormalizeEdges")
+
+        let targetLayer: CALayer
+        if let existing = privateBackdropLayer {
+            targetLayer = existing
+        } else {
+            let created = backdropClass.init()
+            created.frame = bounds
+            layer.insertSublayer(created, at: 0)
+            privateBackdropLayer = created
+            targetLayer = created
+        }
+        targetLayer.filters = [blurFilter]
+        fallback.isHidden = true
     }
 }

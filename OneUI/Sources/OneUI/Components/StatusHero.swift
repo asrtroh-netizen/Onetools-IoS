@@ -22,7 +22,20 @@ public struct StatusHero<Trailing: View>: View {
             if !state.isSettled, primary != nil { actions.transition(.opacity.combined(with: .move(edge: .bottom))) }
         }
         .padding(OneMetrics.space24).frame(maxWidth: .infinity, alignment: .leading)
-        .glassSurface(.frosted, radius: OneMetrics.radiusHero, tint: fill)
+        .background {
+            let heroShape = RoundedRectangle(cornerRadius: OneMetrics.radiusHero, style: .circular)
+            ZStack {
+                OneBackdropBlurView(sigma: 24)
+                heroShape.fill(fill ?? OneGlass.fill)
+            }
+            .clipShape(heroShape)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: OneMetrics.radiusHero, style: .circular)
+                .strokeBorder(OneGlass.stroke, lineWidth: OneMetrics.stroke)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: OneMetrics.radiusHero, style: .circular))
+        .oneShadow(strong: true)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state)
     }
     @ViewBuilder private func header(compact: Bool) -> some View {
@@ -39,7 +52,12 @@ public struct StatusHero<Trailing: View>: View {
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: OneMetrics.space4) {
             if let eyebrow { Text(eyebrow).font(OneText.labelMedium()).foregroundStyle(OnePalette.onSurface.opacity(0.72)).lineLimit(1) }
-            HStack(spacing: OneMetrics.space10) { Text(title).font(OneText.titleLarge()).lineLimit(1).accessibilityAddTraits(.isHeader); Text(pill).font(OneText.labelLarge()).lineLimit(1).padding(.horizontal, 12).padding(.vertical, 6).background(Capsule().fill(OnePalette.onSurface.opacity(0.14))) }
+            HStack(spacing: OneMetrics.space10) {
+                Text(title).font(OneText.titleLarge()).lineLimit(1).accessibilityAddTraits(.isHeader)
+                OneStyledText(pill, size: 14, weight: 600, heightMultiplier: 1.43, tracking: 0.1, lineLimit: 1)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Capsule().fill(OnePalette.onSurface.opacity(0.14)))
+            }
             if !state.isSettled {
                 if let subtitle { Text(subtitle).font(OneText.bodyLarge()) }
                 if let detail { Text(detail).font(OneText.bodySmall()).foregroundStyle(OnePalette.onSurface.opacity(0.78)) }

@@ -7,6 +7,10 @@
 - Clash 环回源文件与测试已通过 `tools/sync_harness.py --check` 保持逐字节一致。
 - `SigningLogic` 的到期提醒覆盖了跨夏令时日期、重复 ID 中过期项与有效项并存的边界。批次结果类型补充 `Sendable`，空本地化错误描述会回退到系统描述。
 - `REPORT.md` 与 `STATE.md` 中遗留的图标夹具阻塞描述已标注为历史记录，门禁数量统一为 21 项。
+- 主代理终审补齐（消除上 Mac 编译/运行隐患与 5 项遗留视觉缺口）：
+  - 补齐 `OnePalette.accent` 公开属性与 `View.inkRipple(overlayColor:enabled:)` 重载，消除跨文件参数标签编译错误；将 `InkRipple` 手势改为 `simultaneousGesture` 防止吞噬内层 `Button` 点击。
+  - 将 `MaterialIcon` 字体名修正为字体表真实 PostScript 名 `MaterialIcons-Regular`（并将 `eye`/`eye_slash` 映射至内置可见性字形），替换 `OneGallery` 中 4 个不在 121 码点目录内的示例图标名。
+  - 完成 `OneStyledText`（CoreText 负 `strokeWidth` `w600`/`w700` 合成加粗 + `1.219em` 行高均分）、`UltraGlassDock` 480ms 非对称液态跨越指示条与中性高光描边及软键盘自动收起、`OneMark` 双圆差并精确几何、`ChoiceChips` iOS 15 折行回退、`CABackdropLayer + CAFilter(gaussianBlur)` 运行时绑定、`OneGlassDialog` / `OneGlassPopupFrame` 超椭圆 `style: .continuous` 材质对齐。
 
 ## 验证结果
 
