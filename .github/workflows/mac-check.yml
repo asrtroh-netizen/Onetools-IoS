@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   apple:
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +21,18 @@ jobs:
           xcrun swift --version
           xcodebuild -showsdks
           xcrun simctl list devices available
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install M1 prerequisites
+        run: |
+          command -v xcodegen || brew install xcodegen
+          python3 -m pip install PyYAML
       - name: M1 environment inventory
         run: bash scripts/mac/10-env.sh
       - name: SigningLogic host tests

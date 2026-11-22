@@ -44,7 +44,7 @@ public struct MaterialIcon: View {
             return MaterialIconCodepoints.codePoint(for: name)
         }()
         let glyph = resolvedCodePoint.flatMap { UnicodeScalar($0) }.map { String($0) } ?? "\u{FFFD}"
-        Text(glyph)
+        return Text(glyph)
             .font(.custom(Self.postScriptFace, size: size))
             .foregroundStyle(color ?? OnePalette.onSurface)
             .frame(width: size, height: size, alignment: .center)
