@@ -1,0 +1,44 @@
+name: OneUI macOS check
+on:
+  push:
+    branches: [codex/mac-check]
+permissions:
+  contents: read
+jobs:
+  apple:
+    runs-on: macos-26
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Identify checkout and Apple toolchain
+        run: |
+          git rev-parse HEAD
+          sw_vers
+          xcodebuild -version
+          xcrun swift --version
+          xcodebuild -showsdks
+          xcrun simctl list devices available
+      - name: M1 environment inventory
+        run: bash scripts/mac/10-env.sh
+      - name: SigningLogic host tests
+        if: ${{ !cancelled() }}
+        run: swift test --package-path SigningLogic
+      - name: OneUI schemes
+        if: ${{ !cancelled() }}
+        working-directory: OneUI
+        run: xcodebuild -list -json | tee "$RUNNER_TEMP/oneui-schemes.json"
+      - name: Compile OneUI with iOS SDK
+        if: ${{ !cancelled() }}
+        working-directory: OneUI
+        run: xcodebuild build -scheme OneUI -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO
+      - name: Run OneUICore tests on iPhone simulator
+        if: ${{ !cancelled() }}
+        working-directory: OneUI
+        run: |
+          set -euo pipefail
+          device=$(xcrun simctl list devices available -j | jq -er '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.isAvailable and (.name | startswith("iPhone")))] | first.udid')
+          scheme=$(jq -er '[.. | objects | .schemes? // empty | .[]] | if index("OneUI-Package") then "OneUI-Package" elif index("OneUICore") then "OneUICore" else "OneUI" end' "$RUNNER_TEMP/oneui-schemes.json")
+          xcodebuild test -scheme "$scheme" -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO -only-testing:OneUICoreTests -resultBundlePath "$RUNNER_TEMP/OneUI.xcresult"
