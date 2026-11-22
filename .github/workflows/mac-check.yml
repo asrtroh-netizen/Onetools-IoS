@@ -21,6 +21,13 @@ jobs:
           xcrun swift --version
           xcodebuild -showsdks
           xcrun simctl list devices available
+      - name: Start a simulator matching the SDK
+        run: |
+          set -euo pipefail
+          sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          device=$(xcrun simctl list devices available -j | jq -er --arg runtime "com.apple.CoreSimulator.SimRuntime.iOS-${sdk//./-}" '.devices[$runtime] | map(select(.isAvailable and (.name | startswith("iPhone")))) | first.udid')
+          echo "SIMULATOR_UDID=$device" >> "$GITHUB_ENV"
+          xcrun simctl boot "$device"
       - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-go@v5
         with:
@@ -51,6 +58,6 @@ jobs:
         working-directory: OneUI
         run: |
           set -euo pipefail
-          device=$(xcrun simctl list devices available -j | jq -er '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.isAvailable and (.name | startswith("iPhone")))] | first.udid')
+          xcrun simctl bootstatus "$SIMULATOR_UDID"
           scheme=$(jq -er '[.. | objects | .schemes? // empty | .[]] | if index("OneUI-Package") then "OneUI-Package" elif index("OneUICore") then "OneUICore" else "OneUI" end' "$RUNNER_TEMP/oneui-schemes.json")
-          xcodebuild test -scheme "$scheme" -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO -only-testing:OneUICoreTests -resultBundlePath "$RUNNER_TEMP/OneUI.xcresult"
+          xcodebuild test -scheme "$scheme" -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" -parallel-testing-enabled NO -enableCodeCoverage NO -only-testing:OneUICoreTests -resultBundlePath "$RUNNER_TEMP/OneUI.xcresult"
