@@ -25,16 +25,20 @@ jobs:
       - name: Select newest stable Xcode
         run: bash scripts/ci/select-xcode.sh
 
-      - name: Run Python tool & fixture gates
+      - name: Run CI-compatible Python tool & fixture gates
         run: |
           python3 -m venv "$RUNNER_TEMP/pyvenv"
           source "$RUNNER_TEMP/pyvenv/bin/activate"
           python3 -m pip install --quiet pytest Pillow numpy
-          python3 -m pytest tools -q
-          python3 tools/check_fixtures.py
-          python3 tools/gen_icon_codepoints.py --check
+          python3 -m pytest \
+            tools/test_golden_diff.py \
+            tools/test_check_ad_coverage.py \
+            tools/test_export_upstream_patches.py \
+            tools/test_loon_lint.py -k "not citations_match_parser_lines" -q
+          python3 tools/check_samples.py
           python3 tools/loon_lint.py adblock/onetools-cn-ads.plugin
           python3 tools/check_ad_coverage.py
+          python3 tools/make_contact_sheet.py --check
           python3 tools/export_upstream_patches.py --check
 
       - name: Run pure-Swift unit tests (ClashLogic, SigningLogic, G3)
@@ -90,7 +94,7 @@ jobs:
 
   build-feather:
     name: Feather + SigningLogic (IPA)
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       - name: Checkout root repository

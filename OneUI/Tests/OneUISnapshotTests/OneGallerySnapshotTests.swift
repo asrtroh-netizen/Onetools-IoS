@@ -9,11 +9,15 @@ import OneUICore
 final class OneGallerySnapshotTests: XCTestCase {
     func testBundledFontsRegisterAndLoad() {
         OneFont.register()
-        _ = MaterialIcon(name: "dashboard_outlined").body
+        MaterialIcon.register()
 
         XCTAssertNotNil(
             UIFont(name: OneFont.postScriptFace, size: 16),
             "Bundled Montserrat-Regular.ttf must register via CoreText"
+        )
+        XCTAssertNotNil(
+            UIFont(name: MaterialIcon.postScriptFace, size: 24),
+            "Bundled MaterialIcons-Regular.otf must register via CoreText"
         )
     }
 

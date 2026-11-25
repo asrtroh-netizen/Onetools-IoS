@@ -21,7 +21,10 @@ public struct MaterialIcon: View {
         CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
     }()
 
+    public static func register() { _ = registered }
+
     public init(name: String, size: CGFloat = 24, color: Color? = nil) {
+        Self.register()
         self.name = name
         self.size = size
         self.color = color
@@ -29,22 +32,26 @@ public struct MaterialIcon: View {
     }
 
     public init(codePoint: UInt32, size: CGFloat = 24, color: Color? = nil) {
+        Self.register()
         self.name = ""
         self.size = size
         self.color = color
         self.explicitCodePoint = codePoint
     }
 
-    public var body: some View {
-        _ = Self.registered
+    private var resolvedGlyph: String {
+        Self.register()
         let resolvedCodePoint: UInt32? = {
             if let explicitCodePoint { return explicitCodePoint }
             if name == "eye" { return MaterialIconCodepoints.visibility_outlined }
             if name == "eye_slash" { return MaterialIconCodepoints.visibility_off_outlined }
             return MaterialIconCodepoints.codePoint(for: name)
         }()
-        let glyph = resolvedCodePoint.flatMap { UnicodeScalar($0) }.map { String($0) } ?? "\u{FFFD}"
-        Text(glyph)
+        return resolvedCodePoint.flatMap { UnicodeScalar($0) }.map { String($0) } ?? "\u{FFFD}"
+    }
+
+    public var body: some View {
+        Text(resolvedGlyph)
             .font(.custom(Self.postScriptFace, size: size))
             .foregroundStyle(color ?? OnePalette.onSurface)
             .frame(width: size, height: size, alignment: .center)
