@@ -71,6 +71,8 @@ public enum OneText {
 /// CoreText-backed single/multi-line label that applies Skia-equivalent negative
 /// stroke synthetic bold (`w600`/`w700`) and M3 `even` line-height compensation.
 public struct OneStyledText: View {
+    public static var pureSwiftUISnapshotMode: Bool = false
+
     public let text: String
     public let size: CGFloat
     public let weight: Int
@@ -98,16 +100,24 @@ public struct OneStyledText: View {
     }
 
     public var body: some View {
-        OneAttributedLabelRepresentable(
-            text: text,
-            size: size,
-            weight: weight,
-            heightMultiplier: heightMultiplier,
-            tracking: tracking,
-            color: color,
-            lineLimit: lineLimit
-        )
-        .fixedSize(horizontal: false, vertical: true)
+        if Self.pureSwiftUISnapshotMode {
+            Text(text)
+                .font(OneFont.montserrat(size, weight >= 700 ? .bold : weight >= 600 ? .semibold : weight >= 500 ? .medium : .regular))
+                .tracking(tracking)
+                .lineLimit(lineLimit)
+                .foregroundStyle(color.map(Color.init(uiColor:)) ?? OnePalette.onSurface)
+        } else {
+            OneAttributedLabelRepresentable(
+                text: text,
+                size: size,
+                weight: weight,
+                heightMultiplier: heightMultiplier,
+                tracking: tracking,
+                color: color,
+                lineLimit: lineLimit
+            )
+            .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

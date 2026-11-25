@@ -4,20 +4,33 @@ import UIKit
 /// Runtime-isolated backdrop blur. Uses private `CABackdropLayer` + `CAFilter("gaussianBlur")`
 /// when present in self-signed builds for exact Flutter `ImageFilter.blur(sigma)` parity,
 /// and degrades cleanly to Apple's public `UIVisualEffectView` whenever unavailable.
-public struct OneBackdropBlurView: UIViewRepresentable {
+public struct OneBackdropBlurView: View {
     public static var preferPublicMaterialFallback: Bool = false
+    public static var pureSwiftUISnapshotMode: Bool = false
 
     public let sigma: CGFloat
 
     public init(sigma: CGFloat) { self.sigma = sigma }
 
-    public func makeUIView(context: Context) -> UIView {
+    public var body: some View {
+        if Self.pureSwiftUISnapshotMode {
+            Color.clear
+        } else {
+            OneBackdropBlurRepresentable(sigma: sigma)
+        }
+    }
+}
+
+private struct OneBackdropBlurRepresentable: UIViewRepresentable {
+    let sigma: CGFloat
+
+    func makeUIView(context: Context) -> UIView {
         let view = BackdropBlurContainer(sigma: sigma)
         view.isUserInteractionEnabled = false
         return view
     }
 
-    public func updateUIView(_ uiView: UIView, context: Context) {
+    func updateUIView(_ uiView: UIView, context: Context) {
         (uiView as? BackdropBlurContainer)?.sigma = sigma
     }
 }
