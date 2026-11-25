@@ -124,8 +124,17 @@ private struct OneAttributedLabelRepresentable: UIViewRepresentable {
         let label = IntrinsicLabel()
         label.backgroundColor = .clear
         label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        label.setContentHuggingPriority(.required, for: .horizontal)
         label.setContentHuggingPriority(.required, for: .vertical)
         return label
+    }
+
+    @available(iOS 16.0, *)
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: IntrinsicLabel, context: Context) -> CGSize {
+        updateUIView(uiView, context: context)
+        let maxWidth = (proposal.width ?? 0) > 0 ? (proposal.width ?? .greatestFiniteMagnitude) : .greatestFiniteMagnitude
+        let fitted = uiView.sizeThatFits(CGSize(width: maxWidth, height: .greatestFiniteMagnitude))
+        return CGSize(width: ceil(min(fitted.width, maxWidth)), height: ceil(fitted.height))
     }
 
     func updateUIView(_ label: IntrinsicLabel, context: Context) {

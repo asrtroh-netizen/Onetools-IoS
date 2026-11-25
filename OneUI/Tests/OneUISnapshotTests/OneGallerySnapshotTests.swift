@@ -72,35 +72,30 @@ final class OneGallerySnapshotTests: XCTestCase {
         size: CGSize,
         style: UIUserInterfaceStyle
     ) throws -> (image: UIImage, png: Data) {
-        let bg = style == .dark
-            ? Color(red: 0x11 / 255.0, green: 0x13 / 255.0, blue: 0x18 / 255.0)
-            : Color(red: 0xF8 / 255.0, green: 0xF9 / 255.0, blue: 0xFF / 255.0)
+        let bgUIColor = style == .dark
+            ? UIColor(red: 0x11 / 255.0, green: 0x13 / 255.0, blue: 0x18 / 255.0, alpha: 1.0)
+            : UIColor(red: 0xF8 / 255.0, green: 0xF9 / 255.0, blue: 0xFF / 255.0, alpha: 1.0)
         let framed = view
             .frame(width: size.width, height: size.height)
-            .background(bg)
-
-        if #available(iOS 16.0, *) {
-            let renderer = ImageRenderer(content: framed)
-            renderer.scale = 3.0
-            renderer.isOpaque = true
-            if let uiImage = renderer.uiImage, let png = uiImage.pngData(), distinctSampledColors(in: uiImage) > 4 {
-                return (uiImage, png)
-            }
-        }
 
         let host = UIHostingController(rootView: framed)
         host.overrideUserInterfaceStyle = style
+        host.view.backgroundColor = bgUIColor
         host.view.bounds = CGRect(origin: .zero, size: size)
         host.view.frame = CGRect(origin: .zero, size: size)
         host.view.setNeedsLayout()
         host.view.layoutIfNeeded()
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.15))
+        host.view.setNeedsLayout()
+        host.view.layoutIfNeeded()
 
         let format = UIGraphicsImageRendererFormat()
         format.scale = 3.0
         format.opaque = true
-        let fallbackRenderer = UIGraphicsImageRenderer(size: size, format: format)
-        let uiImage = fallbackRenderer.image { context in
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        let uiImage = renderer.image { context in
+            bgUIColor.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
             host.view.layer.render(in: context.cgContext)
         }
         guard let png = uiImage.pngData() else {

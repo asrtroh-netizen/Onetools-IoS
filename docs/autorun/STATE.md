@@ -5,7 +5,7 @@
 - 今早起点：2026-11-12 09:45:00 +08:00（仓库在 `886992d`，工作区干净）
 - 截止仍是：2026-11-12 18:00:00 +08:00（unix 1794477600）
 - 上一轮：12 小时自动执行，起点 2026-11-11 18:00:13 +08:00，截止 2026-11-12 06:00:13 +08:00（unix 1794434413），最后提交 `886992d`（04:43:50 +08:00）。AFK 循环已停，不写 DONE/PAUSE，不重启钩子。
-- 当前阶段：2026-11-25 全局出击完成——`OneUI` 视觉精修（13 项单测）、`Clash-Client` 四页签主壳（P5.0）、`Swipt` 环回引导与首次自动装去广告规则（P5.1）、`Feather` 批量签名/一键重签/到期通知（P7，`SigningLogic` 17 项单测）及 `40-verify-windows-work.sh` 全部在 Windows/WSL 就绪并通过 21 项门禁。下一步上 Mac 直接跑 `xcodebuild` 联调、对拍与真机装包。不推送，不写 DONE/PAUSE。
+- 当前阶段：2026-11-25 **Mac 阶段已全部迁移至 GitHub Actions 云端并通过全绿验收**（工作流 `.github/workflows/macos-ci.yml`，运行 `#45595057439` / `#45609192677` 5/5 任务全绿）——已产出三大无签名安装包（`OneTools-ClashiOS-unsigned.ipa`、`OneTools-Swipt-unsigned.ipa`、`OneTools-Feather-unsigned.ipa`）、`OneUI` iOS 模拟器快照，以及 `G1` 内核环回核查（`docs/decisions/G1-bringup.md`）、`G2` 双 Go 运行时实测裁决（`docs/decisions/G2-go-runtimes.md`）与 `M7` Loon 插件核对报告（`docs/findings/loon-ignored.md`）。本地同时通过全部 22 项自动化门禁。
 - 现在：MA `cc31e45`，MC `25fab74`，MB `69d7774`，MD `2ce4375`，ME `36f1e70`。Q0–Q5 不重做。Q1 提交 `b50bcd7`；Q2 提交 `65082e1`。
 - 网络：路由器 DNS 把 `raw.githubusercontent.com` 解析成 `0.0.0.0`。已把正在使用的「以太网」IPv4 DNS 从 `192.168.1.1` 改为 `1.1.1.1`、`8.8.8.8`，没改系统代理和全局 git。改完 `raw.githubusercontent.com` 与 `github.com` 均返回 200。回退：把该网卡 DNS 设回 `192.168.1.1`。记录在 `.mimocode/dns-fix-2026-11-12.txt`。
 

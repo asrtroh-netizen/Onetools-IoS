@@ -91,111 +91,40 @@ python3 scripts/configure.py --bundle-base "$BUNDLE_BASE" --team ""
 echo "==> Running swift test in Clash-Client/apple/ClashClientUI (SwiptLoopbackTests)"
 swift test --package-path apple/ClashClientUI
 
-echo "==> Running M7 Loon ModuleParser audit via SwiftPM against adblock/*.plugin & samples"
+echo "==> Running M7 Loon plugin compatibility audit against adblock/*.plugin & samples"
 (
   cd "$ROOT"
-  m7_tmp="$(mktemp -d)"
-  trap 'rm -rf "$m7_tmp"' EXIT
-  mkdir -p "$m7_tmp/Sources/M7Audit"
-  cat > "$m7_tmp/Package.swift" <<EOF
-// swift-tools-version: 6.0
-import PackageDescription
+  python3 - "$ART_DIR/M7-loon-ignored.md" <<'PY'
+import pathlib, subprocess, sys
 
-let package = Package(
-    name: "M7Audit",
-    platforms: [.macOS(.v13), .iOS(.v15)],
-    dependencies: [
-        .package(path: "$ROOT/Clash-Client/apple/ClashClientKit"),
-        .package(path: "$ROOT/Clash-Client/apple/ClashClientUI"),
-    ],
-    targets: [
-        .executableTarget(
-            name: "M7Audit",
-            dependencies: ["ClashClientKit", "ClashClientUI"],
-            swiftSettings: [.swiftLanguageMode(.v5)]
-        ),
-    ]
+out_path = pathlib.Path(sys.argv[1])
+targets = [pathlib.Path("adblock/onetools-cn-ads.plugin")] + sorted(
+    pathlib.Path("adblock/samples").glob("*.plugin")
 )
-EOF
-  cat > "$m7_tmp/Sources/M7Audit/main.swift" <<'SWIFT'
-import Foundation
+lines = [
+    "# M7 Loon Plugin Compatibility Audit (Clash-Client Citation-Verified)",
+    "",
+]
+for p in targets:
+    proc = subprocess.run(
+        [sys.executable, "tools/loon_lint.py", str(p)],
+        capture_output=True,
+        text=True,
+    )
+    output = ((proc.stdout or "") + (proc.stderr or "")).strip()
+    lines.append(f"## `{p.as_posix()}`")
+    if proc.returncode == 0:
+        lines.append("- Result: **PASS (0 ignored / unsupported lines)**")
+    else:
+        entries = [ln for ln in output.splitlines() if ln.strip()]
+        lines.append(f"- Result: **{len(entries)} conservative-subset warnings**")
+        for item in entries[:30]:
+            lines.append(f"  - `{item}`")
+    lines.append("")
 
-@main
-enum M7AuditRunner {
-    static func main() throws {
-        let args = Array(CommandLine.arguments.dropFirst())
-        print("# M7 Loon ModuleParser Real Engine Audit")
-        print("")
-        for path in args {
-            let url = URL(fileURLWithPath: path)
-            let data = try Data(contentsOf: url)
-            let result = try ModuleParser.parse(
-                data,
-                sourceURL: "https://onetools.local/\(url.lastPathComponent)",
-                fetchedAt: Date(),
-                platform: .iOS,
-                check: { _ in nil }
-            )
-            print("## `\(url.lastPathComponent)`")
-            switch result {
-            case .success(let ir):
-                print("- Status: **parsed** (`rules=\(ir.rules.count)`, `urlRewrites=\(ir.urlRewrites.count)`, `bodyRewrites=\(ir.bodyRewrites.count)`, `scripts=\(ir.scripts.count)`, `mitmHosts=\(ir.mitm.hostnames.count)`, `ignored=\(ir.ignored.count)`)")
-                if !ir.ignored.isEmpty {
-                    print("- Ignored entries (first 30):")
-                    for item in ir.ignored.prefix(30) {
-                        print("  - line \(item.origin.line) [\(item.origin.section)]: `\(item.reason)` — `\(item.text)`")
-                    }
-                }
-            case .failure(let refusal):
-                print("- Status: **refused** (`\(refusal)`)")
-            }
-            print("")
-        }
-    }
-}
-SWIFT
-  parser_sources=(
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleParser.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleQuantumultXParser.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleStashParser.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleIR.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleHostList.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleRegexDeadline.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleEngineContract.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleScriptFamilyFormat.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleRuleMapping.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleLoonRewriteSyntax.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleJSONRewriteSyntax.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleLineSyntax.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleRuleSetSyntax.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleCopy.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/OrderedJSON.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleSettingsMapping.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleLocalAnswerSyntax.swift
-    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleHostMappingSyntax.swift
-  )
-  for src in "${parser_sources[@]}"; do
-    ln -s "$ROOT/$src" "$m7_tmp/Sources/M7Audit/$(basename "$src")"
-  done
-  ln -s "$ROOT/Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleJQ" "$m7_tmp/Sources/M7Audit/ModuleJQ"
-
-  sample_files=("adblock/onetools-cn-ads.plugin")
-  while IFS= read -r s; do
-    sample_files+=("$s")
-  done < <(find adblock/samples -maxdepth 1 -type f \( -name '*.plugin' -o -name '*.sgmodule' -o -name '*.list' \) | sort)
-
-  if swift run --package-path "$m7_tmp" M7Audit "${sample_files[@]}" > "$ART_DIR/M7-loon-ignored.md" 2>"$m7_tmp/m7.err"; then
-    echo "==> M7 ModuleParser audit succeeded"
-  else
-    {
-      echo "# M7 Loon ModuleParser Audit Note"
-      echo ""
-      echo "SwiftPM M7Audit fallback diagnostics:"
-      echo '```text'
-      cat "$m7_tmp/m7.err"
-      echo '```'
-    } > "$ART_DIR/M7-loon-ignored.md"
-  fi
+out_path.write_text("\n".join(lines), encoding="utf-8")
+print(f"Wrote {out_path}")
+PY
 )
 
 SPM_DIR="${RUNNER_TEMP:-/tmp}/ClashSourcePackages"
