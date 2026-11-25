@@ -91,12 +91,33 @@ python3 scripts/configure.py --bundle-base "$BUNDLE_BASE" --team ""
 echo "==> Running swift test in Clash-Client/apple/ClashClientUI (SwiptLoopbackTests)"
 swift test --package-path apple/ClashClientUI
 
-echo "==> Running M7 Loon ModuleParser audit via swiftc against adblock/*.plugin & samples"
+echo "==> Running M7 Loon ModuleParser audit via SwiftPM against adblock/*.plugin & samples"
 (
   cd "$ROOT"
   m7_tmp="$(mktemp -d)"
   trap 'rm -rf "$m7_tmp"' EXIT
-  cat > "$m7_tmp/main.swift" <<'SWIFT'
+  mkdir -p "$m7_tmp/Sources/M7Audit"
+  cat > "$m7_tmp/Package.swift" <<EOF
+// swift-tools-version: 6.0
+import PackageDescription
+
+let package = Package(
+    name: "M7Audit",
+    platforms: [.macOS(.v13), .iOS(.v15)],
+    dependencies: [
+        .package(path: "$ROOT/Clash-Client/apple/ClashClientKit"),
+        .package(path: "$ROOT/Clash-Client/apple/ClashClientUI"),
+    ],
+    targets: [
+        .executableTarget(
+            name: "M7Audit",
+            dependencies: ["ClashClientKit", "ClashClientUI"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+    ]
+)
+EOF
+  cat > "$m7_tmp/Sources/M7Audit/main.swift" <<'SWIFT'
 import Foundation
 
 @main
@@ -120,9 +141,9 @@ enum M7AuditRunner {
             case .success(let ir):
                 print("- Status: **parsed** (`rules=\(ir.rules.count)`, `urlRewrites=\(ir.urlRewrites.count)`, `bodyRewrites=\(ir.bodyRewrites.count)`, `scripts=\(ir.scripts.count)`, `mitmHosts=\(ir.mitm.hostnames.count)`, `ignored=\(ir.ignored.count)`)")
                 if !ir.ignored.isEmpty {
-                    print("- Ignored entries (first 25):")
-                    for item in ir.ignored.prefix(25) {
-                        print("  - line \(item.line) [\(item.section)]: `\(item.reason)` — `\(item.text)`")
+                    print("- Ignored entries (first 30):")
+                    for item in ir.ignored.prefix(30) {
+                        print("  - line \(item.origin.line) [\(item.origin.section)]: `\(item.reason)` — `\(item.text)`")
                     }
                 }
             case .failure(let refusal):
@@ -142,30 +163,43 @@ SWIFT
     Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleRegexDeadline.swift
     Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleEngineContract.swift
     Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleScriptFamilyFormat.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleRuleMapping.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleLoonRewriteSyntax.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleJSONRewriteSyntax.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleLineSyntax.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleRuleSetSyntax.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleCopy.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/OrderedJSON.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleSettingsMapping.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleLocalAnswerSyntax.swift
+    Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleHostMappingSyntax.swift
   )
-  while IFS= read -r jq_file; do
-    parser_sources+=("$jq_file")
-  done < <(find Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleJQ -name '*.swift' | sort)
+  for src in "${parser_sources[@]}"; do
+    ln -s "$ROOT/$src" "$m7_tmp/Sources/M7Audit/$(basename "$src")"
+  done
+  ln -s "$ROOT/Clash-Client/apple/ClashClient/Sources/ConfigStore/ModuleJQ" "$m7_tmp/Sources/M7Audit/ModuleJQ"
 
-  if xcrun swiftc -O "${parser_sources[@]}" "$m7_tmp/main.swift" -o "$m7_tmp/m7-audit" 2>"$m7_tmp/swiftc.err"; then
-    sample_files=("adblock/onetools-cn-ads.plugin")
-    while IFS= read -r s; do
-      sample_files+=("$s")
-    done < <(find adblock/samples -maxdepth 1 -type f \( -name '*.plugin' -o -name '*.sgmodule' -o -name '*.list' \) | sort)
-    "$m7_tmp/m7-audit" "${sample_files[@]}" > "$ART_DIR/M7-loon-ignored.md"
+  sample_files=("adblock/onetools-cn-ads.plugin")
+  while IFS= read -r s; do
+    sample_files+=("$s")
+  done < <(find adblock/samples -maxdepth 1 -type f \( -name '*.plugin' -o -name '*.sgmodule' -o -name '*.list' \) | sort)
+
+  if swift run --package-path "$m7_tmp" M7Audit "${sample_files[@]}" > "$ART_DIR/M7-loon-ignored.md" 2>"$m7_tmp/m7.err"; then
+    echo "==> M7 ModuleParser audit succeeded"
   else
     {
       echo "# M7 Loon ModuleParser Audit Note"
       echo ""
-      echo "Standalone swiftc harness needed extra target symbols; falling back to full ClashiOS build verification:"
+      echo "SwiftPM M7Audit fallback diagnostics:"
       echo '```text'
-      cat "$m7_tmp/swiftc.err"
+      cat "$m7_tmp/m7.err"
       echo '```'
     } > "$ART_DIR/M7-loon-ignored.md"
   fi
 )
 
 SPM_DIR="${RUNNER_TEMP:-/tmp}/ClashSourcePackages"
+COMP_CACHE="${RUNNER_TEMP:-/tmp}/ClashCompilationCache"
 
 echo "==> Building ClashiOS (Release, unsigned)"
 xcodebuild build \
@@ -177,6 +211,8 @@ xcodebuild build \
   -clonedSourcePackagesDirPath "$SPM_DIR" \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  COMPILATION_CACHE_ENABLE_CACHING=YES \
+  COMPILATION_CACHE_CAS_PATH="$COMP_CACHE" \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGN_IDENTITY=""
