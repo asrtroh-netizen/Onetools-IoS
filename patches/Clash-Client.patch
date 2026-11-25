@@ -261,7 +261,7 @@ index 8dd58722a8d4c24804b695483af61d744ad24d4a..5d3d24477acb6a18f083b607d5ebe98d
                  Section {
 diff --git a/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..75c696445415e1bb694a0d09f83fe6d93125bad5
+index 0000000000000000000000000000000000000000..4595c283a68348a5aa2f1d727806351907ab49e4
 --- /dev/null
 +++ b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
 @@ -0,0 +1,335 @@
@@ -333,12 +333,12 @@ index 0000000000000000000000000000000000000000..75c696445415e1bb694a0d09f83fe6d9
 +    }
 +}
 +
++private let oneToolsShellEnabledDefaultsKey = "onetools.shell.enabled"
++
 +/// OneTools iOS 根外壳（P5.0）：保持 `AppShellView` 常驻挂载以保留 VPN 与订阅状态，
 +/// 底部叠加 `OneUI` 手写液态胶囊底栏 `UltraGlassDock` 切换四大核心工作区。
 +struct OneToolsRootShellView<ProxyContent: View>: View {
-+    private static let shellEnabledKey = "onetools.shell.enabled"
-+
-+    @AppStorage(Self.shellEnabledKey) private var shellEnabled: Bool = true
++    @AppStorage(oneToolsShellEnabledDefaultsKey) private var shellEnabled: Bool = true
 +    @StateObject private var router = OneToolsShellRouter.shared
 +    private let proxyContent: ProxyContent
 +
