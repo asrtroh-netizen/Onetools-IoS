@@ -52,6 +52,7 @@ public enum Batch {
     }
 
     #if compiler(>=6.0)
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     public static func runAsync<Item, Value>(
         isolation: isolated (any Actor)? = #isolation,
         _ items: [Item],
@@ -70,6 +71,7 @@ public enum Batch {
         return BatchReport(successes: successes, failures: failures)
     }
     #else
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     public static func runAsync<Item, Value>(
         _ items: [Item],
         operation: (Item) async throws -> Value

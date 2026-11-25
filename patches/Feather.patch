@@ -1,5 +1,5 @@
 diff --git a/Feather.xcodeproj/project.pbxproj b/Feather.xcodeproj/project.pbxproj
-index d36be267d757a4a14979ff17054d6732d3a84dbb..321c6219ef9697a4823b8132cfb415085217dc60 100644
+index d36be267d757a4a14979ff17054d6732d3a84dbb..a331ecc550827c6b5dcdaceea8306633d84935b7 100644
 --- a/Feather.xcodeproj/project.pbxproj
 +++ b/Feather.xcodeproj/project.pbxproj
 @@ -19,6 +19,7 @@
@@ -45,13 +45,12 @@ index d36be267d757a4a14979ff17054d6732d3a84dbb..321c6219ef9697a4823b8132cfb41508
  /* End XCLocalSwiftPackageReference section */
  
  /* Begin XCRemoteSwiftPackageReference section */
-@@ -591,6 +599,11 @@
+@@ -591,6 +599,10 @@
  			isa = XCSwiftPackageProductDependency;
  			productName = AltSourceKit;
  		};
 +		33A1B2C42F99000100112233 /* SigningLogic */ = {
 +			isa = XCSwiftPackageProductDependency;
-+			package = 33A1B2C32F99000100112233 /* XCLocalSwiftPackageReference "SigningLogic" */;
 +			productName = SigningLogic;
 +		};
  		3371F7312DA9ECDD00281AC6 /* Zip */ = {

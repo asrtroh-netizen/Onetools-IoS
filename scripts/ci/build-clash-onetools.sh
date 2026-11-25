@@ -6,23 +6,39 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 ART_DIR="${ART_DIR:-$ROOT/artifacts/clash}"
 BUNDLE_BASE="${BUNDLE_BASE:-org.onetools.clash}"
+MODE="${1:-all}"
 mkdir -p "$ART_DIR"
+
+cd "$ROOT/Clash-Client"
+
+if [[ "$MODE" == "bootstrap" || "$MODE" == "all" ]]; then
+  echo "==> Setting up Python venv for bootstrap.py & configure.py"
+  python3 -m venv .build/python-env
+  # shellcheck disable=SC1091
+  source .build/python-env/bin/activate
+  python3 -m pip install --quiet --upgrade pip PyYAML
+
+  echo "==> Running Clash-Client/scripts/bootstrap.py"
+  python3 scripts/bootstrap.py
+  if [[ "$MODE" == "bootstrap" ]]; then
+    exit 0
+  fi
+fi
 
 if ! command -v xcodegen >/dev/null 2>&1; then
   echo "==> Installing xcodegen via Homebrew"
   brew install xcodegen
 fi
 
-cd "$ROOT/Clash-Client"
-
-echo "==> Setting up Python venv for bootstrap.py & configure.py"
-python3 -m venv .build/python-env
-# shellcheck disable=SC1091
-source .build/python-env/bin/activate
-python3 -m pip install --quiet --upgrade pip PyYAML
-
-echo "==> Running Clash-Client/scripts/bootstrap.py"
-python3 scripts/bootstrap.py
+if [[ ! -d .build/python-env ]]; then
+  python3 -m venv .build/python-env
+  # shellcheck disable=SC1091
+  source .build/python-env/bin/activate
+  python3 -m pip install --quiet --upgrade pip PyYAML
+else
+  # shellcheck disable=SC1091
+  source .build/python-env/bin/activate
+fi
 
 echo "==> Auditing G1 kernel facts (LoopbackAddress & ip_rewrite.go)"
 {

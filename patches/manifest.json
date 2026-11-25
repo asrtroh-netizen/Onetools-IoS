@@ -10,10 +10,10 @@
     },
     "Feather": {
       "base_revision": "31ab6de455f2a6108f6830e343dee826310c03be",
-      "head_revision": "0cde11ca6bd84735cb839dd6fd263e460895c9d8",
-      "patch_bytes": 17226,
+      "head_revision": "dd3ab06d39ac448bc9b6893abb79f0a278e80ac1",
+      "patch_bytes": 17136,
       "patch_file": "patches/Feather.patch",
-      "patch_sha256": "4daf09853cd580090c7747fe72d5e65c4e13e1269d856b594120937821c67f72",
+      "patch_sha256": "2da9b29c208f73061688770b5b0bcec6965dccdf4997bb8dcb75f3d1dbb9d4c7",
       "url": "https://github.com/claration/feather.git"
     },
     "Swipt": {
