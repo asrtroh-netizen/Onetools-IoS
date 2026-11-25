@@ -162,7 +162,14 @@ for cfg_id, is_dbg in (("5C0000000000000000000603", True), ("5C00000000000000000
     text = text[:m.start(1)] + patch_ios_config(m.group(1), is_dbg) + text[m.end(1):]
 
 pbx_path.write_text(text, encoding="utf-8")
-print("Generated SwiptUIBuild.xcodeproj/project.pbxproj successfully")
+
+scheme_path = Path("SwiptUIBuild.xcodeproj/xcshareddata/xcschemes/Swipt.xcscheme")
+scheme_text = scheme_path.read_text(encoding="utf-8")
+scheme_text = scheme_text.replace("container:Swipt.xcodeproj", "container:SwiptUIBuild.xcodeproj")
+scheme_text = scheme_text.replace('BuildableName = "Swipt.app"', 'BuildableName = "SwiptUI.framework"')
+scheme_path.write_text(scheme_text, encoding="utf-8")
+
+print("Generated SwiptUIBuild.xcodeproj & updated Swipt.xcscheme successfully")
 PY
 
 # Keep sync-autolinking.sh stamp newer than SwiptUIBuild.xcodeproj/.spm-injected.json
@@ -171,6 +178,7 @@ if [[ -f build/generated/autolinking/.spm-sync-stamp ]]; then
 fi
 
 DERIVED_UI="${RUNNER_TEMP:-/tmp}/SwiptUIDerivedData"
+COMP_CACHE="${RUNNER_TEMP:-/tmp}/SwiptCompCache"
 rm -rf "$DERIVED_UI"
 
 echo "==> Building SwiptUI.framework (Release, generic/platform=iOS)"
@@ -183,6 +191,8 @@ xcodebuild build \
   -clonedSourcePackagesDirPath "$SPM_CACHE_DIR" \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  COMPILATION_CACHE_ENABLE_CACHING=YES \
+  COMPILATION_CACHE_CAS_PATH="$COMP_CACHE" \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGN_IDENTITY=""

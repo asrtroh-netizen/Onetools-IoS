@@ -24,6 +24,7 @@ echo "==> Fetching Feather local HTTPS server TLS assets (deps)"
 make deps
 
 DERIVED_STANDALONE="${RUNNER_TEMP:-/tmp}/FeatherDerivedData"
+COMP_CACHE="${RUNNER_TEMP:-/tmp}/FeatherCompCache"
 rm -rf _build packages "$DERIVED_STANDALONE"
 
 echo "==> Building standalone Feather.app (Release)"
@@ -36,6 +37,8 @@ xcodebuild \
   -clonedSourcePackagesDirPath "$SPM_CACHE_DIR" \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  COMPILATION_CACHE_ENABLE_CACHING=YES \
+  COMPILATION_CACHE_CAS_PATH="$COMP_CACHE" \
   CODE_SIGNING_ALLOWED=NO \
   ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO
 
@@ -153,7 +156,14 @@ for cfg_id, is_dbg in (("3379C1CE2DA869A3004372DA", True), ("3379C1CF2DA869A3004
     text = text[:m.start(1)] + patch_feather_cfg(m.group(1), is_dbg) + text[m.end(1):]
 
 pbx_path.write_text(text, encoding="utf-8")
-print("Generated FeatherUIBuild.xcodeproj/project.pbxproj successfully")
+
+scheme_path = Path("FeatherUIBuild.xcodeproj/xcshareddata/xcschemes/Feather.xcscheme")
+scheme_text = scheme_path.read_text(encoding="utf-8")
+scheme_text = scheme_text.replace("container:Feather.xcodeproj", "container:FeatherUIBuild.xcodeproj")
+scheme_text = scheme_text.replace('BuildableName = "Feather.app"', 'BuildableName = "FeatherUI.framework"')
+scheme_path.write_text(scheme_text, encoding="utf-8")
+
+print("Generated FeatherUIBuild.xcodeproj & updated Feather.xcscheme successfully")
 PY
 
 DERIVED_UI="${RUNNER_TEMP:-/tmp}/FeatherUIDerivedData"
@@ -169,6 +179,8 @@ xcodebuild build \
   -clonedSourcePackagesDirPath "$SPM_CACHE_DIR" \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  COMPILATION_CACHE_ENABLE_CACHING=YES \
+  COMPILATION_CACHE_CAS_PATH="$COMP_CACHE" \
   DEPLOYMENT_LOCATION=NO \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO \

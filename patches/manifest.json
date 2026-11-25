@@ -18,10 +18,10 @@
     },
     "Swipt": {
       "base_revision": "ab218801d7f80d0260ae2e078032de3cc16d8fdf",
-      "head_revision": "652440b28356ed7b7c135be82c9373676e06f1ff",
-      "patch_bytes": 20145,
+      "head_revision": "ff68cb4327782eb7d6480cf44cfd2d566c0ace33",
+      "patch_bytes": 20798,
       "patch_file": "patches/Swipt.patch",
-      "patch_sha256": "a8b16690bbffeef9493c816dac74b899506807a1bc87b3f1f3e9d7c0643027df",
+      "patch_sha256": "cf112b57aef8c317fb786e8da53ca3f7132abdd10e6e1d0a4d2edfa99957b185",
       "url": "https://github.com/swipt-automation/swipt.git"
     }
   },

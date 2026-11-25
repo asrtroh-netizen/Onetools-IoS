@@ -125,10 +125,12 @@ jobs:
           cp -R SigningLogic Feather/SigningLogic
           sed -i '' 's|relativePath = ../SigningLogic;|relativePath = SigningLogic;|g' Feather/Feather.xcodeproj/project.pbxproj
 
-      - name: Cache Feather SwiftPM packages
+      - name: Cache Feather SwiftPM & Compilation Cache
         uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}/FeatherSPM
+          path: |
+            ${{ runner.temp }}/FeatherSPM
+            ${{ runner.temp }}/FeatherCompCache
           key: feather-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Feather/Feather.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: feather-spm-${{ steps.xcode.outputs.build }}-
 
@@ -240,17 +242,19 @@ jobs:
           bun install --frozen-lockfile
           bun dev frameworks
 
-      - name: Cache Swipt SwiftPM packages
+      - name: Cache Swipt SwiftPM & Compilation Cache
         uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}/SwiptSPM
+          path: |
+            ${{ runner.temp }}/SwiptSPM
+            ${{ runner.temp }}/SwiptCompCache
           key: swipt-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Swipt/Swipt.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: swipt-spm-${{ steps.xcode.outputs.build }}-
 
       - name: Build standalone Swipt IPA & SwiptUI.framework + LibSwipt.framework
         working-directory: Swipt
         env:
-          XCODEBUILD_FLAGS: -clonedSourcePackagesDirPath ${{ runner.temp }}/SwiptSPM
+          XCODEBUILD_FLAGS: -clonedSourcePackagesDirPath ${{ runner.temp }}/SwiptSPM COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_CAS_PATH=${{ runner.temp }}/SwiptCompCache
         run: |
           make archive_ios_ipa
           mkdir -p "$GITHUB_WORKSPACE/artifacts/swipt"

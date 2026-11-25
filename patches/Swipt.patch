@@ -275,7 +275,7 @@ index e02423e5720104d1d606d14f5a06ec1575db8950..c93c81094bcfdfca8d235ceb6d055627
          #else
          Window(Text(verbatim: "Swipt"), id: "home") {
 diff --git a/internal/cmd/build_libswipt/main.go b/internal/cmd/build_libswipt/main.go
-index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..a3da2bbfad8e01fe471bb1b6b11a83e5d99b7bbd 100644
+index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..8646bbf53523fdf56b6ce95f19434e13e4038d69 100644
 --- a/internal/cmd/build_libswipt/main.go
 +++ b/internal/cmd/build_libswipt/main.go
 @@ -1,14 +1,19 @@
@@ -304,7 +304,7 @@ index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..a3da2bbfad8e01fe471bb1b6b11a83e5
  	iosVersion     = "15.0"
  	macOSVersion   = "14.0"
  	outputPath     = "Frameworks/LibSwipt.xcframework"
-+	patchStampVer  = "onetools-objc-seq-prefix-v1"
++	patchStampVer  = "onetools-objc-seq-prefix-v2"
  )
  
  func main() {
@@ -335,7 +335,7 @@ index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..a3da2bbfad8e01fe471bb1b6b11a83e5
  		"bind",
  		"-v",
  		"-target", *target,
-@@ -59,6 +55,130 @@ func main() {
+@@ -59,6 +55,136 @@ func main() {
  	run(bind)
  }
  
@@ -352,22 +352,21 @@ index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..a3da2bbfad8e01fe471bb1b6b11a83e5
 +// libobjc with Clash.framework's unprefixed GoSeqRef classes when embedded in OneTools.
 +func buildIsolatedGomobileTools(gomobileVersion string) string {
 +	srcDir := gomobileModuleSourceDir()
-+	sum := sha256.Sum256([]byte(gomobileVersion + "|" + patchStampVer + "|" + runtime.Version()))
++	workRoot, err := filepath.Abs(filepath.Join(".build", "gomobile-swipt"))
++	if err != nil {
++		log.Fatal(err)
++	}
++	sum := sha256.Sum256([]byte(gomobileVersion + "|" + patchStampVer + "|" + runtime.Version() + "|" + workRoot))
 +	key := hex.EncodeToString(sum[:8])
 +
-+	workRoot := filepath.Join(".build", "gomobile-swipt")
++	stageSrc := filepath.Join(workRoot, "src-"+key)
 +	binDir := filepath.Join(workRoot, "bin-"+key)
 +	gomobileBin := filepath.Join(binDir, executableName("gomobile"))
 +	gobindBin := filepath.Join(binDir, executableName("gobind"))
-+	if fileExists(gomobileBin) && fileExists(gobindBin) {
-+		absBin, err := filepath.Abs(binDir)
-+		if err != nil {
-+			log.Fatal(err)
-+		}
-+		return absBin
++	if fileExists(gomobileBin) && fileExists(gobindBin) && fileExists(filepath.Join(stageSrc, "bind", "objc", "ref.h")) {
++		return binDir
 +	}
 +
-+	stageSrc := filepath.Join(workRoot, "src-"+key)
 +	_ = os.RemoveAll(stageSrc)
 +	if err := copyPatchedGomobileTree(srcDir, stageSrc); err != nil {
 +		log.Fatal("stage patched gomobile: ", err)
@@ -375,22 +374,14 @@ index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..a3da2bbfad8e01fe471bb1b6b11a83e5
 +	if err := os.MkdirAll(binDir, 0o755); err != nil {
 +		log.Fatal(err)
 +	}
-+	absStage, err := filepath.Abs(stageSrc)
-+	if err != nil {
-+		log.Fatal(err)
-+	}
-+	absBin, err := filepath.Abs(binDir)
-+	if err != nil {
-+		log.Fatal(err)
-+	}
 +
 +	for _, tool := range []string{"gomobile", "gobind"} {
-+		out := filepath.Join(absBin, executableName(tool))
++		out := filepath.Join(binDir, executableName(tool))
 +		cmd := exec.Command("go", "build", "-trimpath", "-o", out, "./cmd/"+tool)
-+		cmd.Dir = absStage
++		cmd.Dir = stageSrc
 +		run(cmd)
 +	}
-+	return absBin
++	return binDir
 +}
 +
 +func gomobileModuleSourceDir() string {
@@ -454,6 +445,21 @@ index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..a3da2bbfad8e01fe471bb1b6b11a83e5
 +				data = bytes.Replace(data, []byte(oldInclude), []byte(newInclude), 1)
 +			}
 +		}
++		if slashRel == "cmd/gobind/gen.go" {
++			// Ensure gobind copies ref.h / seq_darwin.* from our patched stage tree
++			// rather than resolving unpatched GOMODCACHE via Swipt/go.mod.
++			oldPkgDir := "func packageDir(path string) (string, error) {"
++			newPkgDir := fmt.Sprintf(
++				"func packageDir(path string) (string, error) {\n\tif strings.HasPrefix(path, %q) {\n\t\trel := strings.TrimPrefix(path, %q)\n\t\treturn filepath.Join(%q, filepath.FromSlash(rel)), nil\n\t}",
++				gomobileModule+"/",
++				gomobileModule+"/",
++				dstRoot,
++			)
++			if !bytes.Contains(data, []byte(oldPkgDir)) {
++				return fmt.Errorf("unexpected packageDir signature in %s", slashRel)
++			}
++			data = bytes.Replace(data, []byte(oldPkgDir), []byte(newPkgDir), 1)
++		}
 +		return os.WriteFile(target, data, 0o644)
 +	})
 +}
@@ -466,7 +472,7 @@ index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..a3da2bbfad8e01fe471bb1b6b11a83e5
  func pinnedGomobileVersion() string {
  	info, loaded := debug.ReadBuildInfo()
  	if !loaded {
-@@ -73,14 +193,6 @@ func pinnedGomobileVersion() string {
+@@ -73,14 +199,6 @@ func pinnedGomobileVersion() string {
  	return module.Version
  }
  
