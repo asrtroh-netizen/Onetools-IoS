@@ -197,7 +197,7 @@ index 134e679549399faa7b76a5f869aab6d2f6750da2..8d79ada69dafd08afca72d6b67f15a94
       
       
 diff --git a/apple/ClashClient/Sources/ConfigStore/ProfileActivationCoordinator.swift b/apple/ClashClient/Sources/ConfigStore/ProfileActivationCoordinator.swift
-index cc19cfd3bb730f1ca8539f6156cbd28812439778..58132c0135fca4d1fb5374372f6949d7aa4e6f8a 100644
+index cc19cfd3bb730f1ca8539f6156cbd28812439778..989534bfe48c1e0e7981d07ef08a0f3c9f4acd9f 100644
 --- a/apple/ClashClient/Sources/ConfigStore/ProfileActivationCoordinator.swift
 +++ b/apple/ClashClient/Sources/ConfigStore/ProfileActivationCoordinator.swift
 @@ -193,6 +193,7 @@ enum ProfileRuntimeConfigBuilder {
@@ -238,6 +238,22 @@ index cc19cfd3bb730f1ca8539f6156cbd28812439778..58132c0135fca4d1fb5374372f6949d7
              providerMerge: providerMerge,
              profileLogLevel: profileLogLevel,
              logLevelSetByApp: { if case .forced = directive { return true } else { return false } }(),
+@@ -1675,6 +1685,7 @@ final class ProfileActivationCoordinator {
+          
+         let workingDirectory = coreHomeDir
+         let sidecarPath = sidecarURL(profileID: given.id).path
++        let profileStore = self.profileStore
+          
+          
+         let givenSource = sourceYAML != nil || handedSource != nil
+@@ -1817,7 +1828,6 @@ final class ProfileActivationCoordinator {
+          
+         let (reusableProviders, reuseSource) = reusableProvidersDirectory(for: profile)
+         activationReuseSource = reuseSource
+-        let profileStore = self.profileStore
+         let publication = try await buildPublishActivate(
+             profile: profile,
+             merged: prepared,
 diff --git a/apple/ClashClient/Sources/ConfigUI/TunnelSettingsView.swift b/apple/ClashClient/Sources/ConfigUI/TunnelSettingsView.swift
 index 8dd58722a8d4c24804b695483af61d744ad24d4a..5d3d24477acb6a18f083b607d5ebe98d1c0d6a6f 100644
 --- a/apple/ClashClient/Sources/ConfigUI/TunnelSettingsView.swift

@@ -25,6 +25,11 @@ jobs:
       - name: Select newest stable Xcode
         run: bash scripts/ci/select-xcode.sh
 
+      - name: Hydrate Clash-Client & sync ClashLogic harness
+        run: |
+          bash scripts/ci/hydrate-upstreams.sh Clash-Client
+          python3 tools/sync_harness.py
+
       - name: Run CI-compatible Python tool & fixture gates
         run: |
           python3 -m venv "$RUNNER_TEMP/pyvenv"
@@ -34,7 +39,7 @@ jobs:
             tools/test_golden_diff.py \
             tools/test_check_ad_coverage.py \
             tools/test_export_upstream_patches.py \
-            tools/test_loon_lint.py -k "not citations_match_parser_lines" -q
+            tools/test_loon_lint.py -q
           python3 tools/check_samples.py
           python3 tools/loon_lint.py adblock/onetools-cn-ads.plugin
           python3 tools/check_ad_coverage.py
