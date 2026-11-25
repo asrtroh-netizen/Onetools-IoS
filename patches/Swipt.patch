@@ -214,7 +214,7 @@ index 378a4fdfe62f751f63f524fcc63cf3297c6d2f84..c6a0905e72bf3603fceffd2ef2c4f390
          let isAppActive = LockedState(initialState: false)
          self.isAppActive = isAppActive
 diff --git a/Swipt/SwiptApp.swift b/Swipt/SwiptApp.swift
-index e02423e5720104d1d606d14f5a06ec1575db8950..c93c81094bcfdfca8d235ceb6d055627f9e4960d 100644
+index e02423e5720104d1d606d14f5a06ec1575db8950..a27b8cccc4d8313ab4efe2b96251ac22fbb9bf60 100644
 --- a/Swipt/SwiptApp.swift
 +++ b/Swipt/SwiptApp.swift
 @@ -4,6 +4,7 @@ import UIKit
@@ -237,7 +237,7 @@ index e02423e5720104d1d606d14f5a06ec1575db8950..c93c81094bcfdfca8d235ceb6d055627
      init() {
          _ = AppDatabase.shared
          #if os(iOS)
-@@ -33,16 +37,34 @@ final class AppLaunch {
+@@ -33,16 +37,46 @@ final class AppLaunch {
      }
  }
  
@@ -255,6 +255,18 @@ index e02423e5720104d1d606d14f5a06ec1575db8950..c93c81094bcfdfca8d235ceb6d055627
 +                    await SwipletStore.shared.bootstrapDefaultChineseAdSkipIfNeeded()
 +                }
 +            }
++    }
++}
++
++/// Pure Objective-C ABI firewall factory so host targets importing `SwiptUI`
++/// do not need transitive Swift/Clang build-time modules (GRDB, Perception, React, Expo).
++@MainActor
++@objc(OneToolsSwiptBridge)
++public final class OneToolsSwiptBridge: NSObject {
++    @objc public static func makeRootViewController() -> UIViewController {
++        let controller = UIHostingController(rootView: SwiptRootView())
++        controller.view.backgroundColor = .clear
++        return controller
 +    }
 +}
 +#endif

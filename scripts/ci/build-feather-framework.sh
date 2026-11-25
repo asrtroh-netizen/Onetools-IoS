@@ -8,7 +8,7 @@ IPA_OUT_DIR="${2:?Usage: $0 <feather-dir> <ipa-out-dir> <embedded-stage-dir> [sp
 EMBED_OUT_DIR="${3:?Usage: $0 <feather-dir> <ipa-out-dir> <embedded-stage-dir> [spm-cache-dir]}"
 SPM_CACHE_DIR="${4:-${RUNNER_TEMP:-/tmp}/FeatherSPM}"
 
-mkdir -p "$IPA_OUT_DIR" "$EMBED_OUT_DIR/frameworks"
+mkdir -p "$IPA_OUT_DIR" "$EMBED_OUT_DIR/host-frameworks" "$EMBED_OUT_DIR/runtime-frameworks"
 IPA_OUT_DIR="$(cd "$IPA_OUT_DIR" && pwd)"
 EMBED_OUT_DIR="$(cd "$EMBED_OUT_DIR" && pwd)"
 
@@ -198,7 +198,30 @@ if [[ -f Feather/Resources/ellekit.deb ]]; then
   cp -f Feather/Resources/ellekit.deb "$FEATHER_UI_FW/"
 fi
 
-cp -RL "$FEATHER_UI_FW" "$EMBED_OUT_DIR/frameworks/FeatherUI.framework"
+cp -RL "$FEATHER_UI_FW" "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework"
+rm -rf "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Headers" \
+       "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/PrivateHeaders" \
+       "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Modules"
+mkdir -p "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Headers" \
+         "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Modules"
+
+cat > "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Headers/OneToolsFeatherBridge.h" <<'OBJC'
+#import <UIKit/UIKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+@interface OneToolsFeatherBridge : NSObject
++ (UIViewController *)makeRootViewController;
++ (void)handleIncomingURL:(NSURL *)url;
+@end
+NS_ASSUME_NONNULL_END
+OBJC
+
+cat > "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Modules/module.modulemap" <<'MODMAP'
+framework module FeatherUI {
+    header "OneToolsFeatherBridge.h"
+    export *
+}
+MODMAP
 
 echo "==> Checking dynamic XCFramework dependencies (IDevice.framework & OpenSSL.framework)"
 OTOOL_DEPS="$(xcrun otool -L "$FEATHER_UI_FW/FeatherUI")"
@@ -211,10 +234,12 @@ for fw_name in IDevice OpenSSL; do
       exit 1
     fi
     echo "Staging dynamic $fw_name.framework from $FW_PATH"
-    cp -RL "$FW_PATH" "$EMBED_OUT_DIR/frameworks/${fw_name}.framework"
+    dst_fw="$EMBED_OUT_DIR/runtime-frameworks/${fw_name}.framework"
+    cp -RL "$FW_PATH" "$dst_fw"
+    rm -rf "$dst_fw/Headers" "$dst_fw/PrivateHeaders" "$dst_fw/Modules"
   else
     echo "Info: ${fw_name} is statically linked into FeatherUI.framework (not a dynamic @rpath framework)"
   fi
 done
 
-ls -lh "$IPA_OUT_DIR" "$EMBED_OUT_DIR/frameworks"
+ls -lh "$IPA_OUT_DIR" "$EMBED_OUT_DIR/host-frameworks" "$EMBED_OUT_DIR/runtime-frameworks"

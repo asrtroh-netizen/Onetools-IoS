@@ -8,7 +8,7 @@ SWIPT_DIR="${1:?Usage: $0 <swipt-dir> <output-stage-dir> [spm-cache-dir]}"
 OUT_DIR="${2:?Usage: $0 <swipt-dir> <output-stage-dir> [spm-cache-dir]}"
 SPM_CACHE_DIR="${3:-${RUNNER_TEMP:-/tmp}/SwiptSPM}"
 
-mkdir -p "$OUT_DIR/frameworks" "$OUT_DIR/resources"
+mkdir -p "$OUT_DIR/host-frameworks" "$OUT_DIR/runtime-frameworks" "$OUT_DIR/resources"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
 
 cd "$SWIPT_DIR"
@@ -203,9 +203,34 @@ if [[ ! -d "$SWIPT_UI_FW" ]]; then
   exit 1
 fi
 
-echo "==> Staging LibSwipt.framework, SwiptUI.framework, EXConstants.bundle & RN frameworks"
-cp -RL "$DYN_FW" "$OUT_DIR/frameworks/LibSwipt.framework"
-cp -RL "$SWIPT_UI_FW" "$OUT_DIR/frameworks/SwiptUI.framework"
+echo "==> Staging SwiptUI.framework (pure ObjC ABI firewall) & runtime frameworks"
+cp -RL "$SWIPT_UI_FW" "$OUT_DIR/host-frameworks/SwiptUI.framework"
+rm -rf "$OUT_DIR/host-frameworks/SwiptUI.framework/Headers" \
+       "$OUT_DIR/host-frameworks/SwiptUI.framework/PrivateHeaders" \
+       "$OUT_DIR/host-frameworks/SwiptUI.framework/Modules"
+mkdir -p "$OUT_DIR/host-frameworks/SwiptUI.framework/Headers" \
+         "$OUT_DIR/host-frameworks/SwiptUI.framework/Modules"
+
+cat > "$OUT_DIR/host-frameworks/SwiptUI.framework/Headers/OneToolsSwiptBridge.h" <<'OBJC'
+#import <UIKit/UIKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+@interface OneToolsSwiptBridge : NSObject
++ (UIViewController *)makeRootViewController;
+@end
+NS_ASSUME_NONNULL_END
+OBJC
+
+cat > "$OUT_DIR/host-frameworks/SwiptUI.framework/Modules/module.modulemap" <<'MODMAP'
+framework module SwiptUI {
+    header "OneToolsSwiptBridge.h"
+    export *
+}
+MODMAP
+
+cp -RL "$DYN_FW" "$OUT_DIR/runtime-frameworks/LibSwipt.framework"
+rm -rf "$OUT_DIR/runtime-frameworks/LibSwipt.framework/Headers" \
+       "$OUT_DIR/runtime-frameworks/LibSwipt.framework/Modules"
 
 if [[ -d "$SWIPT_UI_FW/EXConstants.bundle" ]]; then
   cp -RL "$SWIPT_UI_FW/EXConstants.bundle" "$OUT_DIR/resources/EXConstants.bundle"
@@ -225,7 +250,9 @@ for fw in "${RN_FRAMEWORKS[@]}"; do
     echo "FAIL: Expected RN framework missing: $fw" >&2
     exit 1
   fi
-  cp -RL "$fw" "$OUT_DIR/frameworks/$(basename "$fw")"
+  dst_fw="$OUT_DIR/runtime-frameworks/$(basename "$fw")"
+  cp -RL "$fw" "$dst_fw"
+  rm -rf "$dst_fw/Headers" "$dst_fw/PrivateHeaders" "$dst_fw/Modules"
 done
 
-ls -lh "$OUT_DIR/frameworks" "$OUT_DIR/resources"
+ls -lh "$OUT_DIR/host-frameworks" "$OUT_DIR/runtime-frameworks" "$OUT_DIR/resources"

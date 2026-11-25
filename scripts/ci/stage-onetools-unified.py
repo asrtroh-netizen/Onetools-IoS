@@ -146,14 +146,15 @@ def main() -> int:
             exported_utis.append(uti)
     info_props["UTExportedTypeDeclarations"] = exported_utis
 
-    # 3. Wire staged SwiptUI + FeatherUI + runtime dynamic frameworks into ClashiOS ONLY
+    # 3. Wire staged host-frameworks (link+embed) and runtime-frameworks (embed-only) into ClashiOS ONLY
     if embedded_dir is not None and embedded_dir.is_dir():
-        fw_dir = embedded_dir / "frameworks"
+        host_fw_dir = embedded_dir / "host-frameworks"
+        runtime_fw_dir = embedded_dir / "runtime-frameworks"
         res_dir = embedded_dir / "resources"
         spec_dir = spec_path.parent
 
-        rel_fw_dir = pathlib.Path(
-            pathlib.os.path.relpath(fw_dir, spec_dir)
+        rel_host_fw_dir = pathlib.Path(
+            pathlib.os.path.relpath(host_fw_dir, spec_dir)
         ).as_posix()
 
         base_settings = clash_ios.setdefault("settings", {}).setdefault("base", {})
@@ -162,27 +163,46 @@ def main() -> int:
             fw_search = [fw_search]
         fw_search = ensure_list_items(
             fw_search,
-            ["$(inherited)", f"$(PROJECT_DIR)/{rel_fw_dir}"],
+            ["$(inherited)", f"$(PROJECT_DIR)/{rel_host_fw_dir}"],
         )
         base_settings["FRAMEWORK_SEARCH_PATHS"] = fw_search
 
         deps = clash_ios.setdefault("dependencies", [])
         existing_fws = {d.get("framework") for d in deps if isinstance(d, dict) and "framework" in d}
-        staged_frameworks = sorted(fw_dir.glob("*.framework"))
-        if not staged_frameworks:
-            raise RuntimeError(f"No staged .framework bundles found in {fw_dir}")
 
-        for fw in staged_frameworks:
+        host_frameworks = sorted(host_fw_dir.glob("*.framework"))
+        runtime_frameworks = sorted(runtime_fw_dir.glob("*.framework"))
+        if not host_frameworks:
+            raise RuntimeError(f"No staged host .framework bundles found in {host_fw_dir}")
+
+        for fw in host_frameworks:
             rel_fw = pathlib.Path(pathlib.os.path.relpath(fw, spec_dir)).as_posix()
             if rel_fw not in existing_fws:
                 deps.append(
                     {
                         "framework": rel_fw,
                         "embed": True,
+                        "link": True,
                         "codeSign": False,
                     }
                 )
-        print(f"Wired {len(staged_frameworks)} embedded frameworks into ClashiOS: {[f.name for f in staged_frameworks]}")
+
+        for fw in runtime_frameworks:
+            rel_fw = pathlib.Path(pathlib.os.path.relpath(fw, spec_dir)).as_posix()
+            if rel_fw not in existing_fws:
+                deps.append(
+                    {
+                        "framework": rel_fw,
+                        "embed": True,
+                        "link": False,
+                        "codeSign": False,
+                    }
+                )
+
+        print(
+            f"Wired {len(host_frameworks)} host frameworks {[f.name for f in host_frameworks]} "
+            f"and {len(runtime_frameworks)} runtime frameworks {[f.name for f in runtime_frameworks]} into ClashiOS"
+        )
 
         ex_constants = res_dir / "EXConstants.bundle"
         if ex_constants.is_dir():

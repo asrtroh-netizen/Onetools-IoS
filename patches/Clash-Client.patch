@@ -277,10 +277,10 @@ index 8dd58722a8d4c24804b695483af61d744ad24d4a..5d3d24477acb6a18f083b607d5ebe98d
                  Section {
 diff --git a/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..78704b922a7bb834016248ce2b2f4cbf68d6988e
+index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72bd461ee7
 --- /dev/null
 +++ b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
-@@ -0,0 +1,423 @@
+@@ -0,0 +1,446 @@
 +#if os(iOS)
 +import ClashClientUI
 +import OneUI
@@ -330,7 +330,7 @@ index 0000000000000000000000000000000000000000..78704b922a7bb834016248ce2b2f4cbf
 +            selectedIndex = OneToolsTab.signing.rawValue
 +            lastFeatherURL = url.absoluteString
 +            #if canImport(FeatherUI)
-+            FeatherURLHandler.handle(url)
++            OneToolsFeatherBridge.handleIncomingURL(url)
 +            #endif
 +            return true
 +        }
@@ -350,7 +350,7 @@ index 0000000000000000000000000000000000000000..78704b922a7bb834016248ce2b2f4cbf
 +            selectedIndex = OneToolsTab.signing.rawValue
 +            lastFeatherURL = url.absoluteString
 +            #if canImport(FeatherUI)
-+            FeatherURLHandler.handle(url)
++            OneToolsFeatherBridge.handleIncomingURL(url)
 +            #endif
 +            return true
 +        }
@@ -470,7 +470,10 @@ index 0000000000000000000000000000000000000000..78704b922a7bb834016248ce2b2f4cbf
 +    @ViewBuilder
 +    private var adblockTab: some View {
 +        #if canImport(SwiptUI)
-+        SwiptRootView()
++        OneToolsHostedController(bottomSafeInset: dockClearanceHeight) {
++            OneToolsSwiptBridge.makeRootViewController()
++        }
++        .ignoresSafeArea()
 +        #else
 +        OneToolsAdblockHubView(router: router)
 +            .oneTheme()
@@ -480,11 +483,31 @@ index 0000000000000000000000000000000000000000..78704b922a7bb834016248ce2b2f4cbf
 +    @ViewBuilder
 +    private var signingTab: some View {
 +        #if canImport(FeatherUI)
-+        FeatherRootView()
++        OneToolsHostedController(bottomSafeInset: dockClearanceHeight) {
++            OneToolsFeatherBridge.makeRootViewController()
++        }
++        .ignoresSafeArea()
 +        #else
 +        OneToolsSigningHubView(router: router)
 +            .oneTheme()
 +        #endif
++    }
++}
++
++private struct OneToolsHostedController: UIViewControllerRepresentable {
++    let bottomSafeInset: CGFloat
++    let makeController: @MainActor () -> UIViewController
++
++    func makeUIViewController(context: Context) -> UIViewController {
++        let vc = makeController()
++        vc.additionalSafeAreaInsets.bottom = bottomSafeInset
++        return vc
++    }
++
++    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
++        if uiViewController.additionalSafeAreaInsets.bottom != bottomSafeInset {
++            uiViewController.additionalSafeAreaInsets.bottom = bottomSafeInset
++        }
 +    }
 +}
 +

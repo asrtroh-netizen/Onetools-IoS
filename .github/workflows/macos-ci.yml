@@ -380,18 +380,23 @@ jobs:
         run: |
           STAGE_DIR="$GITHUB_WORKSPACE/Clash-Client/.build/onetools-embedded"
           rm -rf "$STAGE_DIR" "$RUNNER_TEMP/unpacked-embedded"
-          mkdir -p "$STAGE_DIR/frameworks" "$STAGE_DIR/resources" "$RUNNER_TEMP/unpacked-embedded"
+          mkdir -p "$STAGE_DIR/host-frameworks" "$STAGE_DIR/runtime-frameworks" "$STAGE_DIR/resources" "$RUNNER_TEMP/unpacked-embedded"
 
           ditto -x -k "$RUNNER_TEMP/embedded-zips/feather-embedded.zip" "$RUNNER_TEMP/unpacked-embedded"
           ditto -x -k "$RUNNER_TEMP/embedded-zips/swipt-embedded.zip" "$RUNNER_TEMP/unpacked-embedded"
           ditto -x -k "$RUNNER_TEMP/embedded-zips/LibSwipt.xcframework.zip" "$RUNNER_TEMP/unpacked-embedded"
 
-          cp -RL "$RUNNER_TEMP/unpacked-embedded/feather-embedded/frameworks/"* "$STAGE_DIR/frameworks/"
-          cp -RL "$RUNNER_TEMP/unpacked-embedded/swipt-embedded/frameworks/"* "$STAGE_DIR/frameworks/"
+          cp -RL "$RUNNER_TEMP/unpacked-embedded/feather-embedded/host-frameworks/"* "$STAGE_DIR/host-frameworks/"
+          cp -RL "$RUNNER_TEMP/unpacked-embedded/swipt-embedded/host-frameworks/"* "$STAGE_DIR/host-frameworks/"
+          for rt_src in "$RUNNER_TEMP/unpacked-embedded/feather-embedded/runtime-frameworks" "$RUNNER_TEMP/unpacked-embedded/swipt-embedded/runtime-frameworks"; do
+            if [[ -d "$rt_src" ]] && compgen -G "$rt_src/*.framework" > /dev/null; then
+              cp -RL "$rt_src/"*.framework "$STAGE_DIR/runtime-frameworks/"
+            fi
+          done
           if [[ -d "$RUNNER_TEMP/unpacked-embedded/swipt-embedded/resources/EXConstants.bundle" ]]; then
             cp -RL "$RUNNER_TEMP/unpacked-embedded/swipt-embedded/resources/EXConstants.bundle" "$STAGE_DIR/resources/"
           fi
-          ls -lh "$STAGE_DIR/frameworks" "$STAGE_DIR/resources"
+          ls -lh "$STAGE_DIR/host-frameworks" "$STAGE_DIR/runtime-frameworks" "$STAGE_DIR/resources"
 
       - name: Build unified OneTools All-in-One IPA & run binary/ObjC audits
         env:
