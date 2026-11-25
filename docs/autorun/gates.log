@@ -355,3 +355,26 @@ A11-contact-sheet result=pass exit=0 key=png=270 html=270
 P4-signing-test result=pass exit=0 key=Build complete! (1.01 secs)
 E3-icon-codepoints result=pass exit=0 key=ok MaterialIconCodepoints.swift 121
 CI-patches-sync result=pass exit=0 key=OK patches synced (Clash-Client=42119B, Swipt=10102B, Feather=17136B)
+== 2026-11-25 23:44:49 +0800 ==
+R0-5-branches result=pass exit=0 key=Feather=onetools
+R0-8-material-count result=pass exit=0 key=src=200 dst=200
+R0-8-icons result=pass exit=0 key=lines=121
+D1-export-ad-sdks result=pass exit=0 key=4 passed in 0.31s
+D2-check-samples result=pass exit=0 key=ok XWebAds.plugin b6d218d58a709cd72559fbe9c6d5eed5e6e5e2f003e7329fc34c2477cf785649
+A2-golden-diff result=pass exit=0 key=4 passed in 0.32s
+A1-flutter-test result=pass exit=0 key=00:34 +271: All tests passed!
+R0-7-swift-smoke result=pass exit=0 key=Build complete! (1.41 secs)
+B1-sync-check result=pass exit=0 key=same Clash-Client\apple\ClashClientUI\Tests\ClashClientUITests\SwiptLoopbackTests.swift
+B1-swift-test result=pass exit=0 key=Build complete! (1.69 secs)
+E2-swift-test result=pass exit=0 key=Build complete! (1.46 secs)
+E1-swift-test result=pass exit=0 key=Build complete! (1.49 secs)
+D3-loon-lint result=pass exit=0 key=17 passed in 1.90s
+A3-check-fixtures result=pass exit=0 key=ok tokens.json typography.json icons.json dock_edges.json ripple.json layout.json
+D4-ad-coverage result=pass exit=0 key=ok xhLaunchAd
+D4-plugin-lint result=pass exit=0 key=ok adblock\onetools-cn-ads.plugin
+D4-coverage-tests result=pass exit=0 key=6 passed in 0.96s
+A10-golden-coverage result=pass exit=0 key=32/32
+A11-contact-sheet result=pass exit=0 key=png=270 html=270
+P4-signing-test result=pass exit=0 key=Build complete! (1.28 secs)
+E3-icon-codepoints result=pass exit=0 key=ok MaterialIconCodepoints.swift 121
+CI-patches-sync result=pass exit=0 key=OK patches synced (Clash-Client=45783B, Swipt=20145B, Feather=30453B)

@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Build Clash-Client (OneTools shell + OneUI + SigningLogic + Loon adblock plugin)
+# Build Clash-Client (standalone OneTools shell OR unified all-in-one OneTools IPA
+# embedding Clash + OneUI + SwiptUI + LibSwipt + FeatherUI + SigningLogic)
 # on GitHub Actions macOS runners without requiring Apple Developer credentials.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-ART_DIR="${ART_DIR:-$ROOT/artifacts/clash}"
-BUNDLE_BASE="${BUNDLE_BASE:-org.onetools.clash}"
+ART_DIR="${ART_DIR:-$ROOT/artifacts/onetools}"
+BUNDLE_BASE="${BUNDLE_BASE:-org.onetools.app}"
 MODE="${1:-all}"
+EMBEDDED_STAGE_DIR="${ONETOOLS_EMBEDDED_DIR:-}"
 mkdir -p "$ART_DIR"
 
 cd "$ROOT/Clash-Client"
@@ -40,6 +42,12 @@ else
   source .build/python-env/bin/activate
 fi
 
+# Ensure Clash.xcframework symlink & Vendor/ClashAdapter exist when restored from cache
+if [[ ! -e Clash.xcframework || ! -d Vendor/ClashAdapter/Sources/ClashAdapter ]]; then
+  echo "==> Materializing Clash.xcframework symlink & Vendor/ClashAdapter from cached dependencies"
+  python3 scripts/bootstrap.py
+fi
+
 echo "==> Auditing G1 kernel facts (LoopbackAddress & ip_rewrite.go)"
 {
   echo "# G1 Clash Kernel Loopback Audit (GitHub Actions macOS)"
@@ -58,32 +66,17 @@ echo "==> Auditing G1 kernel facts (LoopbackAddress & ip_rewrite.go)"
   echo '```'
 } > "$ART_DIR/G1-clash-kernel.md"
 
-echo "==> Stripping paid-only iCloud entitlement keys from ClashiOS (Master Plan D8)"
-python3 - <<'PY'
-from pathlib import Path
-import yaml
-
-spec_path = Path("apple/ClashClient/project.yml")
-doc = yaml.safe_load(spec_path.read_text(encoding="utf-8"))
-icloud_keys = (
-    "com.apple.developer.icloud-services",
-    "com.apple.developer.icloud-container-identifiers",
-    "com.apple.developer.ubiquity-container-identifiers",
-)
-props = (
-    doc.get("targets", {})
-    .get("ClashiOS", {})
-    .get("entitlements", {})
-    .get("properties", {})
-)
-removed = [k for k in icloud_keys if k in props]
-for k in removed:
-    props.pop(k, None)
-info_props = doc.get("targets", {}).get("ClashiOS", {}).get("info", {}).get("properties", {})
-info_props.pop("NSUbiquitousContainers", None)
-spec_path.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), encoding="utf-8")
-print(f"Stripped ClashiOS iCloud keys for self-signing compatibility: {removed}")
-PY
+if [[ "$MODE" == "build-unified" ]]; then
+  if [[ -z "$EMBEDDED_STAGE_DIR" || ! -d "$EMBEDDED_STAGE_DIR" ]]; then
+    echo "FAIL: build-unified requires ONETOOLS_EMBEDDED_DIR pointing to staged SwiptUI & FeatherUI frameworks" >&2
+    exit 1
+  fi
+  echo "==> Staging unified OneTools metadata, frameworks, and resources into project.yml"
+  python3 "$ROOT/scripts/ci/stage-onetools-unified.py" "$ROOT/Clash-Client" "$EMBEDDED_STAGE_DIR"
+else
+  echo "==> Staging standalone OneTools metadata & stripping paid iCloud entitlements in project.yml"
+  python3 "$ROOT/scripts/ci/stage-onetools-unified.py" "$ROOT/Clash-Client"
+fi
 
 echo "==> Running configure.py (--bundle-base $BUNDLE_BASE --team '')"
 python3 scripts/configure.py --bundle-base "$BUNDLE_BASE" --team ""
@@ -130,7 +123,7 @@ PY
 SPM_DIR="${RUNNER_TEMP:-/tmp}/ClashSourcePackages"
 COMP_CACHE="${RUNNER_TEMP:-/tmp}/ClashCompilationCache"
 
-echo "==> Building ClashiOS (Release, unsigned)"
+echo "==> Building ClashiOS ($MODE, Release, unsigned)"
 xcodebuild build \
   -project apple/ClashClient/ClashClient.xcodeproj \
   -scheme ClashiOS \
@@ -146,12 +139,12 @@ xcodebuild build \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGN_IDENTITY=""
 
-echo "==> Packaging OneTools-ClashiOS-unsigned.ipa"
 APP_PATH=".build/DerivedData-iOS/Build/Products/Release-iphoneos/Clash.app"
 if [[ ! -d "$APP_PATH" ]]; then
   echo "FAIL: Expected $APP_PATH not found" >&2
   exit 1
 fi
+
 rm -rf .build/ipa-stage
 mkdir -p .build/ipa-stage/Payload
 cp -R "$APP_PATH" .build/ipa-stage/Payload/Clash.app
@@ -166,7 +159,19 @@ if [[ -d .build/ipa-stage/Payload/Clash.app/PlugIns ]]; then
     codesign --force --sign - --timestamp=none {} \;
 fi
 codesign --force --sign - --timestamp=none .build/ipa-stage/Payload/Clash.app
-ditto -c -k --sequesterRsrc --keepParent .build/ipa-stage/Payload "$ART_DIR/OneTools-ClashiOS-unsigned.ipa"
+
+if [[ "$MODE" == "build-unified" ]]; then
+  IPA_OUT="$ART_DIR/OneTools-AllInOne-unsigned.ipa"
+  ditto -c -k --sequesterRsrc --keepParent .build/ipa-stage/Payload "$IPA_OUT"
+  echo "==> Running unified binary, ObjC class-table, and process-isolation audit"
+  bash "$ROOT/scripts/ci/verify-onetools-ipa.sh" \
+    .build/ipa-stage/Payload/Clash.app \
+    "$IPA_OUT" \
+    "$ART_DIR/OneTools-Unified-Audit.md"
+else
+  IPA_OUT="$ART_DIR/OneTools-ClashiOS-unsigned.ipa"
+  ditto -c -k --sequesterRsrc --keepParent .build/ipa-stage/Payload "$IPA_OUT"
+fi
 
 echo "==> Verifying ClashmacOS & ClashtvOS compile cleanly (regression gate)"
 xcodebuild build \

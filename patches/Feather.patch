@@ -56,6 +56,19 @@ index d36be267d757a4a14979ff17054d6732d3a84dbb..a331ecc550827c6b5dcdaceea8306633
  		3371F7312DA9ECDD00281AC6 /* Zip */ = {
  			isa = XCSwiftPackageProductDependency;
  			package = 3371F6F52DA9EBA500281AC6 /* XCRemoteSwiftPackageReference "Zip" */;
+diff --git a/Feather/Backend/Server/ServerInstaller+TLS.swift b/Feather/Backend/Server/ServerInstaller+TLS.swift
+index 14f720b53c1a4be7d42970bb93683f47faa2e535..23da8cbc49ec193f15be5b5664fc61fd7b243d7c 100644
+--- a/Feather/Backend/Server/ServerInstaller+TLS.swift
++++ b/Feather/Backend/Server/ServerInstaller+TLS.swift
+@@ -88,7 +88,7 @@ extension ServerInstaller {
+ 		let fileManager = FileManager.default
+ 		
+ 		let documentsURL = URL.documentsDirectory.appendingPathComponent("\(name).\(ext)")
+-		let bundlesURL = Bundle.main.url(forResource: name, withExtension: ext)
++		let bundlesURL = FeatherBundle.url(forResource: name, withExtension: ext)
+ 		
+ 		if fileManager.fileExists(atPath: documentsURL.path) {
+ 			return documentsURL
 diff --git a/Feather/Backend/Storage/Storage+Certificate.swift b/Feather/Backend/Storage/Storage+Certificate.swift
 index aa44e86c677f4a36effeccd813a16284aa3a6247..1ae3f52831be41c9ade8de0d5af2bca17cdfc9a3 100644
 --- a/Feather/Backend/Storage/Storage+Certificate.swift
@@ -76,20 +89,41 @@ index aa44e86c677f4a36effeccd813a16284aa3a6247..1ae3f52831be41c9ade8de0d5af2bca1
  	}
  	
  	func getCertificate(for index: Int) -> CertificatePair? {
+diff --git a/Feather/Backend/Storage/Storage.swift b/Feather/Backend/Storage/Storage.swift
+index a5fc28fedaf882d739eaf04dbe5ab36bdf3ab9c8..3368e73f6d5c898999c1da68baed59f24aaf67f6 100644
+--- a/Feather/Backend/Storage/Storage.swift
++++ b/Feather/Backend/Storage/Storage.swift
+@@ -16,7 +16,12 @@ final class Storage: ObservableObject {
+ 	private let _name: String = "Feather"
+ 
+ 	init(inMemory: Bool = false) {
+-		container = NSPersistentContainer(name: _name)
++		if let modelURL = FeatherBundle.url(forResource: _name, withExtension: "momd"),
++		   let model = NSManagedObjectModel(contentsOf: modelURL) {
++			container = NSPersistentContainer(name: _name, managedObjectModel: model)
++		} else {
++			container = NSPersistentContainer(name: _name)
++		}
+ 
+ 		if inMemory {
+ 			container.persistentStoreDescriptions.first?.url =
 diff --git a/Feather/FeatherApp.swift b/Feather/FeatherApp.swift
-index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..82b059ee15f56f9d21b877b2182a87d2d95e0a19 100644
+index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..f32a25034d23dfac4d42d3477c31aaf657d899cf 100644
 --- a/Feather/FeatherApp.swift
 +++ b/Feather/FeatherApp.swift
-@@ -10,7 +10,38 @@ import Nuke
+@@ -10,7 +10,63 @@ import Nuke
  import IDeviceSwift
  import OSLog
  
 +/// Public embeddable entry view when compiled inside OneTools (`ONETOOLS_EMBEDDED`).
 +public struct FeatherRootView: View {
 +	@StateObject private var downloadManager = DownloadManager.shared
-+	private let storage = Storage.shared
++	private let storage: Storage
 +
-+	public init() {}
++	public init() {
++		FeatherBootstrap.ensureInitialized()
++		self.storage = Storage.shared
++	}
 +
 +	public var body: some View {
 +		VStack {
@@ -101,15 +135,37 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..82b059ee15f56f9d21b877b2182a87d2
 +				.transition(.move(edge: .top).combined(with: .opacity))
 +		}
 +		.animation(.smooth, value: downloadManager.manualDownloads.description)
++		.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
++			DispatchQueue.main.async {
++				UIAlertController.showAlertWithOk(
++					title: "InvalidHostID",
++					message: .localized("Your pairing file is invalid and is incompatible with your device, please import a valid pairing file.")
++				)
++			}
++		}
 +		.onAppear {
 +			CertificateExpiryNotifier.shared.syncNotifications()
 +		}
 +	}
 +}
 +
-+enum FeatherURLHandler {
-+	static func handle(_ url: URL) {
++public enum FeatherURLHandler {
++	public static func handle(_ url: URL) {
++		FeatherBootstrap.ensureInitialized()
 +		FeatherApp.handleIncomingURL(url)
++	}
++}
++
++enum FeatherBootstrap {
++	private static var initialized = false
++
++	static func ensureInitialized() {
++		guard !initialized else { return }
++		initialized = true
++		String.localizationBundle = FeatherBundle.resource
++		let delegate = AppDelegate()
++		delegate.bootstrapForEmbeddedOrStandalone()
++		_ = HeartbeatManager.shared
 +	}
 +}
 +
@@ -119,7 +175,7 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..82b059ee15f56f9d21b877b2182a87d2
  struct FeatherApp: App {
  	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
  	
-@@ -21,15 +52,7 @@ struct FeatherApp: App {
+@@ -21,15 +77,7 @@ struct FeatherApp: App {
  	
  	var body: some Scene {
  		WindowGroup {
@@ -136,7 +192,7 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..82b059ee15f56f9d21b877b2182a87d2
  			.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
  				DispatchQueue.main.async {
  					UIAlertController.showAlertWithOk(
-@@ -49,7 +72,7 @@ struct FeatherApp: App {
+@@ -49,7 +97,7 @@ struct FeatherApp: App {
  		}
  	}
  	
@@ -145,14 +201,56 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..82b059ee15f56f9d21b877b2182a87d2
  		if url.scheme == "feather" {
  			/// feather://import-certificate?p12=<base64>&mobileprovision=<base64>&password=<base64>
  			if url.host == "import-certificate" {
-@@ -160,6 +183,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
+@@ -156,11 +204,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
+ 		_ application: UIApplication,
+ 		didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+ 	) -> Bool {
++		FeatherBootstrap.ensureInitialized()
++		return true
++	}
++
++	func bootstrapForEmbeddedOrStandalone() {
+ 		_createPipeline()
  		_createDocumentsDirectories()
  		ResetView.clearWorkCache()
  		_addDefaultCertificates()
+-		return true
 +		CertificateExpiryNotifier.shared.syncNotifications()
- 		return true
  	}
  	
+ 	private func _createPipeline() {
+@@ -204,7 +257,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
+ 	private func _addDefaultCertificates() {
+ 		guard
+ 			UserDefaults.standard.bool(forKey: "feather.didImportDefaultCertificates") == false,
+-			let signingAssetsURL = Bundle.main.url(forResource: "signing-assets", withExtension: nil)
++			let signingAssetsURL = FeatherBundle.url(forResource: "signing-assets", withExtension: nil)
+ 		else {
+ 			return
+ 		}
+diff --git a/Feather/Utilities/FeatherBundle.swift b/Feather/Utilities/FeatherBundle.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..2d970fa3fa1609c920f61420df7fec77bc45117e
+--- /dev/null
++++ b/Feather/Utilities/FeatherBundle.swift
+@@ -0,0 +1,17 @@
++//
++//  FeatherBundle.swift
++//  Feather
++//
++
++import Foundation
++
++enum FeatherBundle {
++	static let resource: Bundle = Bundle(for: Token.self)
++
++	static func url(forResource name: String?, withExtension ext: String?) -> URL? {
++		resource.url(forResource: name, withExtension: ext)
++			?? Bundle.main.url(forResource: name, withExtension: ext)
++	}
++
++	private final class Token {}
++}
 diff --git a/Feather/Utilities/Handlers/OneToolsSigningCoordinator.swift b/Feather/Utilities/Handlers/OneToolsSigningCoordinator.swift
 new file mode 100644
 index 0000000000000000000000000000000000000000..3dcf98b44f4f1727e5a7ec1012f51ac52fa460c0
@@ -339,6 +437,83 @@ index 0000000000000000000000000000000000000000..3dcf98b44f4f1727e5a7ec1012f51ac5
 +        return await signBatch(apps: signedApps, certificate: certificate, options: options)
 +    }
 +}
+diff --git a/Feather/Utilities/Handlers/SigningHandler.swift b/Feather/Utilities/Handlers/SigningHandler.swift
+index e08c5ffb4a7e61867f1ed572cad4474e0d9c5537..9f5ba59f8b8db2229da0ac8b81e3fdc02da14bf1 100644
+--- a/Feather/Utilities/Handlers/SigningHandler.swift
++++ b/Feather/Utilities/Handlers/SigningHandler.swift
+@@ -9,6 +9,9 @@ import Foundation
+ import ZsignC
+ import UIKit
+ import OSLog
++#if ONETOOLS_EMBEDDED
++import FeatherObjC
++#endif
+ 
+ final class SigningHandler: NSObject {
+ 	private let _fileManager = FileManager.default
+diff --git a/Feather/Utilities/Handlers/TweakHandler.swift b/Feather/Utilities/Handlers/TweakHandler.swift
+index dcd1f3cc0d4763c14b6a5135d5aaddeeb686045e..6891ca7bca969f816b4f0cc967a00a76d3cb1ad6 100644
+--- a/Feather/Utilities/Handlers/TweakHandler.swift
++++ b/Feather/Utilities/Handlers/TweakHandler.swift
+@@ -33,7 +33,7 @@ class TweakHandler {
+ 		let frameworksPath = _app.appendingPathComponent("Frameworks").appendingPathComponent("CydiaSubstrate.framework")
+ 
+ 		func addEllekit() async throws {
+-			if let ellekitURL = Bundle.main.url(forResource: "ellekit", withExtension: "deb") {
++			if let ellekitURL = FeatherBundle.url(forResource: "ellekit", withExtension: "deb") {
+ 				self._urls.insert(ellekitURL, at: 0)
+ 			} else {
+ 				Logger.misc.info("ellekit.deb not found in the app bundle")
+diff --git a/Feather/Views/Common/FRAppIconView.swift b/Feather/Views/Common/FRAppIconView.swift
+index e48f3d0310991a7096e78dbbc0af3d0730690e4a..04df83448a47e1c1223b03e682c59255d92db553 100644
+--- a/Feather/Views/Common/FRAppIconView.swift
++++ b/Feather/Views/Common/FRAppIconView.swift
+@@ -6,6 +6,9 @@
+ //
+ 
+ import SwiftUI
++#if ONETOOLS_EMBEDDED
++import FeatherObjC
++#endif
+ 
+ enum FRIconAppearance: Int {
+ 	case light = 0
+@@ -92,7 +95,7 @@ struct FRAppIconView: View {
+ 				Image(uiImage: image)
+ 					.appIconStyle(size: size)
+ 			} else {
+-				Image("App_Unknown")
++				Image("App_Unknown", bundle: FeatherBundle.resource)
+ 					.appIconStyle(size: size)
+ 			}
+ 		}
+diff --git a/Feather/Views/Common/FRIconCellView.swift b/Feather/Views/Common/FRIconCellView.swift
+index 3f96f930cfc9330f6f7ac22a32c4875e8dff2a11..9dadf8f5819e9265a7ef530e7f9fa2c0f58352ed 100644
+--- a/Feather/Views/Common/FRIconCellView.swift
++++ b/Feather/Views/Common/FRIconCellView.swift
+@@ -41,7 +41,7 @@ struct FRIconCellView: View {
+ 	}
+ 	
+ 	var standardIcon: some View {
+-		Image("App_Unknown")
++		Image("App_Unknown", bundle: FeatherBundle.resource)
+ 			.appIconStyle(size: size, isCircle: isCircle)
+ 	}
+ }
+diff --git a/Feather/Views/Library/Info/LibraryInfoView.swift b/Feather/Views/Library/Info/LibraryInfoView.swift
+index 4830320dc1935b348e91060df28d7250f3fa2d19..55f618ef5c58f0d6df637c6e2b4d33c2aee0d68b 100644
+--- a/Feather/Views/Library/Info/LibraryInfoView.swift
++++ b/Feather/Views/Library/Info/LibraryInfoView.swift
+@@ -8,6 +8,9 @@
+ import SwiftUI
+ import NimbleViews
+ import Zsign
++#if ONETOOLS_EMBEDDED
++import FeatherObjC
++#endif
+ 
+ // MARK: - View
+ struct LibraryInfoView: View {
 diff --git a/Feather/Views/Library/LibraryView.swift b/Feather/Views/Library/LibraryView.swift
 index b9c3aeeecbe81c59f127c5f77e1fd5b411414b8b..7df84686ce8aaa32ca56587f19c5f4e060f0606d 100644
 --- a/Feather/Views/Library/LibraryView.swift
@@ -412,6 +587,24 @@ index b9c3aeeecbe81c59f127c5f77e1fd5b411414b8b..7df84686ce8aaa32ca56587f19c5f4e0
  	
  	private func _getAllApps() -> [AppInfoPresentable] {
  		var allApps: [AppInfoPresentable] = []
+diff --git a/Feather/Views/Settings/App Icon/AppIconView.swift b/Feather/Views/Settings/App Icon/AppIconView.swift
+index 32d70b6925689c44547210743c3a965f3785f3bf..b1e2a6b7b3a625b15f988c164d6cfd93fa13f8a7 100644
+--- a/Feather/Views/Settings/App Icon/AppIconView.swift	
++++ b/Feather/Views/Settings/App Icon/AppIconView.swift	
+@@ -26,7 +26,12 @@ extension AppIconView {
+ 	}
+ 	
+ 	static func altImage(_ name: String?) -> UIImage {
+-		let path = Bundle.main.bundleURL.appendingPathComponent((name ?? "AppIcon60x60") + "@2x.png")
++		let fileName = (name ?? "AppIcon60x60") + "@2x.png"
++		let fwPath = FeatherBundle.resource.bundleURL.appendingPathComponent(fileName)
++		if let img = UIImage(contentsOfFile: fwPath.path) {
++			return img
++		}
++		let path = Bundle.main.bundleURL.appendingPathComponent(fileName)
+ 		return UIImage(contentsOfFile: path.path) ?? UIImage()
+ 	}
+ }
 diff --git a/Feather/Views/Settings/Certificates/CertificatesView.swift b/Feather/Views/Settings/Certificates/CertificatesView.swift
 index 4983923dcd30a979a6f8a59a7700653af26e291f..8eed9d4ed16b5aed443f87bcd90a7364a1cf0ab8 100644
 --- a/Feather/Views/Settings/Certificates/CertificatesView.swift
@@ -425,5 +618,118 @@ index 4983923dcd30a979a6f8a59a7700653af26e291f..8eed9d4ed16b5aed443f87bcd90a7364
 +				_ = await BatchSigningCoordinator.shared.resignAllSignedApps(using: cert)
 +			}
 +		}
+ 	}
+ }
+diff --git a/Feather/Views/Settings/Certificates/Info/CertificatesInfoView.swift b/Feather/Views/Settings/Certificates/Info/CertificatesInfoView.swift
+index 192bd30580e0454faa547b27c1d2f2fb896776e1..b3716a924904a6857712e845d2662730c40a0a9c 100644
+--- a/Feather/Views/Settings/Certificates/Info/CertificatesInfoView.swift
++++ b/Feather/Views/Settings/Certificates/Info/CertificatesInfoView.swift
+@@ -21,7 +21,7 @@ struct CertificatesInfoView: View {
+ 		NBNavigationView(cert.nickname ?? "", displayMode: .inline) {
+ 			Form {
+ 				Section {} header: {
+-					Image("Cert")
++					Image("Cert", bundle: FeatherBundle.resource)
+ 						.resizable()
+ 						.scaledToFit()
+ 						.frame(width: 107, height: 107)
+diff --git a/Feather/Views/Settings/Installation/Tunnel & Pairing/TunnelView.swift b/Feather/Views/Settings/Installation/Tunnel & Pairing/TunnelView.swift
+index a1078e5829f12c9e2fa0d0e17087217ef3b81775..dcbb1a2e80cf7cef9f504c683a168bb5b74be4ed 100644
+--- a/Feather/Views/Settings/Installation/Tunnel & Pairing/TunnelView.swift	
++++ b/Feather/Views/Settings/Installation/Tunnel & Pairing/TunnelView.swift	
+@@ -60,7 +60,11 @@ struct TunnelView: View {
+ 				Button(.localized("Pairing File Guide"), systemImage: "questionmark.circle") {
+ 					UIApplication.open("https://github.com/claration/Impactor#pairing-file")
+ 				}
+-				if isLocalDevVpnAvailable {
++				if let oneToolsURL = URL(string: "onetools://tab/proxy"), UIApplication.shared.canOpenURL(oneToolsURL) {
++					Button("Open Clash Loopback Tunnel (10.7.0.1)", systemImage: "network") {
++						UIApplication.open("onetools://tab/proxy")
++					}
++				} else if isLocalDevVpnAvailable {
+ 					Button(.localized("Connect to LocalDevVPN"), systemImage: "link") {
+ 						UIApplication.open("localdevvpn://enable?scheme=feather")
+ 					}
+diff --git a/Feather/Views/Signing/SigningView.swift b/Feather/Views/Signing/SigningView.swift
+index 7972089c64cc7a3c96aa59572ea65dfe6742fe66..53d234e79607c2a11ad16b7af33f60bccde4db33 100644
+--- a/Feather/Views/Signing/SigningView.swift
++++ b/Feather/Views/Signing/SigningView.swift
+@@ -80,7 +80,7 @@ struct SigningView: View {
+ 			.toolbar {
+ 				NBToolbarButton(role: .dismiss)
+ 				ToolbarItem(placement: .principal) {
+-					Image("Glyph")
++					Image("Glyph", bundle: FeatherBundle.resource)
+ 						.resizable()
+ 						.scaledToFit()
+ 						.frame(height: 38)
+diff --git a/Feather/Views/Sources/Apps/Detail/SourceAppsDetailView.swift b/Feather/Views/Sources/Apps/Detail/SourceAppsDetailView.swift
+index 3207a06f03a1cff7f1aa63d8342283668114608e..f9a25f97b56aff89466d2690203d656ca72bccbc 100644
+--- a/Feather/Views/Sources/Apps/Detail/SourceAppsDetailView.swift
++++ b/Feather/Views/Sources/Apps/Detail/SourceAppsDetailView.swift
+@@ -218,11 +218,11 @@ struct SourceAppsDetailView: View {
+ 	}
+ 	
+ 	var standardIcon: some View {
+-		Image("App_Unknown").appIconStyle(size: 111, isCircle: false)
++		Image("App_Unknown", bundle: FeatherBundle.resource).appIconStyle(size: 111, isCircle: false)
+ 	}
+ 	
+ 	var standardHeader: some View {
+-		Image("App_Unknown")
++		Image("App_Unknown", bundle: FeatherBundle.resource)
+ 			.resizable()
+ 			.aspectRatio(contentMode: .fill)
+ 			.frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+diff --git a/Feather/Views/Sources/SourcesView.swift b/Feather/Views/Sources/SourcesView.swift
+index 766cafb464d9e37517cc16b996f444927f84d9d6..e5f79f585e3a8eb1fd362768da20700e7d3886b9 100644
+--- a/Feather/Views/Sources/SourcesView.swift
++++ b/Feather/Views/Sources/SourcesView.swift
+@@ -42,7 +42,7 @@ struct SourcesView: View {
+ 						} label: {
+ 							let isRegular = horizontalSizeClass != .compact
+ 							HStack(spacing: 18) {
+-								Image("Repositories").appIconStyle()
++								Image("Repositories", bundle: FeatherBundle.resource).appIconStyle()
+ 								NBTitleWithSubtitleView(
+ 									title: .localized("All Repositories"),
+ 									subtitle: .localized("See all apps from your sources")
+diff --git a/NimbleKit/Sources/NimbleExtensions/String/String+localized.swift b/NimbleKit/Sources/NimbleExtensions/String/String+localized.swift
+index d0be3b712cbe3ae3103862ff6bfa3039c8a98cb4..076f88a2617248e0ac269850396c2e851ceaba0f 100644
+--- a/NimbleKit/Sources/NimbleExtensions/String/String+localized.swift
++++ b/NimbleKit/Sources/NimbleExtensions/String/String+localized.swift
+@@ -9,17 +9,20 @@ import Foundation.NSString
+ import SwiftUI
+ 
+ extension String {
+-	// from: https://github.com/NSAntoine/Antoine/blob/main/Antoine/Backend/Extensions/Foundation.swift#L43-L55
+-	// was given permission to use any code from antoine as I like - thank you Serena!~
+-	
++	public nonisolated(unsafe) static var localizationBundle: Bundle = .main
++
+ 	static public func localized(_ name: String) -> String {
+-		NSLocalizedString(name, comment: "")
++		let primary = NSLocalizedString(name, tableName: nil, bundle: localizationBundle, value: name, comment: "")
++		if primary != name || localizationBundle == .main {
++			return primary
++		}
++		return NSLocalizedString(name, comment: "")
+ 	}
+ 	
+ 	static public func localized(_ name: String, arguments: CVarArg...) -> String {
+-		String(format: NSLocalizedString(name, comment: ""), arguments: arguments)
++		String(format: localized(name), arguments: arguments)
+ 	}
+-	/// Localizes the current string using the main bundle.
++	/// Localizes the current string using the configured localization bundle.
+ 	///
+ 	/// - Returns: The localized string.
+ 	public func localized() -> String {
+@@ -29,6 +32,6 @@ extension String {
+ 
+ extension LocalizedStringKey {
+ 	static public func localized(_ key: String) -> LocalizedStringKey {
+-		LocalizedStringKey(key)
++		LocalizedStringKey(String.localized(key))
  	}
  }

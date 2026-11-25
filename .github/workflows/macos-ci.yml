@@ -104,7 +104,7 @@ jobs:
           if-no-files-found: error
 
   build-feather:
-    name: Feather + SigningLogic (IPA)
+    name: Feather + FeatherUI.framework
     runs-on: xcode-27
     timeout-minutes: 45
     steps:
@@ -112,9 +112,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify Xcode 27 toolchain
+        id: xcode
         run: |
           xcode-select -p
           xcodebuild -version
+          echo "build=$(xcodebuild -version | tail -n 1 | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
 
       - name: Hydrate Feather + submodules + OneTools patch
         run: |
@@ -123,34 +125,23 @@ jobs:
           cp -R SigningLogic Feather/SigningLogic
           sed -i '' 's|relativePath = ../SigningLogic;|relativePath = SigningLogic;|g' Feather/Feather.xcodeproj/project.pbxproj
 
-      - name: Build Feather unsigned IPA (with SigningLogic)
-        run: |
-          cd Feather
-          make deps
-          rm -rf _build packages
-          xcodebuild \
-            -project Feather.xcodeproj \
-            -scheme Feather \
-            -configuration Release \
-            -destination "generic/platform=iOS" \
-            -derivedDataPath "$RUNNER_TEMP/FeatherDerivedData" \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
-            CODE_SIGNING_ALLOWED=NO \
-            ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO
+      - name: Cache Feather SwiftPM packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/FeatherSPM
+          key: feather-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Feather/Feather.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: feather-spm-${{ steps.xcode.outputs.build }}-
 
-          APP_DIR="$(find _build "$RUNNER_TEMP/FeatherDerivedData" -type d -name 'Feather.app' | head -n 1)"
-          if [[ -z "$APP_DIR" ]]; then
-            echo "FAIL: Feather.app not found after xcodebuild" >&2
-            exit 1
-          fi
-          mkdir -p _build/Payload "$GITHUB_WORKSPACE/artifacts/feather"
-          cp -R "$APP_DIR" _build/Payload/Feather.app
-          chmod -R 0755 _build/Payload/Feather.app
-          codesign --force --sign - --timestamp=none _build/Payload/Feather.app
-          cp deps/* _build/Payload/Feather.app/ || true
-          ditto -c -k --sequesterRsrc --keepParent _build/Payload "$GITHUB_WORKSPACE/artifacts/feather/OneTools-Feather-unsigned.ipa"
-          ls -lh "$GITHUB_WORKSPACE/artifacts/feather"
+      - name: Build standalone Feather IPA & FeatherUI.framework
+        run: |
+          bash scripts/ci/build-feather-framework.sh \
+            "$GITHUB_WORKSPACE/Feather" \
+            "$GITHUB_WORKSPACE/artifacts/feather" \
+            "$RUNNER_TEMP/feather-embedded" \
+            "$RUNNER_TEMP/FeatherSPM"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$RUNNER_TEMP/feather-embedded" \
+            "$GITHUB_WORKSPACE/artifacts/feather/feather-embedded.zip"
 
       - name: Upload OneTools-Feather-IPA
         uses: actions/upload-artifact@v4
@@ -159,9 +150,17 @@ jobs:
           path: artifacts/feather/OneTools-Feather-unsigned.ipa
           if-no-files-found: error
 
-  build-clash-onetools:
-    name: Clash-Client + OneUI Shell (IPA & M7)
-    runs-on: macos-latest
+      - name: Upload FeatherUI embedded frameworks (internal)
+        uses: actions/upload-artifact@v4
+        with:
+          name: internal-feather-embedded
+          path: artifacts/feather/feather-embedded.zip
+          retention-days: 3
+          if-no-files-found: error
+
+  build-swipt:
+    name: Swipt + SwiptUI.framework
+    runs-on: xcode-27
     timeout-minutes: 60
     env:
       GOTOOLCHAIN: auto
@@ -169,8 +168,141 @@ jobs:
       - name: Checkout root repository
         uses: actions/checkout@v4
 
-      - name: Select newest stable Xcode
-        run: bash scripts/ci/select-xcode.sh
+      - name: Hydrate Swipt + submodules + OneTools patch
+        run: bash scripts/ci/hydrate-upstreams.sh Swipt
+
+      - name: Verify Xcode 27 toolchain
+        id: xcode
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          echo "build=$(xcodebuild -version | tail -n 1 | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: Swipt/go.mod
+          check-latest: true
+          cache: false
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup Bun 1.4.4
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Restore Go modules & build cache (Swipt)
+        id: swipt_go_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/Library/Caches/go-build
+          key: swipt-go-${{ hashFiles('Swipt/go.sum') }}
+          restore-keys: swipt-go-
+
+      - name: Restore LibSwipt.xcframework (SwiptGoSeqRef isolated)
+        id: libswipt_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: Swipt/Frameworks/LibSwipt.xcframework
+          key: libswipt-xcode27-v2-${{ hashFiles('Swipt/go.mod', 'Swipt/go.sum', 'Swipt/libswipt/**', 'Swipt/internal/cmd/build_libswipt/**') }}
+
+      - name: Build LibSwipt.xcframework (ios/arm64 + macos)
+        if: steps.libswipt_cache.outputs.cache-hit != 'true'
+        working-directory: Swipt
+        run: go run ./internal/cmd/build_libswipt -target ios/arm64,macos
+
+      - name: Save LibSwipt.xcframework cache immediately
+        if: steps.libswipt_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: Swipt/Frameworks/LibSwipt.xcframework
+          key: libswipt-xcode27-v2-${{ hashFiles('Swipt/go.mod', 'Swipt/go.sum', 'Swipt/libswipt/**', 'Swipt/internal/cmd/build_libswipt/**') }}
+
+      - name: Save Go cache (Swipt)
+        if: steps.swipt_go_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/Library/Caches/go-build
+          key: swipt-go-${{ hashFiles('Swipt/go.sum') }}
+
+      - name: Install JS dependencies & React Native frameworks
+        working-directory: Swipt
+        run: |
+          command -v xcbeautify >/dev/null 2>&1 || brew install xcbeautify
+          bun install --frozen-lockfile
+          bun dev frameworks
+
+      - name: Cache Swipt SwiftPM packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/SwiptSPM
+          key: swipt-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Swipt/Swipt.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: swipt-spm-${{ steps.xcode.outputs.build }}-
+
+      - name: Build standalone Swipt IPA & SwiptUI.framework + LibSwipt.framework
+        working-directory: Swipt
+        env:
+          XCODEBUILD_FLAGS: -clonedSourcePackagesDirPath ${{ runner.temp }}/SwiptSPM
+        run: |
+          make archive_ios_ipa
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/swipt"
+          cp build/Swipt.ipa "$GITHUB_WORKSPACE/artifacts/swipt/OneTools-Swipt-unsigned.ipa"
+          bash "$GITHUB_WORKSPACE/scripts/ci/build-swipt-frameworks.sh" \
+            "$GITHUB_WORKSPACE/Swipt" \
+            "$RUNNER_TEMP/swipt-embedded" \
+            "$RUNNER_TEMP/SwiptSPM"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$RUNNER_TEMP/swipt-embedded" \
+            "$GITHUB_WORKSPACE/artifacts/swipt/swipt-embedded.zip"
+          ditto -c -k --sequesterRsrc --keepParent \
+            Frameworks/LibSwipt.xcframework \
+            "$GITHUB_WORKSPACE/artifacts/swipt/LibSwipt.xcframework.zip"
+          ls -lh "$GITHUB_WORKSPACE/artifacts/swipt"
+
+      - name: Upload OneTools-Swipt-IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneTools-Swipt-IPA
+          path: artifacts/swipt/OneTools-Swipt-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload SwiptUI & LibSwipt embedded frameworks (internal)
+        uses: actions/upload-artifact@v4
+        with:
+          name: internal-swipt-embedded
+          path: |
+            artifacts/swipt/swipt-embedded.zip
+            artifacts/swipt/LibSwipt.xcframework.zip
+          retention-days: 3
+          if-no-files-found: error
+
+  build-onetools-unified:
+    name: OneTools All-in-One IPA (Clash + Swipt + Feather)
+    runs-on: xcode-27
+    timeout-minutes: 60
+    needs:
+      - build-feather
+      - build-swipt
+    env:
+      GOTOOLCHAIN: auto
+    steps:
+      - name: Checkout root repository
+        uses: actions/checkout@v4
+
+      - name: Verify Xcode 27 toolchain
+        id: xcode
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          echo "build=$(xcodebuild -version | tail -n 1 | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
 
       - name: Hydrate Clash-Client + OneTools patch
         run: bash scripts/ci/hydrate-upstreams.sh Clash-Client
@@ -198,6 +330,7 @@ jobs:
         with:
           path: Clash-Client/.build/dependencies
           key: clash-sdk-v1-${{ hashFiles('Clash-Client/Dependencies.lock.json') }}
+          restore-keys: clash-sdk-v1-
 
       - name: Bootstrap Clash.xcframework & ClashAdapter
         run: bash scripts/ci/build-clash-onetools.sh bootstrap
@@ -218,198 +351,63 @@ jobs:
             ~/Library/Caches/go-build
           key: clash-go-${{ hashFiles('Clash-Client/Dependencies.lock.json') }}
 
-      - name: Cache Clash SwiftPM & Compilation Cache
+      - name: Cache Clash SwiftPM & Compilation Cache (Xcode 27)
         uses: actions/cache@v4
         with:
           path: |
             ${{ runner.temp }}/ClashSourcePackages
             ${{ runner.temp }}/ClashCompilationCache
-          key: clash-spm-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}
-          restore-keys: clash-spm-
+          key: clash-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}
+          restore-keys: clash-spm-${{ steps.xcode.outputs.build }}-
 
-      - name: Build ClashiOS (OneTools Shell), ClashmacOS, ClashtvOS & M7 Audit
-        run: bash scripts/ci/build-clash-onetools.sh build
+      - name: Download FeatherUI embedded frameworks
+        uses: actions/download-artifact@v4
+        with:
+          name: internal-feather-embedded
+          path: ${{ runner.temp }}/embedded-zips
 
-      - name: Stage Clash.xcframework for G2 experiment
+      - name: Download SwiptUI & LibSwipt embedded frameworks
+        uses: actions/download-artifact@v4
+        with:
+          name: internal-swipt-embedded
+          path: ${{ runner.temp }}/embedded-zips
+
+      - name: Assemble unified embedded staging directory
         run: |
-          ditto -c -k --sequesterRsrc --keepParent \
-            Clash-Client/.build/dependencies/kernel/Clash.xcframework \
-            artifacts/clash/Clash.xcframework.zip
+          STAGE_DIR="$GITHUB_WORKSPACE/Clash-Client/.build/onetools-embedded"
+          rm -rf "$STAGE_DIR" "$RUNNER_TEMP/unpacked-embedded"
+          mkdir -p "$STAGE_DIR/frameworks" "$STAGE_DIR/resources" "$RUNNER_TEMP/unpacked-embedded"
 
-      - name: Upload OneTools-ClashiOS-IPA & G1/M7 Reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: OneTools-ClashiOS-IPA
-          path: |
-            artifacts/clash/OneTools-ClashiOS-unsigned.ipa
-            artifacts/clash/G1-clash-kernel.md
-            artifacts/clash/M7-loon-ignored.md
-          if-no-files-found: error
+          ditto -x -k "$RUNNER_TEMP/embedded-zips/feather-embedded.zip" "$RUNNER_TEMP/unpacked-embedded"
+          ditto -x -k "$RUNNER_TEMP/embedded-zips/swipt-embedded.zip" "$RUNNER_TEMP/unpacked-embedded"
+          ditto -x -k "$RUNNER_TEMP/embedded-zips/LibSwipt.xcframework.zip" "$RUNNER_TEMP/unpacked-embedded"
 
-      - name: Upload Clash.xcframework (internal G2 input)
-        uses: actions/upload-artifact@v4
-        with:
-          name: internal-clash-xcframework
-          path: artifacts/clash/Clash.xcframework.zip
-          retention-days: 3
-          if-no-files-found: error
+          cp -RL "$RUNNER_TEMP/unpacked-embedded/feather-embedded/frameworks/"* "$STAGE_DIR/frameworks/"
+          cp -RL "$RUNNER_TEMP/unpacked-embedded/swipt-embedded/frameworks/"* "$STAGE_DIR/frameworks/"
+          if [[ -d "$RUNNER_TEMP/unpacked-embedded/swipt-embedded/resources/EXConstants.bundle" ]]; then
+            cp -RL "$RUNNER_TEMP/unpacked-embedded/swipt-embedded/resources/EXConstants.bundle" "$STAGE_DIR/resources/"
+          fi
+          ls -lh "$STAGE_DIR/frameworks" "$STAGE_DIR/resources"
 
-  build-swipt:
-    name: Swipt + Loopback Onboarding (IPA)
-    runs-on: xcode-27
-    timeout-minutes: 60
-    env:
-      GOTOOLCHAIN: auto
-    steps:
-      - name: Checkout root repository
-        uses: actions/checkout@v4
-
-      - name: Hydrate Swipt + submodules + OneTools patch
-        run: bash scripts/ci/hydrate-upstreams.sh Swipt
-
-      - name: Verify Xcode 27 toolchain
-        run: |
-          xcode-select -p
-          xcodebuild -version
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: Swipt/go.mod
-          check-latest: true
-          cache: false
-
-      - name: Setup Node 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Setup Bun 1.4.4
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.4
-
-      - name: Get Xcode build ID
-        id: xcode
-        run: echo "build=$(xcodebuild -version | tail -n 1 | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
-
-      - name: Restore Go modules & build cache (Swipt)
-        id: swipt_go_cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/Library/Caches/go-build
-          key: swipt-go-${{ hashFiles('Swipt/go.sum') }}
-          restore-keys: swipt-go-
-
-      - name: Restore LibSwipt.xcframework (ios + macos)
-        id: libswipt_cache
-        uses: actions/cache/restore@v4
-        with:
-          path: Swipt/Frameworks/LibSwipt.xcframework
-          key: libswipt-xcode27-v1-${{ hashFiles('Swipt/go.mod', 'Swipt/go.sum', 'Swipt/libswipt/**', 'Swipt/internal/cmd/build_libswipt/**') }}
-
-      - name: Build LibSwipt.xcframework (ios/arm64 + macos)
-        if: steps.libswipt_cache.outputs.cache-hit != 'true'
-        working-directory: Swipt
-        run: go run ./internal/cmd/build_libswipt -target ios/arm64,macos
-
-      - name: Save LibSwipt.xcframework cache immediately
-        if: steps.libswipt_cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: Swipt/Frameworks/LibSwipt.xcframework
-          key: libswipt-xcode27-v1-${{ hashFiles('Swipt/go.mod', 'Swipt/go.sum', 'Swipt/libswipt/**', 'Swipt/internal/cmd/build_libswipt/**') }}
-
-      - name: Save Go cache (Swipt)
-        if: steps.swipt_go_cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/Library/Caches/go-build
-          key: swipt-go-${{ hashFiles('Swipt/go.sum') }}
-
-      - name: Install JS dependencies & React Native frameworks
-        working-directory: Swipt
-        run: |
-          command -v xcbeautify >/dev/null 2>&1 || brew install xcbeautify
-          bun install --frozen-lockfile
-          bun dev frameworks
-
-      - name: Cache Swipt SwiftPM packages
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/SwiptSPM
-          key: swipt-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Swipt/Swipt.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
-          restore-keys: swipt-spm-${{ steps.xcode.outputs.build }}-
-
-      - name: Build Swipt unsigned IPA
-        working-directory: Swipt
+      - name: Build unified OneTools All-in-One IPA & run binary/ObjC audits
         env:
-          XCODEBUILD_FLAGS: -clonedSourcePackagesDirPath ${{ runner.temp }}/SwiptSPM
+          ART_DIR: ${{ github.workspace }}/artifacts/onetools
+          ONETOOLS_EMBEDDED_DIR: ${{ github.workspace }}/Clash-Client/.build/onetools-embedded
         run: |
-          make archive_ios_ipa
-          mkdir -p "$GITHUB_WORKSPACE/artifacts/swipt"
-          cp build/Swipt.ipa "$GITHUB_WORKSPACE/artifacts/swipt/OneTools-Swipt-unsigned.ipa"
-          ditto -c -k --sequesterRsrc --keepParent \
-            Frameworks/LibSwipt.xcframework \
-            "$GITHUB_WORKSPACE/artifacts/swipt/LibSwipt.xcframework.zip"
-          ls -lh "$GITHUB_WORKSPACE/artifacts/swipt"
-
-      - name: Upload OneTools-Swipt-IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: OneTools-Swipt-IPA
-          path: artifacts/swipt/OneTools-Swipt-unsigned.ipa
-          if-no-files-found: error
-
-      - name: Upload LibSwipt.xcframework (internal G2 input)
-        uses: actions/upload-artifact@v4
-        with:
-          name: internal-libswipt-xcframework
-          path: artifacts/swipt/LibSwipt.xcframework.zip
-          retention-days: 3
-          if-no-files-found: error
-
-  g2-dual-go-experiment:
-    name: Gate G2 Dual-Go Runtime Experiment
-    runs-on: xcode-27
-    timeout-minutes: 20
-    needs:
-      - build-clash-onetools
-      - build-swipt
-    steps:
-      - name: Checkout root repository
-        uses: actions/checkout@v4
-
-      - name: Download Clash.xcframework
-        uses: actions/download-artifact@v4
-        with:
-          name: internal-clash-xcframework
-          path: ${{ runner.temp }}/g2-inputs
-
-      - name: Download LibSwipt.xcframework
-        uses: actions/download-artifact@v4
-        with:
-          name: internal-libswipt-xcframework
-          path: ${{ runner.temp }}/g2-inputs
-
-      - name: Unpack XCFrameworks & run G2 Linker + dlopen Experiment
-        run: |
-          ditto -x -k "$RUNNER_TEMP/g2-inputs/Clash.xcframework.zip" "$RUNNER_TEMP/g2-inputs"
-          ditto -x -k "$RUNNER_TEMP/g2-inputs/LibSwipt.xcframework.zip" "$RUNNER_TEMP/g2-inputs"
-          mkdir -p artifacts/g2
+          bash scripts/ci/build-clash-onetools.sh build-unified
           bash scripts/ci/run-g2-dual-go-experiment.sh \
-            "$RUNNER_TEMP/g2-inputs/Clash.xcframework" \
-            "$RUNNER_TEMP/g2-inputs/LibSwipt.xcframework" \
-            "artifacts/g2/G2-go-runtimes.md"
-          cat artifacts/g2/G2-go-runtimes.md >> "$GITHUB_STEP_SUMMARY"
+            "Clash-Client/.build/dependencies/kernel/Clash.xcframework" \
+            "$RUNNER_TEMP/unpacked-embedded/LibSwipt.xcframework" \
+            "artifacts/onetools/G2-go-runtimes.md"
 
-      - name: Upload G2 Dual-Go Runtime Report
+      - name: Upload OneTools-AllInOne-IPA & Verification Reports
         uses: actions/upload-artifact@v4
         with:
-          name: Gate-G2-Dual-Go-Report
-          path: artifacts/g2/G2-go-runtimes.md
+          name: OneTools-AllInOne-IPA
+          path: |
+            artifacts/onetools/OneTools-AllInOne-unsigned.ipa
+            artifacts/onetools/OneTools-Unified-Audit.md
+            artifacts/onetools/G1-clash-kernel.md
+            artifacts/onetools/G2-go-runtimes.md
+            artifacts/onetools/M7-loon-ignored.md
           if-no-files-found: error

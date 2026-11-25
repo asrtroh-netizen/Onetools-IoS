@@ -2,26 +2,26 @@
   "repos": {
     "Clash-Client": {
       "base_revision": "e3e647283b1593a61dba622f13cd499deeda9b8b",
-      "head_revision": "fa900e2b2011077e6a87291fcfb563362715bcd7",
-      "patch_bytes": 42119,
+      "head_revision": "c7c59cbac9bdee85dd3b16c6bcd9aafb6aa25961",
+      "patch_bytes": 45783,
       "patch_file": "patches/Clash-Client.patch",
-      "patch_sha256": "48851fb65184625856bd6f3171b392904c49113b4b68468ddc5b81c9e82b10d8",
+      "patch_sha256": "54224ae4807052c4e2ffd0907dbe67eab6fba80fb3e00fe4dd2e2cf4c8e21264",
       "url": "https://github.com/ProjectClash/Clash-Client.git"
     },
     "Feather": {
       "base_revision": "31ab6de455f2a6108f6830e343dee826310c03be",
-      "head_revision": "dd3ab06d39ac448bc9b6893abb79f0a278e80ac1",
-      "patch_bytes": 17136,
+      "head_revision": "0ad062fde5abcbea53b7d7685f451f84016ec653",
+      "patch_bytes": 30453,
       "patch_file": "patches/Feather.patch",
-      "patch_sha256": "2da9b29c208f73061688770b5b0bcec6965dccdf4997bb8dcb75f3d1dbb9d4c7",
+      "patch_sha256": "63e6bee517866d4b71137f591ef7c4d8eeac363f7d64f0415ccf8af23ace6c38",
       "url": "https://github.com/claration/feather.git"
     },
     "Swipt": {
       "base_revision": "ab218801d7f80d0260ae2e078032de3cc16d8fdf",
-      "head_revision": "4217056f2c7d94c618653adc2ca520dfdf36b01f",
-      "patch_bytes": 10102,
+      "head_revision": "652440b28356ed7b7c135be82c9373676e06f1ff",
+      "patch_bytes": 20145,
       "patch_file": "patches/Swipt.patch",
-      "patch_sha256": "2ae669ec16399c856c638a1e7016df164eff39a08eb0ec9ad21694050dd6b71e",
+      "patch_sha256": "a8b16690bbffeef9493c816dac74b899506807a1bc87b3f1f3e9d7c0643027df",
       "url": "https://github.com/swipt-automation/swipt.git"
     }
   },

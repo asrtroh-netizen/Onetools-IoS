@@ -146,7 +146,11 @@ int main(int argc, const char *argv[]) {
 OBJC
     if xcrun clang -arch "$HOST_ARCH" -fobjc-arc "$WORK/dlopen_probe.m" -framework Foundation -o "$WORK/dlopen_probe" 2>"$WORK/mac_probe.err"; then
       if OUT="$("$WORK/dlopen_probe" "$WORK/libClashMacDyn.dylib" "$WORK/libSwiptMacDyn.dylib" 2>&1)"; then
-        MACOS_RUNTIME_RESULT="$OUT"
+        if grep -q "implemented in both" <<<"$OUT"; then
+          MACOS_RUNTIME_RESULT="WARN (duplicate ObjC classes detected): $OUT"
+        else
+          MACOS_RUNTIME_RESULT="$OUT (0 duplicate ObjC class warnings!)"
+        fi
       else
         MACOS_RUNTIME_RESULT="FAIL (runtime crash/exit): $OUT"
       fi

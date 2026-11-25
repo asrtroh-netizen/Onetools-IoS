@@ -277,15 +277,21 @@ index 8dd58722a8d4c24804b695483af61d744ad24d4a..5d3d24477acb6a18f083b607d5ebe98d
                  Section {
 diff --git a/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..4595c283a68348a5aa2f1d727806351907ab49e4
+index 0000000000000000000000000000000000000000..78704b922a7bb834016248ce2b2f4cbf68d6988e
 --- /dev/null
 +++ b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
-@@ -0,0 +1,335 @@
+@@ -0,0 +1,423 @@
 +#if os(iOS)
 +import ClashClientUI
 +import OneUI
 +import SwiftUI
 +import UIKit
++#if canImport(SwiptUI)
++import SwiptUI
++#endif
++#if canImport(FeatherUI)
++import FeatherUI
++#endif
 +
 +public enum OneToolsTab: Int, CaseIterable, Sendable {
 +    case proxy = 0
@@ -319,10 +325,33 @@ index 0000000000000000000000000000000000000000..4595c283a68348a5aa2f1d7278063519
 +    private init() {}
 +
 +    func handleIncomingURL(_ url: URL) -> Bool {
++        let ext = url.pathExtension.lowercased()
++        if ext == "ipa" || ext == "tipa" {
++            selectedIndex = OneToolsTab.signing.rawValue
++            lastFeatherURL = url.absoluteString
++            #if canImport(FeatherUI)
++            FeatherURLHandler.handle(url)
++            #endif
++            return true
++        }
++        if ext == "p12" || ext == "mobileprovision" {
++            selectedIndex = OneToolsTab.signing.rawValue
++            lastFeatherURL = url.absoluteString
++            bannerMessage = "已接收证书文件：\(url.lastPathComponent)，请在证书管理中导入"
++            return true
++        }
++        if ext == "swiplet" {
++            selectedIndex = OneToolsTab.adblock.rawValue
++            return true
++        }
++
 +        guard let scheme = url.scheme?.lowercased() else { return false }
 +        if scheme == "feather" {
 +            selectedIndex = OneToolsTab.signing.rawValue
 +            lastFeatherURL = url.absoluteString
++            #if canImport(FeatherUI)
++            FeatherURLHandler.handle(url)
++            #endif
 +            return true
 +        }
 +        guard scheme == "onetools" else { return false }
@@ -351,11 +380,13 @@ index 0000000000000000000000000000000000000000..4595c283a68348a5aa2f1d7278063519
 +
 +private let oneToolsShellEnabledDefaultsKey = "onetools.shell.enabled"
 +
-+/// OneTools iOS 根外壳（P5.0）：保持 `AppShellView` 常驻挂载以保留 VPN 与订阅状态，
-+/// 底部叠加 `OneUI` 手写液态胶囊底栏 `UltraGlassDock` 切换四大核心工作区。
++/// OneTools iOS 根外壳（P5.0–P5.2 / P7）：保持已访问工作区常驻挂载以保留 VPN、配对与签名进度，
++/// 底部叠加 `OneUI` 液态胶囊底栏 `UltraGlassDock` 切换四大核心工作区。
 +struct OneToolsRootShellView<ProxyContent: View>: View {
 +    @AppStorage(oneToolsShellEnabledDefaultsKey) private var shellEnabled: Bool = true
 +    @StateObject private var router = OneToolsShellRouter.shared
++    @State private var hasMountedAdblock = false
++    @State private var hasMountedSigning = false
 +    private let proxyContent: ProxyContent
 +
 +    init(@ViewBuilder proxyContent: () -> ProxyContent) {
@@ -366,30 +397,62 @@ index 0000000000000000000000000000000000000000..4595c283a68348a5aa2f1d7278063519
 +        OneToolsTab.allCases.map(\.dockItem)
 +    }
 +
++    private var dockClearanceHeight: CGFloat {
++        OneMetrics.dockHeight + OneMetrics.space24
++    }
++
 +    var body: some View {
 +        if shellEnabled {
 +            ZStack(alignment: .bottom) {
 +                proxyContent
 +                    .safeAreaInset(edge: .bottom, spacing: 0) {
-+                        Color.clear.frame(height: OneMetrics.dockHeight + OneMetrics.space24)
++                        Color.clear.frame(height: dockClearanceHeight)
 +                    }
 +                    .opacity(router.selectedIndex == OneToolsTab.proxy.rawValue ? 1 : 0)
 +                    .allowsHitTesting(router.selectedIndex == OneToolsTab.proxy.rawValue)
 +                    .accessibilityHidden(router.selectedIndex != OneToolsTab.proxy.rawValue)
 +
-+                if router.selectedIndex == OneToolsTab.adblock.rawValue {
++                if hasMountedAdblock || router.selectedIndex == OneToolsTab.adblock.rawValue {
 +                    adblockTab
-+                        .transition(.opacity)
-+                } else if router.selectedIndex == OneToolsTab.signing.rawValue {
++                        .safeAreaInset(edge: .bottom, spacing: 0) {
++                            Color.clear.frame(height: dockClearanceHeight)
++                        }
++                        .opacity(router.selectedIndex == OneToolsTab.adblock.rawValue ? 1 : 0)
++                        .allowsHitTesting(router.selectedIndex == OneToolsTab.adblock.rawValue)
++                        .accessibilityHidden(router.selectedIndex != OneToolsTab.adblock.rawValue)
++                }
++
++                if hasMountedSigning || router.selectedIndex == OneToolsTab.signing.rawValue {
 +                    signingTab
-+                        .transition(.opacity)
-+                } else if router.selectedIndex == OneToolsTab.toolbox.rawValue {
++                        .safeAreaInset(edge: .bottom, spacing: 0) {
++                            Color.clear.frame(height: dockClearanceHeight)
++                        }
++                        .opacity(router.selectedIndex == OneToolsTab.signing.rawValue ? 1 : 0)
++                        .allowsHitTesting(router.selectedIndex == OneToolsTab.signing.rawValue)
++                        .accessibilityHidden(router.selectedIndex != OneToolsTab.signing.rawValue)
++                }
++
++                if router.selectedIndex == OneToolsTab.toolbox.rawValue {
 +                    OneToolsToolboxView(router: router, shellEnabled: $shellEnabled)
 +                        .oneTheme()
 +                        .transition(.opacity)
 +                }
 +
 +                UltraGlassDock(items: dockItems, selectedIndex: $router.selectedIndex)
++            }
++            .onChange(of: router.selectedIndex) { next in
++                if next == OneToolsTab.adblock.rawValue {
++                    hasMountedAdblock = true
++                } else if next == OneToolsTab.signing.rawValue {
++                    hasMountedSigning = true
++                }
++            }
++            .onAppear {
++                if router.selectedIndex == OneToolsTab.adblock.rawValue {
++                    hasMountedAdblock = true
++                } else if router.selectedIndex == OneToolsTab.signing.rawValue {
++                    hasMountedSigning = true
++                }
 +            }
 +            .onOpenURL { url in
 +                _ = router.handleIncomingURL(url)
@@ -538,9 +601,25 @@ index 0000000000000000000000000000000000000000..4595c283a68348a5aa2f1d7278063519
 +        UserDefaults(suiteName: ClashAppIdentifiers.appGroup)
 +    }
 +
++    private var swiptEmbeddedStatus: String {
++        #if canImport(SwiptUI)
++        return "已内嵌合入 (SwiptUI)"
++        #else
++        return "独立桥接模式"
++        #endif
++    }
++
++    private var featherEmbeddedStatus: String {
++        #if canImport(FeatherUI)
++        return "已内嵌合入 (FeatherUI)"
++        #else
++        return "独立桥接模式"
++        #endif
++    }
++
 +    var body: some View {
 +        OnePage {
-+            PageHead("工具箱", desc: "OneTools 全局开关、视觉对拍画廊与互通状态") {
++            PageHead("工具箱", desc: "OneTools 全局开关、三合一模块状态与视觉画廊") {
 +                GlassActionButton("OneUI 画廊", systemImage: "science_outlined") {
 +                    showGallerySheet = true
 +                }
@@ -550,6 +629,15 @@ index 0000000000000000000000000000000000000000..4595c283a68348a5aa2f1d7278063519
 +                OneSnackBarBanner(msg, actionTitle: "知道了") {
 +                    router.bannerMessage = nil
 +                }
++            }
++
++            OneSection("三合一模块合入状态", systemImage: "dashboard_outlined", tone: .green) {
++                SoftLabelGrid([
++                    SoftLabel("代理与去广告引擎", value: "已内嵌合入 (Clash)"),
++                    SoftLabel("界面自动跳过", value: swiptEmbeddedStatus),
++                    SoftLabel("应用证书自签", value: featherEmbeddedStatus),
++                    SoftLabel("环回对端地址", value: ClashTunnelRouteShaping.swiptLoopbackAddress, mono: true),
++                ])
 +            }
 +
 +            OneSection("隧道与视觉运行时", systemImage: "tune_rounded", tone: .green) {

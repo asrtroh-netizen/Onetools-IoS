@@ -1,3 +1,30 @@
+diff --git a/Swipt/App/SwiptBundle.swift b/Swipt/App/SwiptBundle.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..a52424cd8676d75eb6efa2a80e52567836a492a4
+--- /dev/null
++++ b/Swipt/App/SwiptBundle.swift
+@@ -0,0 +1,7 @@
++import Foundation
++
++enum SwiptBundle {
++    nonisolated static let resource: Bundle = Bundle(for: Token.self)
++
++    private final class Token {}
++}
+diff --git a/Swipt/Automation/SwipletInterface.swift b/Swipt/Automation/SwipletInterface.swift
+index b6a67a7ccb57d48d647754cf1e0f7eb30794986e..ec5aff10457a2ce90552d96d9d95fe58e906ccab 100644
+--- a/Swipt/Automation/SwipletInterface.swift
++++ b/Swipt/Automation/SwipletInterface.swift
+@@ -294,7 +294,8 @@ final class SwipletHost {
+         }
+ 
+         override func bundleURL() -> URL? {
+-            Bundle.main.url(forResource: "main", withExtension: "jsbundle")
++            SwiptBundle.resource.url(forResource: "main", withExtension: "jsbundle")
++                ?? Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+         }
+ 
+         // RCTTurboModuleManagerDelegate, which Swift doesn't see; nil makes the default instance.
 diff --git a/Swipt/Automation/SwipletStore.swift b/Swipt/Automation/SwipletStore.swift
 index 8c059760dfab15dc812ffa6bc71951da8657e501..d7e1f03c859b22d32313b1b53557e631c150c0fc 100644
 --- a/Swipt/Automation/SwipletStore.swift
@@ -100,6 +127,19 @@ index 24869acf6d51e39b6772846b25a29b3dc16f0b35..ef175cb4729b054a47fb8fb87273d390
      }
  
      var isDecided: Bool { isSetUp || isEnabled }
+diff --git a/Swipt/Device/PairingGuideView.swift b/Swipt/Device/PairingGuideView.swift
+index e4dc0864d7090e0236da45effac18a46eb5f6718..e25a5a1373979850502c08efecb34621eb2a100a 100644
+--- a/Swipt/Device/PairingGuideView.swift
++++ b/Swipt/Device/PairingGuideView.swift
+@@ -217,7 +217,7 @@ private struct GuidePainter {
+         drawHighlight(banner, cornerRadius: 9)
+         let icon = CGRect(x: banner.minX + 5, y: banner.midY - 6, width: 12, height: 12)
+         context.fill(Path(roundedRect: icon, cornerRadius: 3), with: .color(Color(red: 0.92549, green: 0.93725, blue: 0.94510)))
+-        context.draw(Image("SwiptIcon"), in: icon)
++        context.draw(Image("SwiptIcon", bundle: SwiptBundle.resource), in: icon)
+         let ring = CGRect(x: banner.maxX - 15, y: banner.midY - 5, width: 10, height: 10)
+         context.stroke(Path(ellipseIn: ring), with: .color(.primary), lineWidth: 1.2)
+         context.fill(Path(roundedRect: ring.insetBy(dx: 3.4, dy: 3.4), cornerRadius: 0.6), with: .color(.primary))
 diff --git a/Swipt/Device/SetupView.swift b/Swipt/Device/SetupView.swift
 index f1013d68052402df14cbe239740d5e380499f3c5..5f5c1cbbb280fe76f1fffdb6b68d2f9199346a8d 100644
 --- a/Swipt/Device/SetupView.swift
@@ -158,6 +198,21 @@ index f1013d68052402df14cbe239740d5e380499f3c5..5f5c1cbbb280fe76f1fffdb6b68d2f91
          }
          .onChangeCompat(of: device.tunnelFound == true, initial: true) { found in
              if found {
+diff --git a/Swipt/Platform/Platform.swift b/Swipt/Platform/Platform.swift
+index 378a4fdfe62f751f63f524fcc63cf3297c6d2f84..c6a0905e72bf3603fceffd2ef2c4f390892e2542 100644
+--- a/Swipt/Platform/Platform.swift
++++ b/Swipt/Platform/Platform.swift
+@@ -85,7 +85,9 @@ final class Platform {
+         options.appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+         options.appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+         let deviceOptions = LibSwiptDeviceOptions()
+-        deviceOptions.diskImageDirectory = Bundle.main.url(forResource: "DeveloperDiskImage", withExtension: nil)?.path ?? ""
++        let diskImageURL = SwiptBundle.resource.url(forResource: "DeveloperDiskImage", withExtension: nil)
++            ?? Bundle.main.url(forResource: "DeveloperDiskImage", withExtension: nil)
++        deviceOptions.diskImageDirectory = diskImageURL?.path ?? ""
+         deviceOptions.deferAccessibilityRestart = AutomatedSetupView.isRequested
+         let isAppActive = LockedState(initialState: false)
+         self.isAppActive = isAppActive
 diff --git a/Swipt/SwiptApp.swift b/Swipt/SwiptApp.swift
 index e02423e5720104d1d606d14f5a06ec1575db8950..c93c81094bcfdfca8d235ceb6d055627f9e4960d 100644
 --- a/Swipt/SwiptApp.swift
@@ -219,3 +274,210 @@ index e02423e5720104d1d606d14f5a06ec1575db8950..c93c81094bcfdfca8d235ceb6d055627
          }
          #else
          Window(Text(verbatim: "Swipt"), id: "home") {
+diff --git a/internal/cmd/build_libswipt/main.go b/internal/cmd/build_libswipt/main.go
+index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..a3da2bbfad8e01fe471bb1b6b11a83e5d99b7bbd 100644
+--- a/internal/cmd/build_libswipt/main.go
++++ b/internal/cmd/build_libswipt/main.go
+@@ -1,14 +1,19 @@
+ package main
+ 
+ import (
+-	"debug/buildinfo"
++	"bytes"
++	"crypto/sha256"
++	"encoding/hex"
+ 	"flag"
+-	"go/build"
++	"fmt"
++	"io/fs"
+ 	"log"
+ 	"os"
+ 	"os/exec"
+ 	"path/filepath"
++	"runtime"
+ 	"runtime/debug"
++	"strings"
+ 
+ 	_ "github.com/sagernet/gomobile"
+ 	"github.com/sagernet/sing/common"
+@@ -19,30 +24,21 @@ const (
+ 	iosVersion     = "15.0"
+ 	macOSVersion   = "14.0"
+ 	outputPath     = "Frameworks/LibSwipt.xcframework"
++	patchStampVer  = "onetools-objc-seq-prefix-v1"
+ )
+ 
+ func main() {
+ 	target := flag.String("target", "ios,iossimulator,macos", "gomobile bind target")
+ 	flag.Parse()
+-	binDirectory := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "bin")
++
+ 	gomobileVersion := pinnedGomobileVersion()
+-	var missingTools []string
+-	for _, tool := range []string{"gomobile", "gobind"} {
+-		if !toolInstalled(filepath.Join(binDirectory, tool), gomobileModule+"/cmd/"+tool, gomobileVersion) {
+-			missingTools = append(missingTools, gomobileModule+"/cmd/"+tool+"@"+gomobileVersion)
+-		}
+-	}
+-	if len(missingTools) > 0 {
+-		install := exec.Command("go", append([]string{"install", "-v"}, missingTools...)...)
+-		install.Env = append(os.Environ(), "GOBIN="+binDirectory)
+-		run(install)
+-	}
++	binDirectory := buildIsolatedGomobileTools(gomobileVersion)
+ 
+ 	err := os.MkdirAll(filepath.Dir(outputPath), 0o755)
+ 	if err != nil {
+ 		log.Fatal(err)
+ 	}
+-	bind := exec.Command(filepath.Join(binDirectory, "gomobile"),
++	bind := exec.Command(filepath.Join(binDirectory, executableName("gomobile")),
+ 		"bind",
+ 		"-v",
+ 		"-target", *target,
+@@ -59,6 +55,130 @@ func main() {
+ 	run(bind)
+ }
+ 
++func executableName(base string) string {
++	if runtime.GOOS == "windows" {
++		return base + ".exe"
++	}
++	return base
++}
++
++// buildIsolatedGomobileTools builds a Swipt-private gomobile + gobind pair whose
++// Objective-C runtime bridge classes (SwiptGoSeqRef, SwiptRefTracker, SwiptRefCounter,
++// swiptGoSeqDictionary, swiptGoSeqRefInterface, SwiptUniverseerror) never collide in
++// libobjc with Clash.framework's unprefixed GoSeqRef classes when embedded in OneTools.
++func buildIsolatedGomobileTools(gomobileVersion string) string {
++	srcDir := gomobileModuleSourceDir()
++	sum := sha256.Sum256([]byte(gomobileVersion + "|" + patchStampVer + "|" + runtime.Version()))
++	key := hex.EncodeToString(sum[:8])
++
++	workRoot := filepath.Join(".build", "gomobile-swipt")
++	binDir := filepath.Join(workRoot, "bin-"+key)
++	gomobileBin := filepath.Join(binDir, executableName("gomobile"))
++	gobindBin := filepath.Join(binDir, executableName("gobind"))
++	if fileExists(gomobileBin) && fileExists(gobindBin) {
++		absBin, err := filepath.Abs(binDir)
++		if err != nil {
++			log.Fatal(err)
++		}
++		return absBin
++	}
++
++	stageSrc := filepath.Join(workRoot, "src-"+key)
++	_ = os.RemoveAll(stageSrc)
++	if err := copyPatchedGomobileTree(srcDir, stageSrc); err != nil {
++		log.Fatal("stage patched gomobile: ", err)
++	}
++	if err := os.MkdirAll(binDir, 0o755); err != nil {
++		log.Fatal(err)
++	}
++	absStage, err := filepath.Abs(stageSrc)
++	if err != nil {
++		log.Fatal(err)
++	}
++	absBin, err := filepath.Abs(binDir)
++	if err != nil {
++		log.Fatal(err)
++	}
++
++	for _, tool := range []string{"gomobile", "gobind"} {
++		out := filepath.Join(absBin, executableName(tool))
++		cmd := exec.Command("go", "build", "-trimpath", "-o", out, "./cmd/"+tool)
++		cmd.Dir = absStage
++		run(cmd)
++	}
++	return absBin
++}
++
++func gomobileModuleSourceDir() string {
++	dl := exec.Command("go", "mod", "download", gomobileModule)
++	run(dl)
++	cmd := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", gomobileModule)
++	out, err := cmd.Output()
++	if err != nil {
++		log.Fatal("resolve ", gomobileModule, " dir: ", err)
++	}
++	dir := strings.TrimSpace(string(out))
++	if dir == "" {
++		log.Fatal("empty module dir for ", gomobileModule)
++	}
++	return dir
++}
++
++func copyPatchedGomobileTree(srcRoot, dstRoot string) error {
++	replacements := [][2]string{
++		{"GoSeqRef", "SwiptGoSeqRef"},
++		{"RefTracker", "SwiptRefTracker"},
++		{"RefCounter", "SwiptRefCounter"},
++		{"goSeqDictionary", "swiptGoSeqDictionary"},
++		{"goSeqRefInterface", "swiptGoSeqRefInterface"},
++	}
++
++	return filepath.WalkDir(srcRoot, func(path string, d fs.DirEntry, err error) error {
++		if err != nil {
++			return err
++		}
++		rel, err := filepath.Rel(srcRoot, path)
++		if err != nil {
++			return err
++		}
++		target := filepath.Join(dstRoot, rel)
++		if d.IsDir() {
++			return os.MkdirAll(target, 0o755)
++		}
++		data, err := os.ReadFile(path)
++		if err != nil {
++			return err
++		}
++		slashRel := filepath.ToSlash(rel)
++		if strings.HasPrefix(slashRel, "bind/") && !strings.HasPrefix(slashRel, "bind/java/") && !strings.HasSuffix(slashRel, "_test.go") {
++			for _, pair := range replacements {
++				data = bytes.ReplaceAll(data, []byte(pair[0]), []byte(pair[1]))
++			}
++			if slashRel == "bind/genobjc.go" {
++				oldPrefix := "func (g *ObjcGen) namePrefixOf(pkg *types.Package) string {\n\tif pkg == nil {\n\t\treturn \"Universe\"\n\t}"
++				newPrefix := "func (g *ObjcGen) namePrefixOf(pkg *types.Package) string {\n\tif pkg == nil {\n\t\treturn \"SwiptUniverse\"\n\t}"
++				if !bytes.Contains(data, []byte(oldPrefix)) {
++					return fmt.Errorf("unexpected namePrefixOf signature in %s", slashRel)
++				}
++				data = bytes.Replace(data, []byte(oldPrefix), []byte(newPrefix), 1)
++
++				oldInclude := "g.Printf(\"#include %q\\n\", g.namePrefix+\".objc.h\")"
++				newInclude := "if g.Pkg == nil {\n\t\tg.Printf(\"#include \\\"Universe.objc.h\\\"\\n\")\n\t} else {\n\t\tg.Printf(\"#include %q\\n\", g.namePrefix+\".objc.h\")\n\t}"
++				if !bytes.Contains(data, []byte(oldInclude)) {
++					return fmt.Errorf("unexpected Universe include line in %s", slashRel)
++				}
++				data = bytes.Replace(data, []byte(oldInclude), []byte(newInclude), 1)
++			}
++		}
++		return os.WriteFile(target, data, 0o644)
++	})
++}
++
++func fileExists(path string) bool {
++	info, err := os.Stat(path)
++	return err == nil && !info.IsDir()
++}
++
+ func pinnedGomobileVersion() string {
+ 	info, loaded := debug.ReadBuildInfo()
+ 	if !loaded {
+@@ -73,14 +193,6 @@ func pinnedGomobileVersion() string {
+ 	return module.Version
+ }
+ 
+-func toolInstalled(path string, packagePath string, version string) bool {
+-	info, err := buildinfo.ReadFile(path)
+-	if err != nil {
+-		return false
+-	}
+-	return info.Path == packagePath && info.Main.Path == gomobileModule && info.Main.Version == version
+-}
+-
+ func run(command *exec.Cmd) {
+ 	command.Stdout = os.Stdout
+ 	command.Stderr = os.Stderr
