@@ -30,6 +30,36 @@ final class PartialE3FixtureTests: XCTestCase {
             )
         }
     }
+
+    func testSyntheticBoldMetricsMatchSkiaInterpolation() {
+        XCTAssertFalse(SyntheticBoldMetrics.shouldSynthesize(weight: 400))
+        XCTAssertFalse(SyntheticBoldMetrics.shouldSynthesize(weight: 500))
+        XCTAssertTrue(SyntheticBoldMetrics.shouldSynthesize(weight: 600))
+        XCTAssertTrue(SyntheticBoldMetrics.shouldSynthesize(weight: 700))
+
+        XCTAssertEqual(SyntheticBoldMetrics.strokeWidthPercent(for: 9), -(100.0 / 24.0), accuracy: 1e-9)
+        XCTAssertEqual(SyntheticBoldMetrics.strokeWidthPercent(for: 36), -(100.0 / 32.0), accuracy: 1e-9)
+        XCTAssertEqual(SyntheticBoldMetrics.strokeWidthPercent(for: 6), -(100.0 / 24.0), accuracy: 1e-9)
+        XCTAssertEqual(SyntheticBoldMetrics.strokeWidthPercent(for: 48), -(100.0 / 32.0), accuracy: 1e-9)
+        let mid16 = SyntheticBoldMetrics.strokeWidthPercent(for: 16)
+        XCTAssertLessThan(mid16, -(100.0 / 32.0))
+        XCTAssertGreaterThan(mid16, -(100.0 / 24.0))
+    }
+
+    func testDockEdgesRuntimeSolverMatchesFixtureSamples() {
+        for transition in DockEdges.transitions {
+            for sample in transition.samples {
+                let solved = DockEdges.edges(
+                    from: Double(transition.from),
+                    to: Double(transition.to),
+                    t: sample.t,
+                    count: DockEdges.count
+                )
+                XCTAssertEqual(solved.left, sample.left, accuracy: 5e-3, "from \(transition.from) to \(transition.to) t=\(sample.t) left")
+                XCTAssertEqual(solved.right, sample.right, accuracy: 5e-3, "from \(transition.from) to \(transition.to) t=\(sample.t) right")
+            }
+        }
+    }
 }
 
 private func assertFixture(_ name: String, matches swift: OneTokenValue, root: String) throws {

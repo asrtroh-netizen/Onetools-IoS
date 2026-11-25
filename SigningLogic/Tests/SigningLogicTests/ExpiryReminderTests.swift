@@ -118,4 +118,39 @@ final class ExpiryReminderTests: XCTestCase {
             ExpiryReminderPlanner.reminders(for: subjects, on: today, calendar: calendar),
             [ExpiryReminder(id: "same", notice: .oneDay)])
     }
+
+    func testUpcomingAlertsSchedulesFutureSevenAndOneDayTriggersOnly() {
+        let now = day(2026, 11, 10, hour: 10)
+        let subjects = [
+            ExpirySubject(id: "far", expiresOn: day(2026, 11, 20, hour: 18)),
+            ExpirySubject(id: "within-five-days", expiresOn: day(2026, 11, 15, hour: 18)),
+            ExpirySubject(id: "expired", expiresOn: day(2026, 11, 9, hour: 18)),
+        ]
+        let alerts = ExpiryReminderPlanner.upcomingAlerts(
+            for: subjects,
+            now: now,
+            reminderHour: 9,
+            calendar: calendar
+        )
+        XCTAssertEqual(alerts, [
+            ScheduledExpiryAlert(
+                id: "far",
+                notice: .sevenDays,
+                fireDate: day(2026, 11, 13, hour: 9),
+                expiresOn: day(2026, 11, 20, hour: 18)
+            ),
+            ScheduledExpiryAlert(
+                id: "far",
+                notice: .oneDay,
+                fireDate: day(2026, 11, 19, hour: 9),
+                expiresOn: day(2026, 11, 20, hour: 18)
+            ),
+            ScheduledExpiryAlert(
+                id: "within-five-days",
+                notice: .oneDay,
+                fireDate: day(2026, 11, 14, hour: 9),
+                expiresOn: day(2026, 11, 15, hour: 18)
+            ),
+        ])
+    }
 }

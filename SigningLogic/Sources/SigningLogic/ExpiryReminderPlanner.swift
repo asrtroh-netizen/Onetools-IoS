@@ -25,7 +25,55 @@ public struct ExpiryReminder: Equatable, Sendable {
     }
 }
 
+public struct ScheduledExpiryAlert: Equatable, Sendable {
+    public let id: String
+    public let notice: ExpiryNotice
+    public let fireDate: Date
+    public let expiresOn: Date
+
+    public init(id: String, notice: ExpiryNotice, fireDate: Date, expiresOn: Date) {
+        self.id = id
+        self.notice = notice
+        self.fireDate = fireDate
+        self.expiresOn = expiresOn
+    }
+}
+
 public enum ExpiryReminderPlanner {
+    public static func upcomingAlerts(
+        for subjects: [ExpirySubject],
+        now: Date,
+        reminderHour: Int = 9,
+        calendar: Calendar = .current
+    ) -> [ScheduledExpiryAlert] {
+        var seen: Set<String> = []
+        var alerts: [ScheduledExpiryAlert] = []
+        let clampedHour = min(23, max(0, reminderHour))
+        for subject in subjects {
+            guard subject.expiresOn > now, seen.insert(subject.id).inserted else {
+                continue
+            }
+            let expStart = calendar.startOfDay(for: subject.expiresOn)
+            for (daysBefore, kind) in [(7, ExpiryNotice.sevenDays), (1, ExpiryNotice.oneDay)] {
+                guard let day = calendar.date(byAdding: .day, value: -daysBefore, to: expStart),
+                      let fire = calendar.date(bySettingHour: clampedHour, minute: 0, second: 0, of: day),
+                      fire > now,
+                      fire < subject.expiresOn else {
+                    continue
+                }
+                alerts.append(
+                    ScheduledExpiryAlert(
+                        id: subject.id,
+                        notice: kind,
+                        fireDate: fire,
+                        expiresOn: subject.expiresOn
+                    )
+                )
+            }
+        }
+        return alerts
+    }
+
     public static func reminders(
         for subjects: [ExpirySubject],
         on today: Date,

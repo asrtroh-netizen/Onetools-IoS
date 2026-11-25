@@ -102,4 +102,66 @@ public enum DockEdges {
             "transitions": .list(transitions.map { $0.fixtureTree }),
         ])
     }
+
+    // Flutter Curves.easeInCubic = Cubic(0.55, 0.055, 0.675, 0.19)
+    // Flutter Curves.easeOutCubic = Cubic(0.215, 0.61, 0.355, 1.0)
+    private static let easeInControl = (0.55, 0.055, 0.675, 0.19)
+    private static let easeOutControl = (0.215, 0.61, 0.355, 1.0)
+
+    /// Exact port of `glassDockTabEdges` in `ultra_glass_dock.dart:213-240`.
+    public static func edges(
+        from origin: Double,
+        to destination: Double,
+        t: Double,
+        count: Int = 4
+    ) -> (left: Double, right: Double) {
+        guard count > 0 else { return (0.0, 0.0) }
+        let clamped = min(1.0, max(0.0, t))
+        if origin == destination {
+            let idx = min(max(origin, 0.0), Double(count - 1))
+            return (idx, idx + 1.0)
+        }
+        let lead = evaluateCubic(easeOutControl, at: clamped)
+        let trail = evaluateCubic(easeInControl, at: clamped)
+        let left: Double
+        let right: Double
+        if destination >= origin {
+            left = origin + (destination - origin) * trail
+            right = (origin + 1.0) + (destination - origin) * lead
+        } else {
+            left = origin + (destination - origin) * lead
+            right = (origin + 1.0) + (destination - origin) * trail
+        }
+        let limit = Double(count)
+        return (min(max(left, 0.0), limit), min(max(right, 0.0), limit))
+    }
+
+    private static func evaluateCubic(
+        _ points: (Double, Double, Double, Double),
+        at t: Double
+    ) -> Double {
+        if t <= 0.0 { return 0.0 }
+        if t >= 1.0 { return 1.0 }
+        let (a, b, c, d) = points
+        var start = 0.0
+        var end = 1.0
+        for _ in 0..<64 {
+            let mid = (start + end) * 0.5
+            let est = bezier(a, c, mid)
+            if abs(t - est) < 0.0005 {
+                return bezier(b, d, mid)
+            }
+            if est < t {
+                start = mid
+            } else {
+                end = mid
+            }
+        }
+        return bezier(b, d, (start + end) * 0.5)
+    }
+
+    private static func bezier(_ p1: Double, _ p2: Double, _ m: Double) -> Double {
+        let inv = 1.0 - m
+        return 3.0 * p1 * inv * inv * m + 3.0 * p2 * inv * m * m + m * m * m
+    }
 }

@@ -46,6 +46,19 @@ final class BatchTests: XCTestCase {
         XCTAssertTrue(report.failures.isEmpty)
     }
 
+    func testRunAsyncIsolatesFailuresAndContinues() async {
+        let report = await Batch.runAsync(["ipa-1", "bad-ipa", "ipa-3"]) { item async throws -> String in
+            if item == "bad-ipa" {
+                throw SignError("corrupt bundle")
+            }
+            return "signed:\(item)"
+        }
+        XCTAssertEqual(report.successes.map(\.item), ["ipa-1", "ipa-3"])
+        XCTAssertEqual(report.successes.map(\.value), ["signed:ipa-1", "signed:ipa-3"])
+        XCTAssertEqual(report.failures.map(\.item), ["bad-ipa"])
+        XCTAssertEqual(report.failures.map(\.errorDescription), ["corrupt bundle"])
+    }
+
 }
 
 private struct SignError: LocalizedError {

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - 指标卡
 
@@ -43,17 +44,18 @@ public struct MetricCard: View {
     }
 }
 
-/// 两列指标网格，窄屏 / 大字号退单列（`MetricRow`）。
+/// 固定两列指标网格（`MetricRow`）。
 public struct MetricGrid<Content: View>: View {
     let content: Content
-    @Environment(\.dynamicTypeSize) private var typeSize
 
     public init(@ViewBuilder content: () -> Content) { self.content = content() }
 
     public var body: some View {
-        let columns = typeSize.isAccessibilitySize ? 1 : 2
         LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: OneMetrics.space12, alignment: .top), count: columns),
+            columns: [
+                GridItem(.flexible(), spacing: OneMetrics.space12, alignment: .top),
+                GridItem(.flexible(), spacing: OneMetrics.space12, alignment: .top),
+            ],
             spacing: OneMetrics.space12
         ) { content }
     }
@@ -75,11 +77,23 @@ public struct StageRow: View {
                 let stage = stages[i]
                 VStack(spacing: OneMetrics.space6) {
                     bar(stage.state)
-                    Text(stage.label)
-                        .font(OneText.labelSmall(stage.state == .pending ? .regular : .semibold))
-                        .foregroundStyle(tone(stage.state)?.ink ?? OnePalette.onSurfaceVariant.opacity(0.7))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                    if let stageTone = tone(stage.state), let base = stageTone.base {
+                        OneStyledText(
+                            stage.label,
+                            size: 11,
+                            weight: 600,
+                            heightMultiplier: 1.45,
+                            tracking: 0.5,
+                            color: UIColor { $0.userInterfaceStyle == .dark ? base : base.mixed(with: .black, 0.38) },
+                            lineLimit: 1
+                        )
+                    } else {
+                        Text(stage.label)
+                            .font(OneText.labelSmall(.regular))
+                            .foregroundStyle(OnePalette.onSurfaceVariant.opacity(0.7))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .ignore)

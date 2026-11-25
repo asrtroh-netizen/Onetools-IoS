@@ -51,6 +51,23 @@ public enum Batch {
         return BatchReport(successes: successes, failures: failures)
     }
 
+    public static func runAsync<Item, Value>(
+        _ items: [Item],
+        operation: (Item) async throws -> Value
+    ) async -> BatchReport<Item, Value> {
+        var successes: [BatchSuccess<Item, Value>] = []
+        var failures: [BatchFailure<Item>] = []
+        for item in items {
+            do {
+                let value = try await operation(item)
+                successes.append(BatchSuccess(item: item, value: value))
+            } catch {
+                failures.append(BatchFailure(item: item, errorDescription: message(for: error)))
+            }
+        }
+        return BatchReport(successes: successes, failures: failures)
+    }
+
     private static func message(for error: Error) -> String {
         if let localized = error as? LocalizedError,
            let description = localized.errorDescription,

@@ -68,8 +68,9 @@ public struct InkRipple: ViewModifier {
                 }
             }
             .onEnded { _ in
+                let targetRadius = hypot(hostSize.width, hostSize.height) / 2
                 withAnimation(.easeOut(duration: 0.225)) {
-                    ripple.radius += 5
+                    ripple.radius = targetRadius + 5
                 }
                 withAnimation(.easeIn(duration: 0.375).delay(0.225)) {
                     ripple.opacity = 0

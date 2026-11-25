@@ -252,3 +252,27 @@ N13-onewifix                 pass     HEAD=7a8839e
 2. **`ClashtvOS` 编译依赖修复（语法通过，未编译，提交 `0ef019e`）**：
    - `Clash-Client/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift` 改用 `#if canImport(ClashClientUI)` 条件导入（WSL `swiftc -parse` 退出码 0）。
    - `Clash-Client/apple/ClashClient/project.yml` 的 `ClashtvOS.sources` 补入 `../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift`（`group: SharedFacts`），与 `ClashtvOS` 其余 24 个 `SharedFacts` 文件及 `ClashtvOSExtension` 保持一致。`Clash-Client` 的 `onetools` 分支 HEAD 更新为 `0ef019e`（锁 `e3e6472` 仍为祖先）。
+
+---
+
+## 9. 全局出击：P4 收口与 P5 / P7 代码预置（2026-11-25）
+
+在 Windows + WSL Ubuntu-24.04（Swift 6.4.2）环境下完成跨模块整合预置（所有涉及 Apple UI 框架的文件均标「语法通过，待 Mac `xcodebuild` 编译」）：
+
+1. **`OneUI` 5 处细节收口与单测补齐（已验证纯逻辑 13 项，视图层 18 文件 `swiftc -parse` 通过）**：
+   - `DockEdges.edges(from:to:t:count:)` 实现 Flutter 三次贝塞尔求解并通过全部 33 个夹具样本测试，`UltraGlassDock` 接入该求解器。
+   - `OneStatusHero` 对齐 `one_status_hero.dart` 状态与三段标签映射；`StatusHero` 头部改用 `PreferenceKey` 量宽消除 `GeometryReader` 高度裁切。
+   - 补齐 `Nameplate.lifted` 深底白字模式及 `CardHeadRow` / `StageRow` 的 `OneStyledText` `w600`/`w700` 合成加粗调用；修正 `InkRipple` 松手确认半径；补齐 `SyntheticBoldMetrics` 单测。
+2. **`Clash-Client` 主壳与包接入（P5.0，语法通过，待 Mac 编译）**：
+   - 新增 `Sources/OneTools/OneToolsRootShellView.swift`（常驻保持 `AppShellView` 状态，底部挂载 `UltraGlassDock` 四页签，支持 `onetools://` 与 `feather://` 路由及内置 `OneGallery` 对拍入口）。
+   - `project.yml` 将 iOS 部署目标升至 `16.4`，接入本地包 `OneUI` 与 `SigningLogic`，打包内置 `adblock/onetools-cn-ads.plugin` 资源。
+3. **`Swipt` 环回引导与默认规则预置（P5.1，语法通过，待 Mac 编译）**：
+   - `SetupView.swift` 移除 `LocalDevVPN` 引导，改为检测并一键唤起连接 Clash `10.7.0.1` 环回隧道；`AutoUnlockSettings` 默认跳过首次自动解锁页。
+   - `SwipletStore.swift` 新增 `bootstrapDefaultChineseAdSkipIfNeeded()`：首次启动自动拉取官方稳定源安装 `skip-chinese-ads` 并用 SQLite 预置 `fuzzy_skip = 1`（不触碰只读 `Swiplets` 仓）。
+   - `SwiptApp.swift` 用 `#if !ONETOOLS_EMBEDDED` 保护 `@main` 并导出 `public struct SwiptRootView`。
+4. **`Feather` + `SigningLogic` 自签增强落地（P7，`SigningLogic` 17 项单测通过，`Feather` 语法通过，待 Mac 编译）**：
+   - `SigningLogic` 新增 `Batch.runAsync` 与 `ExpiryReminderPlanner.upcomingAlerts`（17 项单测 0 失败）。
+   - `Feather` 工程接入 `../SigningLogic` 本地包，新增 `OneToolsSigningCoordinator.swift`（证书提前 7 天 / 1 天本地日历通知排程、应用库编辑态 `Batch Sign` 多选批量签名、证书长按菜单「一键重签全部已签应用」），并在 `FeatherApp.swift` 用 `#if !ONETOOLS_EMBEDDED` 保护 `@main`、导出 `public struct FeatherRootView`。
+5. **Mac 脚本订正与文档归档**：
+   - 修复 `scripts/mac/40-verify-windows-work.sh` 中 `xcodebuild` 未切换至 `OneUI/` 子目录的问题（`bash -n` 退出码 0）。
+   - 将交接册归档至 `docs/superpowers/plans/2026-11-21-codex-handoff.md`，忽略 `.xj-cursor/` 临时复审目录。

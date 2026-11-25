@@ -153,6 +153,7 @@ public struct UltraGlassDock: View {
                     progress: slideProgress,
                     from: fromIndex,
                     to: toIndex,
+                    count: count,
                     cellWidth: cell,
                     dark: colorScheme == .dark
                 )
@@ -175,6 +176,7 @@ private struct LiquidDockIndicatorModifier: AnimatableModifier {
     var progress: Double
     let from: Int
     let to: Int
+    let count: Int
     let cellWidth: CGFloat
     let dark: Bool
 
@@ -183,28 +185,11 @@ private struct LiquidDockIndicatorModifier: AnimatableModifier {
         set { progress = newValue }
     }
 
-    private static func easeOutCubic(_ t: Double) -> Double {
-        let inv = 1.0 - t
-        return 1.0 - inv * inv * inv
-    }
-
-    private static func easeInCubic(_ t: Double) -> Double {
-        t * t * t
-    }
-
     func body(content: Content) -> some View {
         let t = min(1.0, max(0.0, progress))
-        let f = Double(from)
-        let d = Double(to)
-        let leftEdge: Double
-        let rightEdge: Double
-        if d >= f {
-            leftEdge = f + (d - f) * Self.easeInCubic(t)
-            rightEdge = (f + 1.0) + (d - f) * Self.easeOutCubic(t)
-        } else {
-            leftEdge = f + (d - f) * Self.easeOutCubic(t)
-            rightEdge = (f + 1.0) + (d - f) * Self.easeInCubic(t)
-        }
+        let pair = DockEdges.edges(from: Double(from), to: Double(to), t: t, count: count)
+        let leftEdge = pair.left
+        let rightEdge = pair.right
 
         let spanWidth = max(cellWidth * CGFloat(rightEdge - leftEdge), 1)
         let offsetX = OneMetrics.space4 + cellWidth * CGFloat(leftEdge)

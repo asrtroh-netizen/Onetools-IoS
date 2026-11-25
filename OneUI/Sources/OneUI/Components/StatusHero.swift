@@ -10,6 +10,8 @@ public enum OneStatusHeroTone: Sendable { case healthy, critical, attention, neu
 
 public struct StatusHero<Trailing: View>: View {
     let state: HeroState; let eyebrow: String?; let title: String; let pill: String; let stageLabels: [String]?; let subtitle: String?; let detail: String?; let primary: HeroAction?; let secondary: HeroAction?; let actionNote: String?; let busyLabel: String; let trailing: Trailing
+    @State private var compactHeader = false
+
     public init(state: HeroState, eyebrow: String? = nil, title: String, pill: String, stageLabels: [String]? = nil, subtitle: String? = nil, detail: String? = nil, primary: HeroAction? = nil, secondary: HeroAction? = nil, actionNote: String? = nil, busyLabel: String = "处理中", @ViewBuilder trailing: () -> Trailing) {
         precondition(stageLabels == nil || stageLabels!.count == 3, "阶段进度固定三段")
         self.state = state; self.eyebrow = eyebrow; self.title = title; self.pill = pill; self.stageLabels = stageLabels; self.subtitle = subtitle; self.detail = detail; self.primary = primary; self.secondary = secondary; self.actionNote = actionNote; self.busyLabel = busyLabel; self.trailing = trailing()
@@ -17,7 +19,17 @@ public struct StatusHero<Trailing: View>: View {
     private var fill: Color? { switch state { case .inactive: OneGlass.alertFill; case .activating: OneGlass.busyFill; case .ready: nil } }
     public var body: some View {
         VStack(alignment: .leading, spacing: OneMetrics.space16) {
-            GeometryReader { proxy in header(compact: proxy.size.width < 300) }.frame(minHeight: 94)
+            header(compact: compactHeader)
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: HeroWidthPreferenceKey.self, value: proxy.size.width)
+                    }
+                )
+                .onPreferenceChange(HeroWidthPreferenceKey.self) { width in
+                    if width > 0 {
+                        compactHeader = width < 300
+                    }
+                }
             if let stageLabels { StageDots(labels: stageLabels, lit: state.litStages) }
             if !state.isSettled, primary != nil { actions.transition(.opacity.combined(with: .move(edge: .bottom))) }
         }
@@ -75,13 +87,65 @@ public struct StatusHero<Trailing: View>: View {
 extension StatusHero where Trailing == EmptyView { public init(state: HeroState, eyebrow: String? = nil, title: String, pill: String, stageLabels: [String]? = nil, subtitle: String? = nil, detail: String? = nil, primary: HeroAction? = nil, secondary: HeroAction? = nil, actionNote: String? = nil, busyLabel: String = "处理中") { self.init(state: state, eyebrow: eyebrow, title: title, pill: pill, stageLabels: stageLabels, subtitle: subtitle, detail: detail, primary: primary, secondary: secondary, actionNote: actionNote, busyLabel: busyLabel) { EmptyView() } } }
 
 public struct OneStatusHero: View {
-    let tone: OneStatusHeroTone; let title: String; let subtitle: String?; let action: HeroAction?
-    public init(tone: OneStatusHeroTone, title: String, subtitle: String? = nil, action: HeroAction? = nil) { self.tone = tone; self.title = title; self.subtitle = subtitle; self.action = action }
-    public var body: some View {
-        StatusHero(state: state, title: title, pill: pill, subtitle: subtitle, primary: action)
+    public static let defaultStages = ["关闭", "处理中", "就绪"]
+
+    let tone: OneStatusHeroTone
+    let title: String
+    let subtitle: String?
+    let detail: String?
+    let showStages: Bool
+    let action: HeroAction?
+
+    public init(
+        tone: OneStatusHeroTone,
+        title: String,
+        subtitle: String? = nil,
+        detail: String? = nil,
+        showStages: Bool = true,
+        action: HeroAction? = nil
+    ) {
+        self.tone = tone
+        self.title = title
+        self.subtitle = subtitle
+        self.detail = detail
+        self.showStages = showStages
+        self.action = action
     }
-    private var state: HeroState { switch tone { case .healthy: .ready; case .critical: .inactive; case .attention: .activating; case .neutral: .ready } }
-    private var pill: String { switch tone { case .healthy: "就绪"; case .critical: "注意"; case .attention: "处理中"; case .neutral: "状态" } }
+
+    public var body: some View {
+        StatusHero(
+            state: state,
+            title: title,
+            pill: pill,
+            stageLabels: showStages ? Self.defaultStages : nil,
+            subtitle: subtitle,
+            detail: detail,
+            primary: action
+        )
+    }
+
+    private var state: HeroState {
+        switch tone {
+        case .healthy: .ready
+        case .critical, .attention: .inactive
+        case .neutral: .activating
+        }
+    }
+
+    private var pill: String {
+        switch tone {
+        case .healthy: "就绪"
+        case .critical, .attention: "注意"
+        case .neutral: "处理中"
+        }
+    }
+}
+
+private struct HeroWidthPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        if nextValue() > 0 { value = nextValue() }
+    }
 }
 
 public struct HeroButtonStyle: ButtonStyle {
