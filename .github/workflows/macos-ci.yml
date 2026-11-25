@@ -355,14 +355,17 @@ jobs:
             ~/Library/Caches/go-build
           key: clash-go-${{ hashFiles('Clash-Client/Dependencies.lock.json') }}
 
-      - name: Cache Clash SwiftPM & Compilation Cache (Xcode 27)
-        uses: actions/cache@v4
+      - name: Restore Clash SwiftPM & Compilation Cache (Xcode 27)
+        id: clash_spm_cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ${{ runner.temp }}/ClashSourcePackages
             ${{ runner.temp }}/ClashCompilationCache
-          key: clash-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}
-          restore-keys: clash-spm-${{ steps.xcode.outputs.build }}-
+          key: clash-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}-${{ github.run_id }}
+          restore-keys: |
+            clash-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}-
+            clash-spm-${{ steps.xcode.outputs.build }}-
 
       - name: Download FeatherUI embedded frameworks
         uses: actions/download-artifact@v4
@@ -408,6 +411,15 @@ jobs:
             "Clash-Client/.build/dependencies/kernel/Clash.xcframework" \
             "$RUNNER_TEMP/unpacked-embedded/LibSwipt.xcframework" \
             "artifacts/onetools/G2-go-runtimes.md"
+
+      - name: Save Clash SwiftPM & Compilation Cache (Xcode 27)
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ runner.temp }}/ClashSourcePackages
+            ${{ runner.temp }}/ClashCompilationCache
+          key: clash-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}-${{ github.run_id }}
 
       - name: Upload OneTools-AllInOne-IPA & Verification Reports
         uses: actions/upload-artifact@v4

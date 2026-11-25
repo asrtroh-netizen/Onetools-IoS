@@ -72,6 +72,13 @@ module FeatherObjC {
 }
 MODMAP
 
+cat > "$OBJC_MOD_DIR/FeatherUI.exp" <<'EXP'
+_OBJC_CLASS_$_OneToolsFeatherBridge
+_OBJC_METACLASS_$_OneToolsFeatherBridge
+_$s9FeatherUI*
+_FeatherUI*
+EXP
+
 echo "==> Generating FeatherUIBuild.xcodeproj for FeatherUI.framework"
 rm -rf FeatherUIBuild.xcodeproj
 cp -R Feather.xcodeproj FeatherUIBuild.xcodeproj
@@ -133,16 +140,10 @@ def patch_feather_cfg(block: str, is_debug: bool) -> str:
         f'\t\t\t\tPRODUCT_NAME = FeatherUI;\n'
         f'\t\t\t\tSKIP_INSTALL = NO;\n'
         f'\t\t\t\tSWIFT_ACTIVE_COMPILATION_CONDITIONS = {cond};\n'
+        f'\t\t\t\tEXPORTED_SYMBOLS_FILE = "{objc_mod_dir}/FeatherUI.exp";\n'
         f'\t\t\t\tSWIFT_INCLUDE_PATHS = (\n'
         f'\t\t\t\t\t"$(inherited)",\n'
         f'\t\t\t\t\t"{objc_mod_dir}",\n'
-        f'\t\t\t\t);\n'
-        f'\t\t\t\tOTHER_LDFLAGS = (\n'
-        f'\t\t\t\t\t"$(inherited)",\n'
-        f'\t\t\t\t\t"-Wl,-exported_symbol,_$s9FeatherUI*",\n'
-        f'\t\t\t\t\t"-Wl,-exported_symbol,_OBJC_CLASS_$_*",\n'
-        f'\t\t\t\t\t"-Wl,-exported_symbol,_OBJC_METACLASS_$_*",\n'
-        f'\t\t\t\t\t"-Wl,-exported_symbol,_FeatherUI*",\n'
         f'\t\t\t\t);\n'
     )
     block = block.replace('\t\t\tbuildSettings = {\n', '\t\t\tbuildSettings = {\n' + injected)
@@ -189,6 +190,12 @@ xcodebuild build \
 FEATHER_UI_FW="$DERIVED_UI/Build/Products/Release-iphoneos/FeatherUI.framework"
 if [[ ! -d "$FEATHER_UI_FW" ]]; then
   echo "FAIL: FeatherUI.framework not found at $FEATHER_UI_FW" >&2
+  exit 1
+fi
+
+if ! xcrun nm -gU "$FEATHER_UI_FW/FeatherUI" | grep -q '_OBJC_CLASS_\$_OneToolsFeatherBridge$'; then
+  echo "FAIL: _OBJC_CLASS_\$_OneToolsFeatherBridge not exported by FeatherUI.framework!" >&2
+  xcrun nm -gU "$FEATHER_UI_FW/FeatherUI" | head -n 40 >&2
   exit 1
 fi
 
