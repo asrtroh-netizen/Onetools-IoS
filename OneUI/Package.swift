@@ -30,6 +30,10 @@ let package = Package(
             name: "OneUICoreTests",
             dependencies: ["OneUICore"]
         ),
+        .testTarget(
+            name: "OneUISnapshotTests",
+            dependencies: ["OneUI", "OneUICore"]
+        ),
     ]
 )
 #else

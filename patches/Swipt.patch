@@ -1,0 +1,221 @@
+diff --git a/Swipt/Automation/SwipletStore.swift b/Swipt/Automation/SwipletStore.swift
+index 8c059760dfab15dc812ffa6bc71951da8657e501..d7e1f03c859b22d32313b1b53557e631c150c0fc 100644
+--- a/Swipt/Automation/SwipletStore.swift
++++ b/Swipt/Automation/SwipletStore.swift
+@@ -1,6 +1,7 @@
+ import Foundation
+ import LibSwipt
+ import Perception
++import SQLite3
+ import UIKit
+ internal import SwiptHost
+ import UniformTypeIdentifiers
+@@ -369,6 +370,60 @@ final class SwipletStore {
+         defer { reload() }
+         try await Platform.shared.removeSwiplet(id)
+     }
++
++    private static let defaultChineseAdSkipBootstrappedKey = "onetools.swipt.bootstrappedSkipChineseAds"
++    nonisolated static let skipChineseAdsID = "skip-chinese-ads"
++
++    /// OneTools (P5.1 / D7): automatically install `skip-chinese-ads` from the official stable
++    /// repository on first launch and seed `fuzzySkip = true` in its SQLite settings table.
++    @available(iOS 17.4, *)
++    func bootstrapDefaultChineseAdSkipIfNeeded() async {
++        guard !UserDefaults.standard.bool(forKey: Self.defaultChineseAdSkipBootstrappedKey) else { return }
++        reload()
++        if !ids.contains(Self.skipChineseAdsID) {
++            let officialURL = Repository.stableCatalogURL
++            if repositories.first(where: { $0.url == officialURL }) == nil,
++               let fetched = try? await Self.fetchRepository(officialURL, etag: "") {
++                try? SwipletDatabase.save(fetched)
++                if let existingIdx = repositories.firstIndex(where: \.isOfficial) {
++                    repositories[existingIdx] = fetched
++                } else {
++                    repositories.insert(fetched, at: 0)
++                }
++            } else {
++                try? await refreshRepository(Repository.official.url, force: true)
++            }
++
++            if let repo = repositories.first(where: { $0.swiplets.contains(where: { $0.id == Self.skipChineseAdsID }) }),
++               let target = repo.swiplets.first(where: { $0.id == Self.skipChineseAdsID }),
++               Platform.shared.isSwipletCompatible(target) {
++                try? await install(target, from: repo)
++            }
++        }
++
++        if ids.contains(Self.skipChineseAdsID) {
++            seedFuzzySkipDefault()
++            try? await setServiceEnabled(Self.skipChineseAdsID, true)
++            UserDefaults.standard.set(true, forKey: Self.defaultChineseAdSkipBootstrappedKey)
++        }
++    }
++
++    private func seedFuzzySkipDefault() {
++        guard let dataDir = dataDirectory(of: Self.skipChineseAdsID) else { return }
++        try? FileManager.default.createDirectory(at: dataDir, withIntermediateDirectories: true)
++        let dbURL = dataDir.appendingPathComponent("skip-chinese-ads.db")
++        var handle: OpaquePointer?
++        guard sqlite3_open(dbURL.path, &handle) == SQLITE_OK, let db = handle else {
++            if let handle { sqlite3_close(handle) }
++            return
++        }
++        defer { sqlite3_close(db) }
++        let sql = """
++        CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY, fuzzy_skip INTEGER NOT NULL DEFAULT 1, close_popups INTEGER NOT NULL DEFAULT 1);
++        INSERT OR IGNORE INTO settings (id, fuzzy_skip, close_popups) VALUES (1, 1, 1);
++        """
++        sqlite3_exec(db, sql, nil, nil, nil)
++    }
+ }
+ 
+ nonisolated struct SwipletEntry: Hashable, Sendable {
+@@ -430,11 +485,12 @@ nonisolated struct IOSOutdatedError: LocalizedError {
+ }
+ 
+ nonisolated struct Repository: Identifiable, Sendable {
+-    private static let stableURL = "https://github.com/swipt-automation/official-swiplets/releases/latest/download/swiplets.json"
++    static let stableCatalogURL = "https://github.com/swipt-automation/official-swiplets/releases/latest/download/swiplets.json"
++    private static let stableURL = stableCatalogURL
+     private static let nightlyURL = "https://github.com/swipt-automation/official-swiplets/releases/download/nightly/swiplets.json"
+ 
+     static let official = Repository(
+-        url: Bundle.main.object(forInfoDictionaryKey: "SwiptChannel") as? String == "stable" ? stableURL : nightlyURL,
++        url: Bundle.main.object(forInfoDictionaryKey: "SwiptChannel") as? String == "nightly" ? nightlyURL : stableURL,
+         name: String(localized: "Official Swiplets"), localizedNames: [:], icon: SwipletIcon(color: nil, symbol: "checkmark.seal.fill"),
+         image: nil, etag: "", swiplets: [])
+ 
+diff --git a/Swipt/Device/AutoUnlockSettings.swift b/Swipt/Device/AutoUnlockSettings.swift
+index 24869acf6d51e39b6772846b25a29b3dc16f0b35..ef175cb4729b054a47fb8fb87273d3901da44623 100644
+--- a/Swipt/Device/AutoUnlockSettings.swift
++++ b/Swipt/Device/AutoUnlockSettings.swift
+@@ -36,7 +36,8 @@ final class AutoUnlockSettings {
+         isEnabled = store.value(Bool.self, for: Key.isEnabled) ?? false
+         passcodeType = store.value(Int32.self, for: Key.passcodeType).flatMap(PasscodeType.init(rawValue:)) ?? .pin
+         passcode = store.value(String.self, for: Key.passcode) ?? ""
+-        isSetUp = store.value(Bool.self, for: Key.isSetUp) ?? false
++        // OneTools: skip Auto Unlock by default during initial setup; users can still enable it in Settings.
++        isSetUp = store.value(Bool.self, for: Key.isSetUp) ?? true
+     }
+ 
+     var isDecided: Bool { isSetUp || isEnabled }
+diff --git a/Swipt/Device/SetupView.swift b/Swipt/Device/SetupView.swift
+index f1013d68052402df14cbe239740d5e380499f3c5..5f5c1cbbb280fe76f1fffdb6b68d2f9199346a8d 100644
+--- a/Swipt/Device/SetupView.swift
++++ b/Swipt/Device/SetupView.swift
+@@ -82,38 +82,40 @@ struct AutomatedSetupView: View {
+ struct LoopbackSetupView: View {
+     let next: () -> Void
+ 
+-    private static let localDevVPN = URL(string: "localdevvpn://")!
+-    private static let localDevVPNStore = URL(string: "https://apps.apple.com/app/id6755608044")!
++    private static let oneToolsProxyTab = URL(string: "onetools://tab/proxy")!
++    private static let clashFallbackURL = URL(string: "clash://")!
+ 
+     @Environment(\.openURL) private var openURL
+     @Environment(\.scenePhase) private var scenePhase
+-    @State private var hasLocalDevVPN = false
+ 
+     private let device = Platform.shared.device
+ 
+     var body: some View {
+         SetupPage(
+             device.usesCellular ? "antenna.radiowaves.left.and.right.slash" : "network",
+-            device.usesCellular ? Text("Unsupported Network") : Text("Loopback VPN"),
++            device.usesCellular ? Text("Unsupported Network") : Text("Clash Loopback Tunnel"),
+             description: device.usesCellular
+-                ? Text("Swipt only stops working on cellular data, due to Apple’s restrictions on developer services.")
+-                : Text("Swipt needs a loopback VPN to connect to developer services.")
++                ? Text("Swipt stops working on cellular data due to Apple restrictions on developer services. Connect to Wi-Fi and keep Clash tunnel connected.")
++                : Text("OneTools uses the built-in Clash tunnel (10.7.0.1 loopback) instead of LocalDevVPN. Connect Clash with Swipt Compatibility enabled to continue.")
+         ) {
+         } actions: {
+             if !device.usesCellular {
+-                if hasLocalDevVPN {
+-                    SetupPrimaryButton(title: Text("Open LocalDevVPN")) { openURL(Self.localDevVPN) }
+-                } else {
+-                    SetupPrimaryButton(title: Text("Get LocalDevVPN")) { openURL(Self.localDevVPNStore) }
++                SetupPrimaryButton(title: Text("Connect Clash Tunnel")) {
++                    if UIApplication.shared.canOpenURL(Self.oneToolsProxyTab) {
++                        openURL(Self.oneToolsProxyTab)
++                    } else {
++                        openURL(Self.clashFallbackURL)
++                    }
+                 }
+-                SetupSecondaryButton(title: Text("More Options…")) {
+-                    openURL(URL(string: "https://swipt.io/\(Bundle.main.preferredLocalizations.first ?? "en")/docs/setup")!)
++                SetupSecondaryButton(title: Text("Re-check Tunnel")) {
++                    device.stopProbing()
++                    device.startProbing()
+                 }
+             }
+         }
+         .onChangeCompat(of: scenePhase == .active, initial: true) { active in
+             guard active else { return }
+-            hasLocalDevVPN = UIApplication.shared.canOpenURL(Self.localDevVPN)
++            device.startProbing()
+         }
+         .onChangeCompat(of: device.tunnelFound == true, initial: true) { found in
+             if found {
+diff --git a/Swipt/SwiptApp.swift b/Swipt/SwiptApp.swift
+index e02423e5720104d1d606d14f5a06ec1575db8950..c93c81094bcfdfca8d235ceb6d055627f9e4960d 100644
+--- a/Swipt/SwiptApp.swift
++++ b/Swipt/SwiptApp.swift
+@@ -4,6 +4,7 @@ import UIKit
+ import UserNotifications
+ #endif
+ 
++#if !ONETOOLS_EMBEDDED
+ @main
+ enum SwiptMain {
+     static func main() {
+@@ -20,8 +21,11 @@ enum SwiptMain {
+         SwiptApp.main()
+     }
+ }
++#endif
+ 
+ final class AppLaunch {
++    static let shared = AppLaunch()
++
+     init() {
+         _ = AppDatabase.shared
+         #if os(iOS)
+@@ -33,16 +37,34 @@ final class AppLaunch {
+     }
+ }
+ 
++#if os(iOS)
++/// Public embeddable entry view when compiled inside OneTools (`ONETOOLS_EMBEDDED`).
++public struct SwiptRootView: View {
++    private let launch = AppLaunch.shared
++
++    public init() {}
++
++    public var body: some View {
++        HomeView()
++            .task {
++                if #available(iOS 17.4, *), Platform.isSupported {
++                    await SwipletStore.shared.bootstrapDefaultChineseAdSkipIfNeeded()
++                }
++            }
++    }
++}
++#endif
++
+ struct SwiptApp: App {
+     #if os(iOS)
+     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+     #endif
+-    private let launch = AppLaunch()
++    private let launch = AppLaunch.shared
+ 
+     var body: some Scene {
+         #if os(iOS)
+         WindowGroup {
+-            HomeView()
++            SwiptRootView()
+         }
+         #else
+         Window(Text(verbatim: "Swipt"), id: "home") {

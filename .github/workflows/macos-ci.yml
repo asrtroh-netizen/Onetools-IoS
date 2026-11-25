@@ -1,0 +1,359 @@
+name: macOS CI & Unsigned IPA Builds
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  oneui-and-logic:
+    name: OneUI & Swift Logic (iOS Sim)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout root repository
+        uses: actions/checkout@v4
+
+      - name: Select newest stable Xcode
+        run: bash scripts/ci/select-xcode.sh
+
+      - name: Run Python tool & fixture gates
+        run: |
+          python3 -m pip install --quiet pytest Pillow numpy
+          python3 -m pytest tools -q
+          python3 tools/check_fixtures.py
+          python3 tools/gen_icon_codepoints.py --check
+          python3 tools/loon_lint.py adblock/onetools-cn-ads.plugin
+          python3 tools/check_ad_coverage.py
+          python3 tools/export_upstream_patches.py --check
+
+      - name: Run pure-Swift unit tests (ClashLogic, SigningLogic, G3)
+        run: |
+          swift test --package-path _harness/ClashLogic
+          swift test --package-path SigningLogic
+          swift test --package-path experiments/G3
+
+      - name: Build OneUI for iOS (generic/platform=iOS)
+        run: |
+          cd OneUI
+          xcodebuild build \
+            -scheme OneUI \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Test OneUI & render Simulator snapshots
+        run: |
+          SIM_UDID="$(python3 - <<'PY'
+          import json, subprocess, sys
+          raw = subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "-j"], text=True)
+          devices = json.loads(raw).get("devices", {})
+          candidates = []
+          for runtime, items in devices.items():
+              if "iOS" not in runtime:
+                  continue
+              for d in items:
+                  if d.get("isAvailable") and "iPhone" in d.get("name", ""):
+                      candidates.append((runtime, d["udid"], d["name"]))
+          if not candidates:
+              sys.exit("No available iPhone simulator found")
+          candidates.sort()
+          chosen = candidates[-1]
+          print(chosen[1])
+          sys.stderr.write(f"Picked simulator: {chosen[2]} ({chosen[0]}) -> {chosen[1]}\n")
+          PY
+          )"
+          SNAP_DIR="$RUNNER_TEMP/oneui-snapshots"
+          mkdir -p "$SNAP_DIR"
+          cd OneUI
+          TEST_RUNNER_ONETOOLS_SNAPSHOT_DIR="$SNAP_DIR" xcodebuild test \
+            -scheme OneUI-Package \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            CODE_SIGNING_ALLOWED=NO
+          ls -lh "$SNAP_DIR"
+
+      - name: Upload OneUI Simulator Snapshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneUI-Simulator-Snapshots
+          path: ${{ runner.temp }}/oneui-snapshots/*.png
+          if-no-files-found: error
+
+  build-feather:
+    name: Feather + SigningLogic (IPA)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout root repository
+        uses: actions/checkout@v4
+
+      - name: Select newest stable Xcode
+        run: bash scripts/ci/select-xcode.sh
+
+      - name: Hydrate Feather + submodules + OneTools patch
+        run: bash scripts/ci/hydrate-upstreams.sh Feather
+
+      - name: Get Xcode build ID
+        id: xcode
+        run: echo "build=$(xcodebuild -version | tail -n 1 | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Feather SwiftPM packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/FeatherSPM
+          key: feather-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('patches/manifest.json') }}
+          restore-keys: feather-spm-${{ steps.xcode.outputs.build }}-
+
+      - name: Build Feather unsigned IPA (with SigningLogic)
+        run: |
+          cd Feather
+          make deps
+          rm -rf _build packages
+          xcodebuild \
+            -project Feather.xcodeproj \
+            -scheme Feather \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$RUNNER_TEMP/FeatherDerivedData" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/FeatherSPM" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO
+
+          APP_DIR="$(find _build "$RUNNER_TEMP/FeatherDerivedData" -type d -name 'Feather.app' | head -n 1)"
+          if [[ -z "$APP_DIR" ]]; then
+            echo "FAIL: Feather.app not found after xcodebuild" >&2
+            exit 1
+          fi
+          mkdir -p _build/Payload "$GITHUB_WORKSPACE/artifacts/feather"
+          cp -R "$APP_DIR" _build/Payload/Feather.app
+          chmod -R 0755 _build/Payload/Feather.app
+          codesign --force --sign - --timestamp=none _build/Payload/Feather.app
+          cp deps/* _build/Payload/Feather.app/ || true
+          ditto -c -k --sequesterRsrc --keepParent _build/Payload "$GITHUB_WORKSPACE/artifacts/feather/OneTools-Feather-unsigned.ipa"
+          ls -lh "$GITHUB_WORKSPACE/artifacts/feather"
+
+      - name: Upload OneTools-Feather-IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneTools-Feather-IPA
+          path: artifacts/feather/OneTools-Feather-unsigned.ipa
+          if-no-files-found: error
+
+  build-clash-onetools:
+    name: Clash-Client + OneUI Shell (IPA & M7)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      GOTOOLCHAIN: auto
+    steps:
+      - name: Checkout root repository
+        uses: actions/checkout@v4
+
+      - name: Select newest stable Xcode
+        run: bash scripts/ci/select-xcode.sh
+
+      - name: Hydrate Clash-Client + OneTools patch
+        run: bash scripts/ci/hydrate-upstreams.sh Clash-Client
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          check-latest: true
+          cache: false
+
+      - name: Cache Go modules & build cache (Clash)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/Library/Caches/go-build
+          key: clash-go-${{ hashFiles('Clash-Client/Dependencies.lock.json') }}
+          restore-keys: clash-go-
+
+      - name: Cache Clash.xcframework & pinned dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            Clash-Client/.build/dependencies
+          key: clash-sdk-${{ hashFiles('Clash-Client/Dependencies.lock.json') }}
+
+      - name: Build ClashiOS (OneTools Shell), ClashmacOS, ClashtvOS & M7 Audit
+        run: bash scripts/ci/build-clash-onetools.sh
+
+      - name: Stage Clash.xcframework for G2 experiment
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            Clash-Client/.build/dependencies/kernel/Clash.xcframework \
+            artifacts/clash/Clash.xcframework.zip
+
+      - name: Upload OneTools-ClashiOS-IPA & G1/M7 Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneTools-ClashiOS-IPA
+          path: |
+            artifacts/clash/OneTools-ClashiOS-unsigned.ipa
+            artifacts/clash/G1-clash-kernel.md
+            artifacts/clash/M7-loon-ignored.md
+          if-no-files-found: error
+
+      - name: Upload Clash.xcframework (internal G2 input)
+        uses: actions/upload-artifact@v4
+        with:
+          name: internal-clash-xcframework
+          path: artifacts/clash/Clash.xcframework.zip
+          retention-days: 3
+          if-no-files-found: error
+
+  build-swipt:
+    name: Swipt + Loopback Onboarding (IPA)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      GOTOOLCHAIN: auto
+    steps:
+      - name: Checkout root repository
+        uses: actions/checkout@v4
+
+      - name: Select newest stable Xcode
+        run: bash scripts/ci/select-xcode.sh
+
+      - name: Hydrate Swipt + submodules + OneTools patch
+        run: bash scripts/ci/hydrate-upstreams.sh Swipt
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: Swipt/go.mod
+          check-latest: true
+          cache: false
+
+      - name: Setup Node & Bun
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup Bun 1.4.4
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Get Xcode build ID
+        id: xcode
+        run: echo "build=$(xcodebuild -version | tail -n 1 | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Go modules & build cache (Swipt)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/Library/Caches/go-build
+          key: swipt-go-${{ hashFiles('Swipt/go.sum') }}
+          restore-keys: swipt-go-
+
+      - name: Cache LibSwipt.xcframework (ios + macos)
+        id: libswipt_cache
+        uses: actions/cache@v4
+        with:
+          path: Swipt/Frameworks/LibSwipt.xcframework
+          key: libswipt-ios-macos-${{ hashFiles('Swipt/go.mod', 'Swipt/go.sum', 'Swipt/libswipt/**', 'Swipt/internal/cmd/build_libswipt/**') }}
+
+      - name: Build LibSwipt.xcframework (ios/arm64 + macos)
+        if: steps.libswipt_cache.outputs.cache-hit != 'true'
+        working-directory: Swipt
+        run: go run ./internal/cmd/build_libswipt -target ios/arm64,macos
+
+      - name: Install JS dependencies & React Native frameworks
+        working-directory: Swipt
+        run: |
+          command -v xcbeautify >/dev/null 2>&1 || brew install xcbeautify
+          bun install --frozen-lockfile
+          bun dev frameworks
+
+      - name: Cache Swipt SwiftPM packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/SwiptSPM
+          key: swipt-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Swipt/Swipt.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: swipt-spm-${{ steps.xcode.outputs.build }}-
+
+      - name: Build Swipt unsigned IPA
+        working-directory: Swipt
+        env:
+          XCODEBUILD_FLAGS: -clonedSourcePackagesDirPath ${{ runner.temp }}/SwiptSPM
+        run: |
+          make archive_ios_ipa
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/swipt"
+          cp build/Swipt.ipa "$GITHUB_WORKSPACE/artifacts/swipt/OneTools-Swipt-unsigned.ipa"
+          ditto -c -k --sequesterRsrc --keepParent \
+            Frameworks/LibSwipt.xcframework \
+            "$GITHUB_WORKSPACE/artifacts/swipt/LibSwipt.xcframework.zip"
+          ls -lh "$GITHUB_WORKSPACE/artifacts/swipt"
+
+      - name: Upload OneTools-Swipt-IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneTools-Swipt-IPA
+          path: artifacts/swipt/OneTools-Swipt-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload LibSwipt.xcframework (internal G2 input)
+        uses: actions/upload-artifact@v4
+        with:
+          name: internal-libswipt-xcframework
+          path: artifacts/swipt/LibSwipt.xcframework.zip
+          retention-days: 3
+          if-no-files-found: error
+
+  g2-dual-go-experiment:
+    name: Gate G2 Dual-Go Runtime Experiment
+    runs-on: macos-latest
+    timeout-minutes: 20
+    needs:
+      - build-clash-onetools
+      - build-swipt
+    steps:
+      - name: Checkout root repository
+        uses: actions/checkout@v4
+
+      - name: Select newest stable Xcode
+        run: bash scripts/ci/select-xcode.sh
+
+      - name: Download Clash.xcframework
+        uses: actions/download-artifact@v4
+        with:
+          name: internal-clash-xcframework
+          path: ${{ runner.temp }}/g2-inputs
+
+      - name: Download LibSwipt.xcframework
+        uses: actions/download-artifact@v4
+        with:
+          name: internal-libswipt-xcframework
+          path: ${{ runner.temp }}/g2-inputs
+
+      - name: Unpack XCFrameworks & run G2 Linker + dlopen Experiment
+        run: |
+          ditto -x -k "$RUNNER_TEMP/g2-inputs/Clash.xcframework.zip" "$RUNNER_TEMP/g2-inputs"
+          ditto -x -k "$RUNNER_TEMP/g2-inputs/LibSwipt.xcframework.zip" "$RUNNER_TEMP/g2-inputs"
+          mkdir -p artifacts/g2
+          bash scripts/ci/run-g2-dual-go-experiment.sh \
+            "$RUNNER_TEMP/g2-inputs/Clash.xcframework" \
+            "$RUNNER_TEMP/g2-inputs/LibSwipt.xcframework" \
+            "artifacts/g2/G2-go-runtimes.md"
+          cat artifacts/g2/G2-go-runtimes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload G2 Dual-Go Runtime Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gate-G2-Dual-Go-Report
+          path: artifacts/g2/G2-go-runtimes.md
+          if-no-files-found: error

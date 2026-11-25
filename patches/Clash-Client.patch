@@ -1,0 +1,806 @@
+diff --git a/apple/ClashClient/Sources/AppArchitecture/AppLocalization/en.lproj/Localizable.strings b/apple/ClashClient/Sources/AppArchitecture/AppLocalization/en.lproj/Localizable.strings
+index 6b784e5a226701eed368f1a71c285a0bc08e7447..c50e4ba6c86cfeace4d158ebaa364297becc71b6 100644
+--- a/apple/ClashClient/Sources/AppArchitecture/AppLocalization/en.lproj/Localizable.strings
++++ b/apple/ClashClient/Sources/AppArchitecture/AppLocalization/en.lproj/Localizable.strings
+@@ -1616,6 +1616,7 @@
+ "If YES, the VPN connection will be always on. The default is NO" = "If YES, the VPN connection will be always on. The default is NO";
+ "If YES, the VPN connection will be disconnected when the device goes to sleep. The default is NO" = "If YES, the VPN connection will be disconnected when the device goes to sleep. The default is NO";
+ "If YES, the network traffic for the Apple Push Notification service (APNs) will be included from the tunnel." = "When on, Apple push notification traffic also goes through Clash.";
++"If YES, the tunnel answers 10.7.0.1 as a loopback address, so Swipt reaches this device through Clash without a separate loopback VPN. Takes effect on the next connection." = "If YES, the tunnel answers 10.7.0.1 as a loopback address, so Swipt reaches this device through Clash without a separate loopback VPN. Takes effect on the next connection.";
+ "If YES, the tunnel does not take the default route and installs a split route table instead, so HomeKit accessories on the local network keep answering. Internet Sharing does not work while this is on. Takes effect on the next connection." = "When on, HomeKit accessories on your local network keep working; Internet Sharing doesn't work while it's on. Takes effect the next time you connect.";
+ "Ignore" = "Ignore";
+ "Image on" = "Image on";
+@@ -3090,6 +3091,7 @@
+ "Summary" = "Summary";
+ "Supported Fields" = "Supported Fields";
+ "Supporting Files" = "Supporting Files";
++"Swipt Compatibility" = "Swipt Compatibility";
+ "Switch Clash between Rule, Global, and Direct routing." = "Switch Clash between Rule, Global, and Direct routing.";
+ "Switch to %@" = "Switch to %@";
+ "Switch to another profile before deleting" = "Switch to another profile before deleting";
+diff --git a/apple/ClashClient/Sources/AppArchitecture/AppLocalization/zh-Hans.lproj/Localizable.strings b/apple/ClashClient/Sources/AppArchitecture/AppLocalization/zh-Hans.lproj/Localizable.strings
+index 742419219446b9e090306fc654e7699723029b8f..be9925aa1da9f38d4e79ae7d9f9369cefc22132f 100644
+--- a/apple/ClashClient/Sources/AppArchitecture/AppLocalization/zh-Hans.lproj/Localizable.strings
++++ b/apple/ClashClient/Sources/AppArchitecture/AppLocalization/zh-Hans.lproj/Localizable.strings
+@@ -1616,6 +1616,7 @@
+ "If YES, the VPN connection will be always on. The default is NO" = "如果是，VPN连接将始终开启，默认值是否。";
+ "If YES, the VPN connection will be disconnected when the device goes to sleep. The default is NO" = "如果是，VPN 连接将在设备进入睡眠状态时断开。默认值是否";
+ "If YES, the network traffic for the Apple Push Notification service (APNs) will be included from the tunnel." = "开启后，Apple 推送通知的流量也经过 Clash";
++"If YES, the tunnel answers 10.7.0.1 as a loopback address, so Swipt reaches this device through Clash without a separate loopback VPN. Takes effect on the next connection." = "开启后，隧道把 10.7.0.1 当作环回地址应答，Swipt 直接通过 Clash 连到本机，不用另装环回 VPN。下次连接时生效。";
+ "If YES, the tunnel does not take the default route and installs a split route table instead, so HomeKit accessories on the local network keep answering. Internet Sharing does not work while this is on. Takes effect on the next connection." = "开启后，局域网里的 HomeKit 配件保持可用；开启期间「互联网共享」不可用。下次连接时生效";
+ "Ignore" = "忽略";
+ "Image on" = "图片位于";
+@@ -3090,6 +3091,7 @@
+ "Summary" = "摘要";
+ "Supported Fields" = "受支持的字段";
+ "Supporting Files" = "附属文件";
++"Swipt Compatibility" = "Swipt 兼容";
+ "Switch Clash between Rule, Global, and Direct routing." = "在规则、全局与直连之间切换 Clash 的出站模式。";
+ "Switch to %@" = "切换到 %@";
+ "Switch to another profile before deleting" = "删除前请先切换到其他配置";
+diff --git a/apple/ClashClient/Sources/AppArchitecture/AppLocalization/zh-Hant.lproj/Localizable.strings b/apple/ClashClient/Sources/AppArchitecture/AppLocalization/zh-Hant.lproj/Localizable.strings
+index bd978db7bac0ebed35e3702ad3940a349c2a38df..f3325564b0c52ffc62465034bfe947b6236636eb 100644
+--- a/apple/ClashClient/Sources/AppArchitecture/AppLocalization/zh-Hant.lproj/Localizable.strings
++++ b/apple/ClashClient/Sources/AppArchitecture/AppLocalization/zh-Hant.lproj/Localizable.strings
+@@ -1616,6 +1616,7 @@
+ "If YES, the VPN connection will be always on. The default is NO" = "如果是，VPN連線將始終開啟，預設值是否。";
+ "If YES, the VPN connection will be disconnected when the device goes to sleep. The default is NO" = "如果是，VPN 連線將在裝置進入睡眠狀態時中斷。預設值是否";
+ "If YES, the network traffic for the Apple Push Notification service (APNs) will be included from the tunnel." = "開啟後，Apple 推播通知的流量也經過 Clash";
++"If YES, the tunnel answers 10.7.0.1 as a loopback address, so Swipt reaches this device through Clash without a separate loopback VPN. Takes effect on the next connection." = "開啟後，通道把 10.7.0.1 當作環回網址回應，Swipt 直接透過 Clash 連到本機，不用另外安裝環回 VPN。下次連線時生效。";
+ "If YES, the tunnel does not take the default route and installs a split route table instead, so HomeKit accessories on the local network keep answering. Internet Sharing does not work while this is on. Takes effect on the next connection." = "開啟後，區域網路裡的 HomeKit 配件保持可用；開啟期間「網際網路共享」不可用。下次連線時生效";
+ "Ignore" = "忽略";
+ "Image on" = "圖片位於";
+@@ -3090,6 +3091,7 @@
+ "Summary" = "摘要";
+ "Supported Fields" = "受支援的欄位";
+ "Supporting Files" = "附屬檔案";
++"Swipt Compatibility" = "Swipt 相容";
+ "Switch Clash between Rule, Global, and Direct routing." = "在規則、全域與直連之間切換 Clash 的出站模式。";
+ "Switch to %@" = "切換到 %@";
+ "Switch to another profile before deleting" = "刪除前請先切換到其他設定檔";
+diff --git a/apple/ClashClient/Sources/ClashClientApp.swift b/apple/ClashClient/Sources/ClashClientApp.swift
+index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..5980bed901016e7d924d6889c2f1e104684cb48a 100644
+--- a/apple/ClashClient/Sources/ClashClientApp.swift
++++ b/apple/ClashClient/Sources/ClashClientApp.swift
+@@ -88,7 +88,9 @@ struct ClashClientApp: App {
+     var body: some Scene {
+         WindowGroup {
+ 
+-            AppShellView()
++            OneToolsRootShellView {
++                AppShellView()
++            }
+ 
+         }
+     }
+diff --git a/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift b/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift
+index 134e679549399faa7b76a5f869aab6d2f6750da2..8d79ada69dafd08afca72d6b67f15a946d3098ff 100644
+--- a/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift
++++ b/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift
+@@ -1,6 +1,9 @@
+ import CryptoKit
+ import Foundation
+ import Clash
++#if canImport(ClashClientUI)
++import ClashClientUI
++#endif
+ 
+  
+  
+@@ -2214,9 +2217,10 @@ enum ConfigTransforms {
+         _ yaml: String,
+         udpFallback: UDPFallbackPolicy,
+         excludeAPNsRoute: Bool = false,
++        swiptLoopback: Bool = true,
+         json: String? = nil
+     ) throws -> String {
+-        try applyClientRuntimePolicyReading(yaml, udpFallback: udpFallback, excludeAPNsRoute: excludeAPNsRoute,
++        try applyClientRuntimePolicyReading(yaml, udpFallback: udpFallback, excludeAPNsRoute: excludeAPNsRoute, swiptLoopback: swiptLoopback,
+                                             json: json).yaml
+     }
+ 
+@@ -2240,13 +2244,14 @@ enum ConfigTransforms {
+         _ yaml: String,
+         udpFallback: UDPFallbackPolicy,
+         excludeAPNsRoute: Bool = false,
++        swiptLoopback: Bool = true,
+         json known: String? = nil
+     ) throws -> RuntimePolicyReading {
+          
+          
+          
+         if let reading = try applyClientRuntimePolicyAroundRules(yaml, udpFallback: udpFallback,
+-                                                                 excludeAPNsRoute: excludeAPNsRoute) {
++                                                                 excludeAPNsRoute: excludeAPNsRoute, swiptLoopback: swiptLoopback) {
+             return reading
+         }
+          
+@@ -2264,7 +2269,7 @@ enum ConfigTransforms {
+             } else {
+                 parsed = try OrderedJSON.parse(yamlToJSON(cut.rest))
+             }
+-            let root = try clientRuntimeRoot(parsed, udpFallback: udpFallback, excludeAPNsRoute: excludeAPNsRoute)
++            let root = try clientRuntimeRoot(parsed, udpFallback: udpFallback, excludeAPNsRoute: excludeAPNsRoute, swiptLoopback: swiptLoopback)
+             let restJSON = root.serialized()
+             if let spliced = cut.splicing(into: try jsonToYAML(restJSON)) {
+                 guard let nodes else { return RuntimePolicyReading(yaml: spliced, json: restJSON, omitsNodes: true) }
+@@ -2273,7 +2278,7 @@ enum ConfigTransforms {
+             }
+         }
+         let root = try clientRuntimeRoot(
+-            clientRuntimeDocument(yaml, json: known), udpFallback: udpFallback, excludeAPNsRoute: excludeAPNsRoute)
++            clientRuntimeDocument(yaml, json: known), udpFallback: udpFallback, excludeAPNsRoute: excludeAPNsRoute, swiptLoopback: swiptLoopback)
+         let json = root.serialized()
+         return RuntimePolicyReading(yaml: try jsonToYAML(json), json: json, omitsNodes: false)
+     }
+@@ -2287,7 +2292,8 @@ enum ConfigTransforms {
+     private static func applyClientRuntimePolicyAroundRules(
+         _ yaml: String,
+         udpFallback: UDPFallbackPolicy,
+-        excludeAPNsRoute: Bool
++        excludeAPNsRoute: Bool,
++        swiptLoopback: Bool
+     ) throws -> RuntimePolicyReading? {
+         guard yaml.utf8.count >= ruleSectionCutFromBytes else { return nil }
+         var keys: Set<String> = ["rules"]
+@@ -2295,7 +2301,7 @@ enum ConfigTransforms {
+         guard let cut = TopLevelYAMLSections.cutting(keys, from: yaml), let section = cut.sectionText("rules"),
+               let lines = RuleLines(section) else { return nil }
+         let root = try clientRuntimeRoot(OrderedJSON.parse(yamlToJSON(cut.rest)), udpFallback: udpFallback,
+-                                         excludeAPNsRoute: excludeAPNsRoute)
++                                         excludeAPNsRoute: excludeAPNsRoute, swiptLoopback: swiptLoopback)
+         var written = section
+         if let guardRule = UDPFallbackGuard.ruleToInject(
+             policy: udpFallback, existingRules: try lines.rules(whoseLinesHold: ["udp", "reject"])) {
+@@ -2312,13 +2318,17 @@ enum ConfigTransforms {
+     private static func clientRuntimeRoot(
+         _ parsed: OrderedJSON,
+         udpFallback: UDPFallbackPolicy,
+-        excludeAPNsRoute: Bool
++        excludeAPNsRoute: Bool,
++        swiptLoopback: Bool
+     ) throws -> OrderedJSON {
+         var root = try clientRuntimeRootBeforeUDPFallbackGuard(parsed: parsed)
+         try appendUDPFallbackGuard(udpFallback, to: &root)
+         if excludeAPNsRoute {
+             appendAPNsFakeIPFilter(to: &root)
+         }
++        if swiptLoopback {
++            appendSwiptLoopbackAddress(to: &root)
++        }
+         return root
+     }
+ 
+@@ -2414,6 +2424,24 @@ enum ConfigTransforms {
+         root = root.setting(path: ["dns", "fake-ip-filter"], to: .array(filter))
+     }
+ 
++    private static func appendSwiptLoopbackAddress(to root: inout OrderedJSON) {
++        var configured: [String] = []
++        switch root.topLevelValue("tun")?.topLevelValue("loopback-address") {
++        case nil:
++            break
++        case let .array(existing)?:
++            configured = existing.compactMap { if case let .string(value) = $0 { return value } else { return nil } }
++            // 列表里有不是字符串的项：这是用户自己写的东西，不碰。
++            guard configured.count == existing.count else { return }
++        default:
++            // 写成了别的形状：同样不碰。
++            return
++        }
++        let merged = ClashTunnelRouteShaping.loopbackAddresses(configured: configured, swiptLoopback: true)
++        guard merged != configured else { return }
++        root = root.setting(path: ["tun", "loopback-address"], to: .array(merged.map { .string($0) }))
++    }
++
+      
+      
+      
+diff --git a/apple/ClashClient/Sources/ConfigStore/ProfileActivationCoordinator.swift b/apple/ClashClient/Sources/ConfigStore/ProfileActivationCoordinator.swift
+index cc19cfd3bb730f1ca8539f6156cbd28812439778..58132c0135fca4d1fb5374372f6949d7aa4e6f8a 100644
+--- a/apple/ClashClient/Sources/ConfigStore/ProfileActivationCoordinator.swift
++++ b/apple/ClashClient/Sources/ConfigStore/ProfileActivationCoordinator.swift
+@@ -193,6 +193,7 @@ enum ProfileRuntimeConfigBuilder {
+          
+          
+         var excludeAPNsRoute = false
++        var swiptLoopback = true
+          
+          
+          
+@@ -228,6 +229,7 @@ enum ProfileRuntimeConfigBuilder {
+                 beforeClientRuntimePolicy,
+                 udpFallback: udpFallback,
+                 excludeAPNsRoute: excludeAPNsRoute,
++                swiptLoopback: swiptLoopback,
+                 json: beforeClientRuntimePolicyJSON
+             )
+         }
+@@ -245,6 +247,7 @@ enum ProfileRuntimeConfigBuilder {
+             stages.beforeClientRuntimePolicy,
+             udpFallback: stages.udpFallback,
+             excludeAPNsRoute: stages.excludeAPNsRoute,
++            swiptLoopback: stages.swiptLoopback,
+             json: stages.beforeClientRuntimePolicyJSON
+         )
+          
+@@ -515,6 +518,13 @@ enum ProfileRuntimeConfigBuilder {
+             excludeAPNsRoute: ClashTunnelRouteShaping.Switches.read(
+                 from: UDPFallbackSettings.appGroupDefaults
+             ).excludeAPNsRoute,
++            swiptLoopback: {
++                #if os(iOS)
++                return ClashTunnelRouteShaping.swiptLoopbackEnabled(in: UDPFallbackSettings.appGroupDefaults)
++                #else
++                return true
++                #endif
++            }(),
+             providerMerge: providerMerge,
+             profileLogLevel: profileLogLevel,
+             logLevelSetByApp: { if case .forced = directive { return true } else { return false } }(),
+diff --git a/apple/ClashClient/Sources/ConfigUI/TunnelSettingsView.swift b/apple/ClashClient/Sources/ConfigUI/TunnelSettingsView.swift
+index 8dd58722a8d4c24804b695483af61d744ad24d4a..5d3d24477acb6a18f083b607d5ebe98d1c0d6a6f 100644
+--- a/apple/ClashClient/Sources/ConfigUI/TunnelSettingsView.swift
++++ b/apple/ClashClient/Sources/ConfigUI/TunnelSettingsView.swift
+@@ -138,6 +138,16 @@ struct TunnelSettingsView: View {
+             } footer: {
+                 Text("If YES, 17.0.0.0/8 stays outside the tunnel and push.apple.com resolves to its real address, so Apple push notifications reach this device directly instead of through the proxy. Takes effect on the next connection.")
+             }
++            #if os(iOS)
++            Section {
++                Toggle("Swipt Compatibility", isOn: binding(\.swiptLoopback))
++                    .accessibilityIdentifier("tunnel.swiptLoopback")
++            } header: {
++                Text("Swipt Compatibility")
++            } footer: {
++                Text("If YES, the tunnel answers 10.7.0.1 as a loopback address, so Swipt reaches this device through Clash without a separate loopback VPN. Takes effect on the next connection.")
++            }
++            #endif
+ 
+             if !error.isEmpty {
+                 Section {
+diff --git a/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..75c696445415e1bb694a0d09f83fe6d93125bad5
+--- /dev/null
++++ b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
+@@ -0,0 +1,335 @@
++#if os(iOS)
++import ClashClientUI
++import OneUI
++import SwiftUI
++import UIKit
++
++public enum OneToolsTab: Int, CaseIterable, Sendable {
++    case proxy = 0
++    case adblock = 1
++    case signing = 2
++    case toolbox = 3
++
++    var dockItem: UltraGlassDock.Item {
++        switch self {
++        case .proxy:
++            return .init(id: "proxy", icon: "router_outlined", label: "代理")
++        case .adblock:
++            return .init(id: "adblock", icon: "shield_outlined", label: "去广告")
++        case .signing:
++            return .init(id: "signing", icon: "verified_user_outlined", label: "自签")
++        case .toolbox:
++            return .init(id: "toolbox", icon: "dashboard_outlined", label: "工具箱")
++        }
++    }
++}
++
++@MainActor
++final class OneToolsShellRouter: ObservableObject {
++    static let shared = OneToolsShellRouter()
++
++    @Published var selectedIndex: Int = OneToolsTab.proxy.rawValue
++    @Published var lastOneWifiPairingURL: String?
++    @Published var lastFeatherURL: String?
++    @Published var bannerMessage: String?
++
++    private init() {}
++
++    func handleIncomingURL(_ url: URL) -> Bool {
++        guard let scheme = url.scheme?.lowercased() else { return false }
++        if scheme == "feather" {
++            selectedIndex = OneToolsTab.signing.rawValue
++            lastFeatherURL = url.absoluteString
++            return true
++        }
++        guard scheme == "onetools" else { return false }
++        let host = url.host?.lowercased() ?? ""
++        switch host {
++        case "tab":
++            let slug = url.pathComponents.dropFirst().first?.lowercased() ?? ""
++            switch slug {
++            case "proxy", "clash": selectedIndex = OneToolsTab.proxy.rawValue
++            case "adblock", "swipt": selectedIndex = OneToolsTab.adblock.rawValue
++            case "signing", "feather": selectedIndex = OneToolsTab.signing.rawValue
++            case "toolbox", "more": selectedIndex = OneToolsTab.toolbox.rawValue
++            default: break
++            }
++            return true
++        case "onewifi":
++            lastOneWifiPairingURL = url.absoluteString
++            selectedIndex = OneToolsTab.toolbox.rawValue
++            bannerMessage = "已接收 OneWIFI 配对链接，等待互通模块接入"
++            return true
++        default:
++            return false
++        }
++    }
++}
++
++/// OneTools iOS 根外壳（P5.0）：保持 `AppShellView` 常驻挂载以保留 VPN 与订阅状态，
++/// 底部叠加 `OneUI` 手写液态胶囊底栏 `UltraGlassDock` 切换四大核心工作区。
++struct OneToolsRootShellView<ProxyContent: View>: View {
++    private static let shellEnabledKey = "onetools.shell.enabled"
++
++    @AppStorage(Self.shellEnabledKey) private var shellEnabled: Bool = true
++    @StateObject private var router = OneToolsShellRouter.shared
++    private let proxyContent: ProxyContent
++
++    init(@ViewBuilder proxyContent: () -> ProxyContent) {
++        self.proxyContent = proxyContent()
++    }
++
++    private var dockItems: [UltraGlassDock.Item] {
++        OneToolsTab.allCases.map(\.dockItem)
++    }
++
++    var body: some View {
++        if shellEnabled {
++            ZStack(alignment: .bottom) {
++                proxyContent
++                    .safeAreaInset(edge: .bottom, spacing: 0) {
++                        Color.clear.frame(height: OneMetrics.dockHeight + OneMetrics.space24)
++                    }
++                    .opacity(router.selectedIndex == OneToolsTab.proxy.rawValue ? 1 : 0)
++                    .allowsHitTesting(router.selectedIndex == OneToolsTab.proxy.rawValue)
++                    .accessibilityHidden(router.selectedIndex != OneToolsTab.proxy.rawValue)
++
++                if router.selectedIndex == OneToolsTab.adblock.rawValue {
++                    adblockTab
++                        .transition(.opacity)
++                } else if router.selectedIndex == OneToolsTab.signing.rawValue {
++                    signingTab
++                        .transition(.opacity)
++                } else if router.selectedIndex == OneToolsTab.toolbox.rawValue {
++                    OneToolsToolboxView(router: router, shellEnabled: $shellEnabled)
++                        .oneTheme()
++                        .transition(.opacity)
++                }
++
++                UltraGlassDock(items: dockItems, selectedIndex: $router.selectedIndex)
++            }
++            .onOpenURL { url in
++                _ = router.handleIncomingURL(url)
++            }
++        } else {
++            proxyContent
++                .onOpenURL { url in
++                    if url.scheme?.lowercased() == "onetools", url.host?.lowercased() == "shell" {
++                        shellEnabled = true
++                    }
++                }
++        }
++    }
++
++    @ViewBuilder
++    private var adblockTab: some View {
++        #if canImport(SwiptUI)
++        SwiptRootView()
++        #else
++        OneToolsAdblockHubView(router: router)
++            .oneTheme()
++        #endif
++    }
++
++    @ViewBuilder
++    private var signingTab: some View {
++        #if canImport(FeatherUI)
++        FeatherRootView()
++        #else
++        OneToolsSigningHubView(router: router)
++            .oneTheme()
++        #endif
++    }
++}
++
++private struct OneToolsAdblockHubView: View {
++    @ObservedObject var router: OneToolsShellRouter
++    @State private var copiedPlugin = false
++
++    private var appGroupDefaults: UserDefaults? {
++        UserDefaults(suiteName: ClashAppIdentifiers.appGroup)
++    }
++
++    private var loopbackEnabled: Bool {
++        ClashTunnelRouteShaping.swiptLoopbackEnabled(in: appGroupDefaults)
++    }
++
++    private var bundledPluginText: String? {
++        guard let url = Bundle.main.url(forResource: "onetools-cn-ads", withExtension: "plugin") else {
++            return nil
++        }
++        return try? String(contentsOf: url, encoding: .utf8)
++    }
++
++    var body: some View {
++        OnePage {
++            PageHead("去广告", desc: "网络层 Loon 模块引擎 + 界面层 Swipt 自动跳过") {
++                Nameplate.ready("双层拦截", detail: "12 规则")
++            }
++
++            OneStatusHero(
++                tone: loopbackEnabled ? .healthy : .attention,
++                title: loopbackEnabled ? "环回兼容已开启" : "环回兼容已关闭",
++                subtitle: loopbackEnabled
++                    ? "Clash 隧道已配置注入 \(ClashTunnelRouteShaping.swiptLoopbackAddress)，可直接承载 Swipt"
++                    : "请在「工具箱」或「隧道设置」开启 Swipt 兼容以提供 10.7.0.1 环回地址",
++                detail: "无需额外安装 LocalDevVPN，单 VPN 通道同时服务代理与界面跳过",
++                action: HeroAction("前往代理页") {
++                    router.selectedIndex = OneToolsTab.proxy.rawValue
++                }
++            )
++
++            OneSection("网络层 · 自有国内广告规则", desc: "已内置经双源交叉验证的 onetools-cn-ads.plugin", systemImage: "shield_outlined", tone: .green) {
++                VStack(alignment: .leading, spacing: OneMetrics.space12) {
++                    SoftLabelGrid([
++                        SoftLabel("内置插件", value: bundledPluginText != nil ? "已随包内置" : "待打包资源"),
++                        SoftLabel("覆盖 SDK", value: "8 家核心 / 12 条规则"),
++                        SoftLabel("引擎基础", value: "Clash Module Engine"),
++                        SoftLabel("兼容语法", value: "Loon / Surge / QX"),
++                    ])
++                    HStack(spacing: OneMetrics.space8) {
++                        OneFilledButton(copiedPlugin ? "已复制规则内容" : "复制内置 Loon 插件") {
++                            if let text = bundledPluginText {
++                                UIPasteboard.general.string = text
++                                copiedPlugin = true
++                            }
++                        }
++                        OneOutlinedButton("打开模块管理") {
++                            router.selectedIndex = OneToolsTab.proxy.rawValue
++                        }
++                    }
++                }
++            }
++
++            OneSection("界面层 · Swipt 自动化仓位", desc: "G2 双 Go 运行时实测通过后直接挂载 SwiptRootView", systemImage: "extension_outlined", tone: .teal) {
++                SoftLabelGrid([
++                    SoftLabel("环回对端", value: ClashTunnelRouteShaping.swiptLoopbackAddress, mono: true),
++                    SoftLabel("默认规则", value: "跳过中国广告 (fuzzySkip)"),
++                    SoftLabel("最低系统", value: "iOS 17.4+"),
++                    SoftLabel("引导改造", value: "已移除 LocalDevVPN 依赖"),
++                ])
++            }
++        }
++    }
++}
++
++private struct OneToolsSigningHubView: View {
++    @ObservedObject var router: OneToolsShellRouter
++
++    var body: some View {
++        OnePage {
++            PageHead("自签", desc: "Feather 证书签名底座 + 批量重签与到期提醒") {
++                Nameplate("Zsign + IDevice", tone: .teal)
++            }
++
++            OneStatusHero(
++                tone: .neutral,
++                title: "自签引擎待合入编译",
++                subtitle: "SigningLogic（提前 7 天 / 1 天到期提醒与批量签名错误隔离）已在 Feather 分支就绪",
++                detail: router.lastFeatherURL.map { "最近接收 URL：\($0)" } ?? "支持 feather:// 证书导入与本地环回安装通道",
++                action: HeroAction("查看工具箱状态") {
++                    router.selectedIndex = OneToolsTab.toolbox.rawValue
++                }
++            )
++
++            OneSection("已就绪增强能力（P7）", systemImage: "key_outlined", tone: .green) {
++                SoftLabelGrid([
++                    SoftLabel("到期提醒", value: "提前 7 天 / 1 天"),
++                    SoftLabel("批量签名", value: "单包异常自动隔离"),
++                    SoftLabel("一键重签", value: "按新证书批量迁移已签应用"),
++                    SoftLabel("直装通道", value: "复用 10.7.0.1 环回"),
++                ])
++            }
++        }
++    }
++}
++
++private struct OneToolsToolboxView: View {
++    @ObservedObject var router: OneToolsShellRouter
++    @Binding var shellEnabled: Bool
++    @State private var swiptLoopbackOn: Bool = true
++    @State private var publicBlurFallback: Bool = OneBackdropBlurView.preferPublicMaterialFallback
++    @State private var showGallerySheet = false
++
++    private var appGroupDefaults: UserDefaults? {
++        UserDefaults(suiteName: ClashAppIdentifiers.appGroup)
++    }
++
++    var body: some View {
++        OnePage {
++            PageHead("工具箱", desc: "OneTools 全局开关、视觉对拍画廊与互通状态") {
++                GlassActionButton("OneUI 画廊", systemImage: "science_outlined") {
++                    showGallerySheet = true
++                }
++            }
++
++            if let msg = router.bannerMessage {
++                OneSnackBarBanner(msg, actionTitle: "知道了") {
++                    router.bannerMessage = nil
++                }
++            }
++
++            OneSection("隧道与视觉运行时", systemImage: "tune_rounded", tone: .green) {
++                VStack(alignment: .leading, spacing: OneMetrics.space12) {
++                    HStack {
++                        VStack(alignment: .leading, spacing: OneMetrics.space2) {
++                            Text("Swipt 环回兼容 (10.7.0.1)").font(OneText.bodyLarge())
++                            Text("在 Clash 运行时配置自动注入 tun.loopback-address")
++                                .font(OneText.bodySmall())
++                                .foregroundStyle(OnePalette.onSurfaceVariant)
++                        }
++                        Spacer()
++                        SystemSwitch(isOn: $swiptLoopbackOn)
++                    }
++                    OneDivider()
++                    HStack {
++                        VStack(alignment: .leading, spacing: OneMetrics.space2) {
++                            Text("仅用公开材质模糊回退").font(OneText.bodyLarge())
++                            Text("关闭时优先使用 CABackdropLayer 精确匹配 Flutter sigma")
++                                .font(OneText.bodySmall())
++                                .foregroundStyle(OnePalette.onSurfaceVariant)
++                        }
++                        Spacer()
++                        SystemSwitch(isOn: $publicBlurFallback)
++                    }
++                }
++            }
++
++            OneSection("后期互通与深链记录", systemImage: "link_outlined", tone: .teal) {
++                VStack(alignment: .leading, spacing: OneMetrics.space12) {
++                    SoftLabelGrid([
++                        SoftLabel("URL Scheme", value: "onetools:// · feather://", mono: true),
++                        SoftLabel("OneWIFI 配对", value: router.lastOneWifiPairingURL ?? "未收到配对唤起"),
++                    ])
++                    HStack(spacing: OneMetrics.space8) {
++                        OneFilledButton("打开 OneUI 对拍画廊") {
++                            showGallerySheet = true
++                        }
++                        OneOutlinedButton("临时切回原版 Clash 外壳") {
++                            shellEnabled = false
++                        }
++                    }
++                }
++            }
++        }
++        .onAppear {
++            swiptLoopbackOn = ClashTunnelRouteShaping.swiptLoopbackEnabled(in: appGroupDefaults)
++            publicBlurFallback = OneBackdropBlurView.preferPublicMaterialFallback
++        }
++        .onChange(of: swiptLoopbackOn) { next in
++            appGroupDefaults?.set(next, forKey: ClashTunnelRouteShaping.swiptLoopbackKey)
++        }
++        .onChange(of: publicBlurFallback) { next in
++            OneBackdropBlurView.preferPublicMaterialFallback = next
++        }
++        .sheet(isPresented: $showGallerySheet) {
++            NavigationView {
++                OneGallery()
++                    .oneTheme()
++                    .navigationTitle("OneUI Gallery")
++                    .navigationBarTitleDisplayMode(.inline)
++            }
++        }
++    }
++}
++#endif
+diff --git a/apple/ClashClient/Sources/VPNController.swift b/apple/ClashClient/Sources/VPNController.swift
+index bd4403d8acdd27eb85b8157ea45bca619c5da454..b83fe598080f3f754ce4a08752b36e725c05c94c 100644
+--- a/apple/ClashClient/Sources/VPNController.swift
++++ b/apple/ClashClient/Sources/VPNController.swift
+@@ -269,6 +269,7 @@ struct VPNTunnelSettings: Equatable {
+      
+      
+     var excludeAPNsRoute = false
++    var swiptLoopback = true
+ 
+     enum Key {
+         static let enforceRoutes = "vpn.tunnel.enforceRoutes"
+@@ -279,6 +280,7 @@ struct VPNTunnelSettings: Equatable {
+         static let hideVPNIcon = "vpn.tunnel.hideVPNIcon"
+         static let homeKitCompatibility = "vpn.tunnel.homeKitCompatibility"
+         static let excludeAPNsRoute = "vpn.tunnel.excludeAPNsRoute"
++        static let swiptLoopback = "vpn.tunnel.swiptLoopback"
+     }
+ 
+     static func load(from defaults: UserDefaults) -> Self {
+@@ -290,7 +292,8 @@ struct VPNTunnelSettings: Equatable {
+             includeCellularServices: defaults.bool(forKey: Key.includeCellularServices),
+             hideVPNIcon: defaults.bool(forKey: Key.hideVPNIcon),
+             homeKitCompatibility: defaults.bool(forKey: Key.homeKitCompatibility),
+-            excludeAPNsRoute: defaults.bool(forKey: Key.excludeAPNsRoute)
++            excludeAPNsRoute: defaults.bool(forKey: Key.excludeAPNsRoute),
++            swiptLoopback: ClashTunnelRouteShaping.swiptLoopbackEnabled(in: defaults)
+         )
+     }
+ 
+@@ -303,6 +306,7 @@ struct VPNTunnelSettings: Equatable {
+         defaults.set(hideVPNIcon, forKey: Key.hideVPNIcon)
+         defaults.set(homeKitCompatibility, forKey: Key.homeKitCompatibility)
+         defaults.set(excludeAPNsRoute, forKey: Key.excludeAPNsRoute)
++        defaults.set(swiptLoopback, forKey: Key.swiptLoopback)
+     }
+ }
+ 
+diff --git a/apple/ClashClient/project.yml b/apple/ClashClient/project.yml
+index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..9e61135c194b1e0e5b7e788399327aca208b7345 100644
+--- a/apple/ClashClient/project.yml
++++ b/apple/ClashClient/project.yml
+@@ -2,7 +2,7 @@ name: ClashClient
+ options:
+   bundleIdPrefix: org.example.clash
+   deploymentTarget:
+-    iOS: '15.0'
++    iOS: '16.4'
+     macOS: '13.0'
+     tvOS: '17.0'
+ settings:
+@@ -25,6 +25,10 @@ packages:
+     path: ../ClashClientUI
+   ClashMacClient:
+     path: ../ClashMacClient
++  OneUI:
++    path: ../../../OneUI
++  SigningLogic:
++    path: ../../../SigningLogic
+   swift-certificates:
+     url: https://github.com/apple/swift-certificates.git
+     exactVersion: 1.9.0
+@@ -69,6 +73,8 @@ targets:
+       buildPhase: resources
+     - path: Resources/Module/surge-builtin-system.list
+       buildPhase: resources
++    - path: ../../../adblock/onetools-cn-ads.plugin
++      buildPhase: resources
+     - path: ../../Vendor/ClashAdapter/Sources/ClashAdapter
+     settings:
+       configs:
+@@ -109,7 +115,8 @@ targets:
+           - clash
+           - clashmeta
+           - flclash
+-          - clash
++          - onetools
++          - feather
+         CFBundleDocumentTypes:
+         - CFBundleTypeName: YAML Configuration
+           CFBundleTypeRole: Viewer
+@@ -144,6 +151,8 @@ targets:
+     dependencies:
+     - package: ClashClientKit
+     - package: ClashClientUI
++    - package: OneUI
++    - package: SigningLogic
+     - package: swift-certificates
+       product: X509
+     - package: swift-crypto
+@@ -414,6 +423,7 @@ targets:
+     - path: Sources
+       excludes:
+       - TV
++      - OneTools
+       - ClashClientApp.swift
+       - ClashNavigationLab.swift
+       - ClashPushClockTouchProbe.swift
+@@ -454,6 +464,8 @@ targets:
+       buildPhase: resources
+     - path: Resources/Module/surge-builtin-system.list
+       buildPhase: resources
++    - path: ../../../adblock/onetools-cn-ads.plugin
++      buildPhase: resources
+     - path: ../../Vendor/ClashAdapter/Sources/ClashAdapter
+     settings:
+       configs:
+@@ -739,6 +751,8 @@ targets:
+       group: SharedFacts
+     - path: ../ClashClientUI/Sources/ClashClientUI/Features/RemoteControl/ClashRemoteControlSettings.swift
+       group: SharedFacts
++    - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
++      group: SharedFacts
+     - path: Sources/ConfigStore/ConfigTransforms.swift
+     - path: Sources/ConfigStore/TopLevelYAMLSections.swift
+     - path: Sources/ConfigStore/InvalidDomainSites.swift
+diff --git a/apple/ClashClientUI/Package.swift b/apple/ClashClientUI/Package.swift
+index 84baa5e71a85ed559f5bea8919f7d41feddd1e95..fb86776f7a7862ffa6db209bed561e9990e03e40 100644
+--- a/apple/ClashClientUI/Package.swift
++++ b/apple/ClashClientUI/Package.swift
+@@ -1,3 +1,3 @@
+ // swift-tools-version: 6.0
+ import PackageDescription
+-let package = Package(name: "ClashClientUI", platforms: [.iOS(.v15), .macOS(.v13), .tvOS(.v17)], products: [.library(name: "ClashClientUI", targets: ["ClashClientUI"])], dependencies: [.package(path: "../ClashClientKit")], targets: [.target(name: "ClashClientUI", dependencies: ["ClashClientKit"], resources: [.copy("Resources/FieldCopy")], swiftSettings: [.unsafeFlags(["-Osize"], .when(platforms: [.iOS, .macOS], configuration: .release))])])
++let package = Package(name: "ClashClientUI", platforms: [.iOS(.v15), .macOS(.v13), .tvOS(.v17)], products: [.library(name: "ClashClientUI", targets: ["ClashClientUI"])], dependencies: [.package(path: "../ClashClientKit")], targets: [.target(name: "ClashClientUI", dependencies: ["ClashClientKit"], resources: [.copy("Resources/FieldCopy")], swiftSettings: [.unsafeFlags(["-Osize"], .when(platforms: [.iOS, .macOS], configuration: .release))]), .testTarget(name: "ClashClientUITests", dependencies: ["ClashClientUI"])])
+diff --git a/apple/ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift b/apple/ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
+index e1e2cf1ddfde75535663978e05c47c6a51d4dbdd..c28cac93120e4dc72243ee780e9a99b7221af48f 100644
+--- a/apple/ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
++++ b/apple/ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
+@@ -27,6 +27,26 @@ public enum ClashTunnelRouteShaping {
+      
+      
+     public static let excludeAPNsRouteKey = "vpn.tunnel.excludeAPNsRoute"
++
++    public static let swiptLoopbackKey = "vpn.tunnel.swiptLoopback"
++
++    /// LocalDevVPN 与 StosVPN 约定的环回对端地址，Swipt 最后兜底试的也是它。
++    public static let swiptLoopbackAddress = "10.7.0.1"
++
++    /// 键从没写过时算「开」。`UserDefaults.bool(forKey:)` 对缺失的键返回 false，这里不能用它。
++    public static func swiptLoopbackEnabled(in defaults: UserDefaults?) -> Bool {
++        (defaults?.object(forKey: swiptLoopbackKey) as? Bool) ?? true
++    }
++
++    /// 配置里已经有 10.7.0.1 就原样返回。
++    public static func loopbackAddresses(configured: [String], swiptLoopback: Bool) -> [String] {
++        guard swiptLoopback else { return configured }
++        let normalizedLoopback = swiptLoopbackAddress.lowercased()
++        guard !configured.contains(where: { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalizedLoopback }) else {
++            return configured
++        }
++        return configured + [swiptLoopbackAddress]
++    }
+      
+      
+      
+diff --git a/apple/ClashClientUI/Tests/ClashClientUITests/SwiptLoopbackTests.swift b/apple/ClashClientUI/Tests/ClashClientUITests/SwiptLoopbackTests.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..64f16f41dd14f35cca83c12b4c0c846adc20fd2d
+--- /dev/null
++++ b/apple/ClashClientUI/Tests/ClashClientUITests/SwiptLoopbackTests.swift
+@@ -0,0 +1,42 @@
++import XCTest
++@testable import ClashClientUI
++
++final class SwiptLoopbackTests: XCTestCase {
++    func testAddsTheAddressWhenOnAndAbsent() {
++        XCTAssertEqual(
++            ClashTunnelRouteShaping.loopbackAddresses(configured: [], swiptLoopback: true),
++            ["10.7.0.1"])
++    }
++
++    func testKeepsWhatTheUserWroteAndAppends() {
++        XCTAssertEqual(
++            ClashTunnelRouteShaping.loopbackAddresses(configured: ["10.9.0.1", "fd00::1"], swiptLoopback: true),
++            ["10.9.0.1", "fd00::1", "10.7.0.1"])
++    }
++
++    func testDoesNotAddItTwice() {
++        XCTAssertEqual(
++            ClashTunnelRouteShaping.loopbackAddresses(configured: ["10.7.0.1"], swiptLoopback: true),
++            ["10.7.0.1"])
++    }
++
++    func testDoesNotAddWhitespacePaddedAddressTwice() {
++        XCTAssertEqual(
++            ClashTunnelRouteShaping.loopbackAddresses(configured: [" 10.7.0.1\n"], swiptLoopback: true),
++            [" 10.7.0.1\n"])
++    }
++
++    func testLeavesTheListAloneWhenOff() {
++        XCTAssertEqual(
++            ClashTunnelRouteShaping.loopbackAddresses(configured: ["10.9.0.1"], swiptLoopback: false),
++            ["10.9.0.1"])
++    }
++
++    func testAKeyNeverWrittenCountsAsOn() {
++        let defaults = UserDefaults(suiteName: "SwiptLoopbackTests.\(UUID().uuidString)")!
++        XCTAssertTrue(ClashTunnelRouteShaping.swiptLoopbackEnabled(in: defaults))
++        defaults.set(false, forKey: ClashTunnelRouteShaping.swiptLoopbackKey)
++        XCTAssertFalse(ClashTunnelRouteShaping.swiptLoopbackEnabled(in: defaults))
++        XCTAssertTrue(ClashTunnelRouteShaping.swiptLoopbackEnabled(in: nil))
++    }
++}

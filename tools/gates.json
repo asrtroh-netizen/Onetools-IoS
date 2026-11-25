@@ -220,6 +220,12 @@
       "cwd": ".",
       "enabled": true,
       "command": ["python", "tools/gen_icon_codepoints.py", "--check"]
+    },
+    {
+      "id": "CI-patches-sync",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "tools/export_upstream_patches.py", "--check"]
     }
   ]
 }

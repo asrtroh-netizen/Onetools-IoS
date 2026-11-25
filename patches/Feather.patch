@@ -1,0 +1,430 @@
+diff --git a/Feather.xcodeproj/project.pbxproj b/Feather.xcodeproj/project.pbxproj
+index d36be267d757a4a14979ff17054d6732d3a84dbb..321c6219ef9697a4823b8132cfb415085217dc60 100644
+--- a/Feather.xcodeproj/project.pbxproj
++++ b/Feather.xcodeproj/project.pbxproj
+@@ -19,6 +19,7 @@
+ 		33693A082DC8BF5B00730215 /* AltSourceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 33693A072DC8BF5B00730215 /* AltSourceKit */; };
+ 		3371F7322DA9ECDD00281AC6 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = 3371F7312DA9ECDD00281AC6 /* Zip */; };
+ 		33CF13392DB5ACFB0021D4C5 /* SWCompression in Frameworks */ = {isa = PBXBuildFile; productRef = 33CF13382DB5ACFB0021D4C5 /* SWCompression */; };
++		33A1B2C52F99000100112233 /* SigningLogic in Frameworks */ = {isa = PBXBuildFile; productRef = 33A1B2C42F99000100112233 /* SigningLogic */; };
+ 		570920BE2F98A4F0008C4A83 /* Feather.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 570920BD2F98A4F0008C4A83 /* Feather.xcconfig */; };
+ /* End PBXBuildFile section */
+ 
+@@ -77,6 +78,7 @@
+ 				330F69032DC03DF500D8C35D /* NimbleViews in Frameworks */,
+ 				3305BBAC2DB8944200660D45 /* Vapor in Frameworks */,
+ 				3346F83B2DC6C6D100C7D508 /* NukeUI in Frameworks */,
++				33A1B2C52F99000100112233 /* SigningLogic in Frameworks */,
+ 			);
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 		};
+@@ -140,6 +142,7 @@
+ 				3346F8482DC6D64800C7D508 /* NimbleJSON */,
+ 				33693A072DC8BF5B00730215 /* AltSourceKit */,
+ 				3349E7662DEFB46F00E317ED /* IDeviceSwift */,
++				33A1B2C42F99000100112233 /* SigningLogic */,
+ 			);
+ 			productName = Feather;
+ 			productReference = 3379C1B92DA869A1004372DA /* Feather.app */;
+@@ -190,6 +193,7 @@
+ 				3346F8372DC6C68300C7D508 /* XCRemoteSwiftPackageReference "Nuke" */,
+ 				33693A062DC8BF5B00730215 /* XCLocalSwiftPackageReference "AltSourceKit" */,
+ 				3349E7652DEFB46F00E317ED /* XCLocalSwiftPackageReference "IDeviceKitten" */,
++				33A1B2C32F99000100112233 /* XCLocalSwiftPackageReference "SigningLogic" */,
+ 			);
+ 			preferredProjectObjectVersion = 77;
+ 			productRefGroup = 3379C1BA2DA869A1004372DA /* Products */;
+@@ -511,6 +515,10 @@
+ 			isa = XCLocalSwiftPackageReference;
+ 			relativePath = Zsign;
+ 		};
++		33A1B2C32F99000100112233 /* XCLocalSwiftPackageReference "SigningLogic" */ = {
++			isa = XCLocalSwiftPackageReference;
++			relativePath = ../SigningLogic;
++		};
+ /* End XCLocalSwiftPackageReference section */
+ 
+ /* Begin XCRemoteSwiftPackageReference section */
+@@ -591,6 +599,11 @@
+ 			isa = XCSwiftPackageProductDependency;
+ 			productName = AltSourceKit;
+ 		};
++		33A1B2C42F99000100112233 /* SigningLogic */ = {
++			isa = XCSwiftPackageProductDependency;
++			package = 33A1B2C32F99000100112233 /* XCLocalSwiftPackageReference "SigningLogic" */;
++			productName = SigningLogic;
++		};
+ 		3371F7312DA9ECDD00281AC6 /* Zip */ = {
+ 			isa = XCSwiftPackageProductDependency;
+ 			package = 3371F6F52DA9EBA500281AC6 /* XCRemoteSwiftPackageReference "Zip" */;
+diff --git a/Feather/Backend/Storage/Storage+Certificate.swift b/Feather/Backend/Storage/Storage+Certificate.swift
+index aa44e86c677f4a36effeccd813a16284aa3a6247..1ae3f52831be41c9ade8de0d5af2bca17cdfc9a3 100644
+--- a/Feather/Backend/Storage/Storage+Certificate.swift
++++ b/Feather/Backend/Storage/Storage+Certificate.swift
+@@ -32,6 +32,7 @@ extension Storage {
+ 		new.isDefault = isDefault
+ 		Storage.shared.revokagedCertificate(for: new)
+ 		saveContext()
++		CertificateExpiryNotifier.shared.syncNotifications()
+ 		generator.impactOccurred()
+ 		completion(nil)
+ 	}
+@@ -42,6 +43,7 @@ extension Storage {
+ 		}
+ 		context.delete(cert)
+ 		saveContext()
++		CertificateExpiryNotifier.shared.syncNotifications()
+ 	}
+ 	
+ 	func getCertificate(for index: Int) -> CertificatePair? {
+diff --git a/Feather/FeatherApp.swift b/Feather/FeatherApp.swift
+index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..82b059ee15f56f9d21b877b2182a87d2d95e0a19 100644
+--- a/Feather/FeatherApp.swift
++++ b/Feather/FeatherApp.swift
+@@ -10,7 +10,38 @@ import Nuke
+ import IDeviceSwift
+ import OSLog
+ 
++/// Public embeddable entry view when compiled inside OneTools (`ONETOOLS_EMBEDDED`).
++public struct FeatherRootView: View {
++	@StateObject private var downloadManager = DownloadManager.shared
++	private let storage = Storage.shared
++
++	public init() {}
++
++	public var body: some View {
++		VStack {
++			DownloadHeaderView(downloadManager: downloadManager)
++				.transition(.move(edge: .top).combined(with: .opacity))
++			VariedTabbarView()
++				.environment(\.managedObjectContext, storage.context)
++				.onOpenURL(perform: FeatherURLHandler.handle)
++				.transition(.move(edge: .top).combined(with: .opacity))
++		}
++		.animation(.smooth, value: downloadManager.manualDownloads.description)
++		.onAppear {
++			CertificateExpiryNotifier.shared.syncNotifications()
++		}
++	}
++}
++
++enum FeatherURLHandler {
++	static func handle(_ url: URL) {
++		FeatherApp.handleIncomingURL(url)
++	}
++}
++
++#if !ONETOOLS_EMBEDDED
+ @main
++#endif
+ struct FeatherApp: App {
+ 	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+ 	
+@@ -21,15 +52,7 @@ struct FeatherApp: App {
+ 	
+ 	var body: some Scene {
+ 		WindowGroup {
+-			VStack {
+-				DownloadHeaderView(downloadManager: downloadManager)
+-					.transition(.move(edge: .top).combined(with: .opacity))
+-				VariedTabbarView()
+-					.environment(\.managedObjectContext, storage.context)
+-					.onOpenURL(perform: _handleURL)
+-					.transition(.move(edge: .top).combined(with: .opacity))
+-			}
+-			.animation(.smooth, value: downloadManager.manualDownloads.description)
++			FeatherRootView()
+ 			.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
+ 				DispatchQueue.main.async {
+ 					UIAlertController.showAlertWithOk(
+@@ -49,7 +72,7 @@ struct FeatherApp: App {
+ 		}
+ 	}
+ 	
+-	private func _handleURL(_ url: URL) {
++	static func handleIncomingURL(_ url: URL) {
+ 		if url.scheme == "feather" {
+ 			/// feather://import-certificate?p12=<base64>&mobileprovision=<base64>&password=<base64>
+ 			if url.host == "import-certificate" {
+@@ -160,6 +183,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
+ 		_createDocumentsDirectories()
+ 		ResetView.clearWorkCache()
+ 		_addDefaultCertificates()
++		CertificateExpiryNotifier.shared.syncNotifications()
+ 		return true
+ 	}
+ 	
+diff --git a/Feather/Utilities/Handlers/OneToolsSigningCoordinator.swift b/Feather/Utilities/Handlers/OneToolsSigningCoordinator.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dcf98b44f4f1727e5a7ec1012f51ac52fa460c0
+--- /dev/null
++++ b/Feather/Utilities/Handlers/OneToolsSigningCoordinator.swift
+@@ -0,0 +1,180 @@
++//
++//  OneToolsSigningCoordinator.swift
++//  Feather
++//
++
++import CoreData
++import Foundation
++import SigningLogic
++import UIKit
++import UserNotifications
++
++// MARK: - Certificate Expiry Notification Scheduler (P7)
++
++final class CertificateExpiryNotifier {
++    static let shared = CertificateExpiryNotifier()
++    private static let identifierPrefix = "onetools.cert.expiry."
++
++    private init() {}
++
++    func syncNotifications(now: Date = Date()) {
++        let certs = Storage.shared.getAllCertificates().filter { !$0.revoked }
++        let subjects: [ExpirySubject] = certs.compactMap { cert in
++            guard let uuid = cert.uuid else { return nil }
++            let exp = cert.expiration ?? Storage.shared.getProvisionFileDecoded(for: cert)?.ExpirationDate
++            guard let expiresOn = exp else { return nil }
++            return ExpirySubject(id: uuid, expiresOn: expiresOn)
++        }
++        let nicknameByID: [String: String] = Dictionary(
++            uniqueKeysWithValues: certs.compactMap { cert in
++                guard let uuid = cert.uuid else { return nil }
++                let title = (cert.nickname?.isEmpty == false ? cert.nickname : nil)
++                    ?? Storage.shared.getProvisionFileDecoded(for: cert)?.Name
++                    ?? uuid
++                return (uuid, title)
++            }
++        )
++
++        let alerts = ExpiryReminderPlanner.upcomingAlerts(for: subjects, now: now)
++        let center = UNUserNotificationCenter.current()
++
++        center.getPendingNotificationRequests { existing in
++            let staleIDs = existing
++                .map(\.identifier)
++                .filter { $0.hasPrefix(Self.identifierPrefix) }
++            if !staleIDs.isEmpty {
++                center.removePendingNotificationRequests(withIdentifiers: staleIDs)
++            }
++            guard !alerts.isEmpty else { return }
++
++            center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
++                guard granted else { return }
++                let calendar = Calendar.current
++                for alert in alerts {
++                    let certTitle = nicknameByID[alert.id] ?? alert.id
++                    let content = UNMutableNotificationContent()
++                    switch alert.notice {
++                    case .sevenDays:
++                        content.title = "证书将在 7 天后到期"
++                        content.body = "「\(certTitle)」即将到期，建议提前导入新证书并使用一键全部重签。"
++                    case .oneDay:
++                        content.title = "证书明天到期"
++                        content.body = "「\(certTitle)」将于明天失效，请尽快一键重签所有已签应用。"
++                    }
++                    content.sound = .default
++
++                    let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: alert.fireDate)
++                    let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
++                    let suffix = alert.notice == .sevenDays ? "7d" : "1d"
++                    let req = UNNotificationRequest(
++                        identifier: "\(Self.identifierPrefix)\(alert.id).\(suffix)",
++                        content: content,
++                        trigger: trigger
++                    )
++                    center.add(req)
++                }
++            }
++        }
++    }
++
++    func expiringSoonCount(withinDays limit: Int = 7, now: Date = Date()) -> Int {
++        let calendar = Calendar.current
++        return Storage.shared.getAllCertificates().filter { cert in
++            guard !cert.revoked else { return false }
++            guard let exp = cert.expiration ?? Storage.shared.getProvisionFileDecoded(for: cert)?.ExpirationDate,
++                  exp > now else {
++                return false
++            }
++            let days = calendar.dateComponents(
++                [.day],
++                from: calendar.startOfDay(for: now),
++                to: calendar.startOfDay(for: exp)
++            ).day ?? (limit + 1)
++            return days <= limit
++        }.count
++    }
++}
++
++// MARK: - Batch Signing & One-Click Re-sign Coordinator (P7)
++
++@MainActor
++final class BatchSigningCoordinator: ObservableObject {
++    static let shared = BatchSigningCoordinator()
++
++    @Published private(set) var isRunning = false
++    @Published private(set) var completedCount = 0
++    @Published private(set) var totalCount = 0
++    @Published var lastSummaryMessage: String?
++
++    private init() {}
++
++    func signBatch(
++        apps: [AppInfoPresentable],
++        certificate: CertificatePair?,
++        options: Options = OptionsManager.shared.options
++    ) async -> BatchReport<String, String> {
++        guard !apps.isEmpty else {
++            return BatchReport(successes: [], failures: [])
++        }
++        isRunning = true
++        completedCount = 0
++        totalCount = apps.count
++        defer { isRunning = false }
++
++        var byKey: [String: AppInfoPresentable] = [:]
++        var orderedKeys: [String] = []
++        for (idx, app) in apps.enumerated() {
++            let key = app.uuid ?? "app-\(idx)"
++            byKey[key] = app
++            orderedKeys.append(key)
++        }
++
++        let report = await Batch.runAsync(orderedKeys) { key async throws -> String in
++            guard let target = byKey[key] else {
++                throw SigningFileHandlerError.appNotFound
++            }
++            var itemOptions = options
++            itemOptions.appName = nil
++            itemOptions.appIdentifier = nil
++            itemOptions.appVersion = nil
++
++            let handler = SigningHandler(app: target, options: itemOptions)
++            handler.appCertificate = certificate
++            do {
++                try await handler.copy()
++                try await handler.modify()
++                try? await handler.clean()
++                await MainActor.run {
++                    self.completedCount += 1
++                }
++                return target.name ?? key
++            } catch {
++                try? await handler.clean()
++                await MainActor.run {
++                    self.completedCount += 1
++                }
++                throw error
++            }
++        }
++
++        let okCount = report.successes.count
++        let failCount = report.failures.count
++        if failCount == 0 {
++            lastSummaryMessage = "批量签名完成：成功 \(okCount) 个应用。"
++        } else {
++            let details = report.failures.prefix(3).map { "\($0.item): \($0.errorDescription)" }.joined(separator: "\n")
++            lastSummaryMessage = "批量签名完成：成功 \(okCount) 个，失败 \(failCount) 个。\n\(details)"
++        }
++        return report
++    }
++
++    func resignAllSignedApps(
++        using certificate: CertificatePair,
++        options: Options = OptionsManager.shared.options
++    ) async -> BatchReport<String, String> {
++        let request: NSFetchRequest<Signed> = Signed.fetchRequest()
++        request.sortDescriptors = [NSSortDescriptor(keyPath: \Signed.date, ascending: false)]
++        let signedApps = (try? Storage.shared.context.fetch(request)) ?? []
++        return await signBatch(apps: signedApps, certificate: certificate, options: options)
++    }
++}
+diff --git a/Feather/Views/Library/LibraryView.swift b/Feather/Views/Library/LibraryView.swift
+index b9c3aeeecbe81c59f127c5f77e1fd5b411414b8b..7df84686ce8aaa32ca56587f19c5f4e060f0606d 100644
+--- a/Feather/Views/Library/LibraryView.swift
++++ b/Feather/Views/Library/LibraryView.swift
+@@ -13,6 +13,8 @@ import NimbleViews
+ struct LibraryView: View {
+ 	@StateObject var downloadManager = DownloadManager.shared
+ 	@StateObject var updateManager = UpdateManager.shared
++	@StateObject private var batchCoordinator = BatchSigningCoordinator.shared
++	@AppStorage("feather.selectedCert") private var _storedSelectedCert: Int = 0
+ 	
+ 	@State private var _selectedInfoAppPresenting: AnyApp?
+ 	@State private var _selectedSigningAppPresenting: AnyApp?
+@@ -147,10 +149,17 @@ struct LibraryView: View {
+ 				}
+ 				
+ 				if _editMode.isEditing {
++					NBToolbarButton(
++						.localized("Batch Sign"),
++						systemImage: "signature",
++						isDisabled: _selectedAppUUIDs.isEmpty || batchCoordinator.isRunning
++					) {
++						_bulkSignSelectedApps()
++					}
+ 					NBToolbarButton(
+ 						.localized("Delete"),
+ 						systemImage: "trash",
+-						isDisabled: _selectedAppUUIDs.isEmpty
++						isDisabled: _selectedAppUUIDs.isEmpty || batchCoordinator.isRunning
+ 					) {
+ 						_bulkDeleteSelectedApps()
+ 					}
+@@ -237,6 +246,19 @@ struct LibraryView: View {
+ 			.onChange(of: updateManager.isChecking) { isChecking in
+ 				_handleUpdateCheckStateChange(isChecking)
+ 			}
++			.alert(
++				"批量签名结果",
++				isPresented: Binding(
++					get: { batchCoordinator.lastSummaryMessage != nil },
++					set: { if !$0 { batchCoordinator.lastSummaryMessage = nil } }
++				)
++			) {
++				Button(.localized("OK")) {
++					batchCoordinator.lastSummaryMessage = nil
++				}
++			} message: {
++				Text(batchCoordinator.lastSummaryMessage ?? "")
++			}
+ 		}
+ 	}
+ }
+@@ -270,6 +292,20 @@ extension LibraryView {
+ 		
+ 		// _editMode = .inactive
+ 	}
++
++	private func _bulkSignSelectedApps() {
++		let selectedApps = _getAllApps().filter { app in
++			guard let uuid = app.uuid else { return false }
++			return _selectedAppUUIDs.contains(uuid)
++		}
++		guard !selectedApps.isEmpty else { return }
++		let cert = Storage.shared.getCertificate(for: _storedSelectedCert)
++		Task {
++			_ = await batchCoordinator.signBatch(apps: selectedApps, certificate: cert)
++			_selectedAppUUIDs.removeAll()
++			_editMode = .inactive
++		}
++	}
+ 	
+ 	private func _getAllApps() -> [AppInfoPresentable] {
+ 		var allApps: [AppInfoPresentable] = []
+diff --git a/Feather/Views/Settings/Certificates/CertificatesView.swift b/Feather/Views/Settings/Certificates/CertificatesView.swift
+index 4983923dcd30a979a6f8a59a7700653af26e291f..8eed9d4ed16b5aed443f87bcd90a7364a1cf0ab8 100644
+--- a/Feather/Views/Settings/Certificates/CertificatesView.swift
++++ b/Feather/Views/Settings/Certificates/CertificatesView.swift
+@@ -154,5 +154,10 @@ extension CertificatesView {
+ 		Button(.localized("Check Revokage"), systemImage: "person.text.rectangle") {
+ 			Storage.shared.revokagedCertificate(for: cert)
+ 		}
++		Button("一键重签全部已签应用", systemImage: "arrow.triangle.2.circlepath.doc.on.clipboard") {
++			Task {
++				_ = await BatchSigningCoordinator.shared.resignAllSignedApps(using: cert)
++			}
++		}
+ 	}
+ }
