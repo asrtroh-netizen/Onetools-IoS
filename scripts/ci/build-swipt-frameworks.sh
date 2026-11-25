@@ -203,7 +203,8 @@ if [[ ! -d "$SWIPT_UI_FW" ]]; then
   exit 1
 fi
 
-if ! xcrun nm -gU "$SWIPT_UI_FW/SwiptUI" | grep -q '_OBJC_CLASS_\$_OneToolsSwiptBridge$'; then
+xcrun nm -gU "$SWIPT_UI_FW/SwiptUI" > "$DYN_WRAP_ROOT/swiptui.syms"
+if ! grep -q '_OBJC_CLASS_\$_OneToolsSwiptBridge$' "$DYN_WRAP_ROOT/swiptui.syms"; then
   echo "FAIL: _OBJC_CLASS_\$_OneToolsSwiptBridge not exported by SwiptUI.framework!" >&2
   exit 1
 fi

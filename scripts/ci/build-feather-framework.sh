@@ -193,9 +193,10 @@ if [[ ! -d "$FEATHER_UI_FW" ]]; then
   exit 1
 fi
 
-if ! xcrun nm -gU "$FEATHER_UI_FW/FeatherUI" | grep -q '_OBJC_CLASS_\$_OneToolsFeatherBridge$'; then
+xcrun nm -gU "$FEATHER_UI_FW/FeatherUI" > "$OBJC_MOD_DIR/featherui.syms"
+if ! grep -q '_OBJC_CLASS_\$_OneToolsFeatherBridge$' "$OBJC_MOD_DIR/featherui.syms"; then
   echo "FAIL: _OBJC_CLASS_\$_OneToolsFeatherBridge not exported by FeatherUI.framework!" >&2
-  xcrun nm -gU "$FEATHER_UI_FW/FeatherUI" | head -n 40 >&2
+  head -n 40 "$OBJC_MOD_DIR/featherui.syms" >&2
   exit 1
 fi
 
