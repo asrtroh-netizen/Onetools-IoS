@@ -22,6 +22,7 @@ final class OneGallerySnapshotTests: XCTestCase {
         )
     }
 
+    @available(iOS 16.0, *)
     func testOneGalleryAndCoreComponentsRenderNonEmptySnapshots() throws {
         OneFont.register()
         MaterialIcon.register()
