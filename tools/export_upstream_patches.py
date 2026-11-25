@@ -115,7 +115,31 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Verify patches/*.patch and patches/manifest.json match local HEADs.",
     )
+    parser.add_argument(
+        "--check-manifest",
+        action="store_true",
+        help="Verify patches/*.patch SHA-256 digests match patches/manifest.json (CI-safe without nested repos).",
+    )
     args = parser.parse_args(argv)
+
+    if args.check_manifest:
+        if not MANIFEST_PATH.is_file():
+            print("FAIL: missing patches/manifest.json", file=sys.stderr)
+            return 1
+        doc = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        repos_meta = doc.get("repos", {})
+        for name, meta in repos_meta.items():
+            patch_path = ROOT / str(meta["patch_file"])
+            if not patch_path.is_file():
+                print(f"FAIL: missing {meta['patch_file']}", file=sys.stderr)
+                return 1
+            raw = patch_path.read_bytes()
+            digest = hashlib.sha256(raw).hexdigest()
+            if digest != meta["patch_sha256"] or len(raw) != int(meta["patch_bytes"]):
+                print(f"FAIL: {meta['patch_file']} digest/size mismatch with manifest.json", file=sys.stderr)
+                return 1
+        print(f"OK patch manifest verified ({len(repos_meta)} repos)")
+        return 0
 
     patches, manifest = build_bundle()
     expected_manifest = render_manifest_bytes(manifest)

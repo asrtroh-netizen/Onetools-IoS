@@ -639,7 +639,7 @@ index bd4403d8acdd27eb85b8157ea45bca619c5da454..b83fe598080f3f754ce4a08752b36e72
  }
  
 diff --git a/apple/ClashClient/project.yml b/apple/ClashClient/project.yml
-index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..9e61135c194b1e0e5b7e788399327aca208b7345 100644
+index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..56fe0694d86a80c78e8e43fa32a88f51e91e88b1 100644
 --- a/apple/ClashClient/project.yml
 +++ b/apple/ClashClient/project.yml
 @@ -2,7 +2,7 @@ name: ClashClient
@@ -690,7 +690,15 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..9e61135c194b1e0e5b7e788399327aca
      - package: swift-certificates
        product: X509
      - package: swift-crypto
-@@ -414,6 +423,7 @@ targets:
+@@ -223,6 +232,7 @@ targets:
+     - path: ../ClashClientUI/Sources/ClashClientUI/Features/Widgets/ClashWidgetInterfaceAccounting.swift
+       group: Shared
+     - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
++      group: Shared
+     - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelOutboundMode.swift
+     - path: Resources/PrivacyInfo.xcprivacy
+       buildPhase: resources
+@@ -414,6 +424,7 @@ targets:
      - path: Sources
        excludes:
        - TV
@@ -698,7 +706,7 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..9e61135c194b1e0e5b7e788399327aca
        - ClashClientApp.swift
        - ClashNavigationLab.swift
        - ClashPushClockTouchProbe.swift
-@@ -454,6 +464,8 @@ targets:
+@@ -454,6 +465,8 @@ targets:
        buildPhase: resources
      - path: Resources/Module/surge-builtin-system.list
        buildPhase: resources
@@ -707,7 +715,15 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..9e61135c194b1e0e5b7e788399327aca
      - path: ../../Vendor/ClashAdapter/Sources/ClashAdapter
      settings:
        configs:
-@@ -739,6 +751,8 @@ targets:
+@@ -626,6 +639,7 @@ targets:
+       group: Shared
+     - Shared
+     - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
++      group: Shared
+     - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelOutboundMode.swift
+     - path: Resources/PrivacyInfo.xcprivacy
+       buildPhase: resources
+@@ -739,6 +753,8 @@ targets:
        group: SharedFacts
      - path: ../ClashClientUI/Sources/ClashClientUI/Features/RemoteControl/ClashRemoteControlSettings.swift
        group: SharedFacts
@@ -716,6 +732,14 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..9e61135c194b1e0e5b7e788399327aca
      - path: Sources/ConfigStore/ConfigTransforms.swift
      - path: Sources/ConfigStore/TopLevelYAMLSections.swift
      - path: Sources/ConfigStore/InvalidDomainSites.swift
+@@ -852,6 +868,7 @@ targets:
+       - Info.plist
+     - Shared
+     - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
++      group: Shared
+     - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelOutboundMode.swift
+     - path: Resources/PrivacyInfo.xcprivacy
+       buildPhase: resources
 diff --git a/apple/ClashClientUI/Package.swift b/apple/ClashClientUI/Package.swift
 index 84baa5e71a85ed559f5bea8919f7d41feddd1e95..fb86776f7a7862ffa6db209bed561e9990e03e40 100644
 --- a/apple/ClashClientUI/Package.swift

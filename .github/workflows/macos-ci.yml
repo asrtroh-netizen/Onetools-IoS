@@ -39,7 +39,7 @@ jobs:
           python3 tools/loon_lint.py adblock/onetools-cn-ads.plugin
           python3 tools/check_ad_coverage.py
           python3 tools/make_contact_sheet.py --check
-          python3 tools/export_upstream_patches.py --check
+          python3 tools/export_upstream_patches.py --check-manifest
 
       - name: Run pure-Swift unit tests (ClashLogic, SigningLogic, G3)
         run: |
@@ -94,28 +94,23 @@ jobs:
 
   build-feather:
     name: Feather + SigningLogic (IPA)
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 45
     steps:
       - name: Checkout root repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode 26.3 for Feather (matches upstream release.yml)
+      - name: Verify Xcode 27 toolchain
         run: |
-          if [[ -d "/Applications/Xcode_26.3.0.app" ]]; then
-            sudo xcode-select -s "/Applications/Xcode_26.3.0.app/Contents/Developer"
-            echo "DEVELOPER_DIR=/Applications/Xcode_26.3.0.app/Contents/Developer" >> "$GITHUB_ENV"
-            /Applications/Xcode_26.3.0.app/Contents/Developer/usr/bin/xcodebuild -version
-          elif [[ -d "/Applications/Xcode_26.3.app" ]]; then
-            sudo xcode-select -s "/Applications/Xcode_26.3.app/Contents/Developer"
-            echo "DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer" >> "$GITHUB_ENV"
-            /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/xcodebuild -version
-          else
-            bash scripts/ci/select-xcode.sh
-          fi
+          xcode-select -p
+          xcodebuild -version
 
       - name: Hydrate Feather + submodules + OneTools patch
-        run: bash scripts/ci/hydrate-upstreams.sh Feather
+        run: |
+          bash scripts/ci/hydrate-upstreams.sh Feather
+          rm -rf Feather/SigningLogic
+          cp -R SigningLogic Feather/SigningLogic
+          sed -i '' 's|relativePath = ../SigningLogic;|relativePath = SigningLogic;|g' Feather/Feather.xcodeproj/project.pbxproj
 
       - name: Build Feather unsigned IPA (with SigningLogic)
         run: |
