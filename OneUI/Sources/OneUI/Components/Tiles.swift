@@ -32,10 +32,31 @@ public struct SoftLabel: View {
 
 public struct SoftLabelGrid: View {
     let items: [SoftLabel]
+    @Environment(\.colorScheme) private var colorScheme
     public init(_ items: [SoftLabel]) { self.items = items }
     public var body: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: OneMetrics.space10), GridItem(.flexible(), spacing: OneMetrics.space10)], spacing: OneMetrics.space10) {
-            ForEach(items.indices, id: \.self) { i in GlassTile { items[i] } }
+            ForEach(items.indices, id: \.self) { i in
+                items[i]
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, OneMetrics.space12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .background {
+                        RoundedRectangle(cornerRadius: OneMetrics.radiusTile, style: .continuous)
+                            .fill(colorScheme == .dark ? Color.white.opacity(0.045) : Color.black.opacity(0.03))
+                            .overlay(alignment: .top) {
+                                RoundedRectangle(cornerRadius: OneMetrics.radiusTile, style: .continuous)
+                                    .strokeBorder(
+                                        LinearGradient(
+                                            colors: [.white.opacity(colorScheme == .dark ? 0.10 : 0.65), .clear],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        ),
+                                        lineWidth: 0.5
+                                    )
+                            }
+                    }
+            }
         }
     }
 }

@@ -39,13 +39,21 @@ public struct OneGallery: View {
                 )
                 OneSection("状态组件", systemImage: "check_circle_rounded", tone: .green) {
                     VStack(alignment: .leading, spacing: OneMetrics.space12) {
+                        OneSlidingPill(
+                            [
+                                .init("rule", title: "规则路由"),
+                                .init("global", title: "全局代理"),
+                                .init("direct", title: "全直连"),
+                            ],
+                            selection: $mode
+                        )
                         MetricGrid {
-                            MetricCard("上传", value: "1.2 MB/s", sub: "累计 3.4 GB", systemImage: "upload_file_outlined", tone: .green)
-                            MetricCard("下载", value: "8.6 MB/s", sub: "累计 21 GB", systemImage: "download_outlined", tone: .teal)
+                            MetricCard("上传", value: "1.28 MB/s", sub: "累计 3.4 GB", systemImage: "upload_file_outlined", tone: .green, indexTag: "01")
+                            MetricCard("下载", value: "18.6 MB/s", sub: "累计 21 GB", systemImage: "download_outlined", tone: .teal, indexTag: "02")
                         }
                         StageRow([("DNS", .ready), ("TLS", .ready), ("规则", .active), ("MITM", .pending), ("脚本", .failed)])
                         ThinProgress(62, tone: .green)
-                        ChoiceChips([("rule", "规则"), ("global", "全局"), ("direct", "直连")], selection: $mode)
+                        OneSwipeConfirm("右滑体验阻尼防误触确认", tone: .amber) {}
                     }
                 }
                 OneSection("控件", systemImage: "tune_rounded", tone: .teal) {

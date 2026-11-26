@@ -51,8 +51,14 @@
     "widgets/choice_toggle.dart": {
       "scenes": ["choice_toggle"]
     },
+    "widgets/comm_micro_loader.dart": {
+      "exclude": "CommMicroLoader 是新增连续帧动画加载器（ripples 1500ms / bars 960ms），历史 270 张冻结金图未实例化该组件；Swift 侧已在 OneMicroInteractions (OneRhythmBars) 对齐。"
+    },
     "widgets/console_layout.dart": {
       "exclude": "只做转出口，没有自己的控件。被它导出的控件各自有场景，没有场景 import 这个文件。"
+    },
+    "widgets/digit_swap.dart": {
+      "exclude": "DigitSwapText 与 SplitWeightMetricText 是新增 180ms 跳字过渡组件，历史冻结金图 metric_card 未改动金图哈希；Swift 侧已在 OneMotionSpec (OneMetricFormatter) 与 OneBentoValueText 对齐。"
     },
     "widgets/feature_failure_notice.dart": {
       "scenes": ["feature_failure_notice"]
@@ -107,6 +113,9 @@
     },
     "widgets/system_controls.dart": {
       "scenes": ["metric_card", "section", "obscurable_field", "glass_action", "status_hero_ready"]
+    },
+    "widgets/view_transition.dart": {
+      "exclude": "OneViewTransition 是 AnimatedSwitcher 时序过渡包装器（退场 120ms / 进场 180ms Cubic(0.16,1,0.3,1) / 位移 <=4px），自身不绘制独立像素；静止帧与子视图一致，Swift 侧已在 OneMotionSpec 与 OneMicroInteractions 对齐。"
     }
   }
 }

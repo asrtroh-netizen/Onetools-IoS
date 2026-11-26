@@ -46,9 +46,10 @@ public struct StatusHero<Trailing: View>: View {
             RoundedRectangle(cornerRadius: OneMetrics.radiusHero, style: .circular)
                 .strokeBorder(OneGlass.stroke, lineWidth: OneMetrics.stroke)
         }
+        .oneBorderBeam(active: state.isBusy, tone: .neutral, radius: OneMetrics.radiusHero)
         .clipShape(RoundedRectangle(cornerRadius: OneMetrics.radiusHero, style: .circular))
         .oneShadow(strong: true)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state)
+        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: state)
     }
     @ViewBuilder private func header(compact: Bool) -> some View {
         if compact {
@@ -78,7 +79,7 @@ public struct StatusHero<Trailing: View>: View {
     }
     @ViewBuilder private var actions: some View {
         VStack(alignment: .leading, spacing: OneMetrics.space8) {
-            if state.isBusy { Button {} label: { HStack(spacing: OneMetrics.space10) { ProgressView().tint(OnePalette.onHeroButton); Text(busyLabel) } }.buttonStyle(HeroButtonStyle()).disabled(true) }
+            if state.isBusy { Button {} label: { HStack(spacing: OneMetrics.space10) { OneRhythmBars(color: OnePalette.onHeroButton); Text(busyLabel) } }.buttonStyle(HeroButtonStyle()).disabled(true) }
             else { HStack(spacing: OneMetrics.space10) { if let secondary { Button(secondary.title, action: secondary.action).buttonStyle(HeroButtonStyle()) }; if let primary { Button(primary.title, action: primary.action).buttonStyle(HeroButtonStyle()) } } }
             if let actionNote { Text(actionNote).font(OneText.bodySmall()).foregroundStyle(OnePalette.onSurface.opacity(0.72)).padding(.horizontal, OneMetrics.space4) }
         }
@@ -151,7 +152,18 @@ private struct HeroWidthPreferenceKey: PreferenceKey {
 public struct HeroButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     public init() {}
-    public func makeBody(configuration: Configuration) -> some View { configuration.label.font(OneText.labelLarge()).lineLimit(1).foregroundStyle(OnePalette.onHeroButton).frame(maxWidth: .infinity, minHeight: OneMetrics.control).padding(.horizontal, OneMetrics.space16).background(Capsule().fill(OnePalette.heroButton)).opacity(enabled ? 1 : 0.38).inkRipple(overlayColor: OnePalette.onSurface.opacity(0.10)) }
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(OneText.labelLarge())
+            .lineLimit(1)
+            .foregroundStyle(OnePalette.onHeroButton)
+            .frame(maxWidth: .infinity, minHeight: OneMetrics.control)
+            .padding(.horizontal, OneMetrics.space16)
+            .background(Capsule().fill(OnePalette.heroButton))
+            .opacity(enabled ? 1 : 0.38)
+            .modifier(OneSpringPressModifier(isPressed: configuration.isPressed, targetScale: 0.95))
+            .inkRipple(overlayColor: OnePalette.onSurface.opacity(0.10))
+    }
 }
 
 struct StageDots: View {

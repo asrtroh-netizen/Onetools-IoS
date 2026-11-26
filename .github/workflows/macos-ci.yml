@@ -4,15 +4,15 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
     paths-ignore:
       - 'docs/**'
-      - '*.md'
   pull_request:
     branches:
       - main
     paths-ignore:
       - 'docs/**'
-      - '*.md'
   workflow_dispatch:
     inputs:
       build_standalone_ipas:
@@ -20,6 +20,14 @@ on:
         required: false
         default: false
         type: boolean
+      release_tag:
+        description: 'Optional GitHub Release tag to publish/update (defaults to v1.1.0 on main)'
+        required: false
+        default: 'v1.1.0'
+        type: string
+
+permissions:
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -309,6 +317,7 @@ jobs:
     runs-on: xcode-27
     timeout-minutes: 60
     needs:
+      - oneui-and-logic
       - build-feather
       - build-swipt
     env:
@@ -448,3 +457,56 @@ jobs:
             artifacts/onetools/G2-go-runtimes.md
             artifacts/onetools/M7-loon-ignored.md
           if-no-files-found: error
+
+      - name: Publish / Update GitHub Release (OneTools All-in-One + Lite IPAs)
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ inputs.release_tag }}
+        run: |
+          if [[ "${GITHUB_REF:-}" == refs/tags/v* ]]; then
+            REL_TAG="${GITHUB_REF#refs/tags/}"
+          elif [[ -n "${INPUT_TAG:-}" ]]; then
+            REL_TAG="$INPUT_TAG"
+          else
+            REL_TAG="v1.1.0"
+          fi
+          TITLE="OneTools ${REL_TAG} · Liquid Glass & Precision Motion Edition (All-in-One)"
+          cat > "$RUNNER_TEMP/release-notes.md" <<'EOF'
+          ## OneTools __REL_TAG__（三合一终极单包 · 液态磨砂与微交互精修版）
+
+          ### 安装包直链选择指南
+          - **`OneTools-AllInOne-unsigned.ipa`（全功能旗舰版）**：适用 **巨魔 TrollStore / 付费开发者证书 / 企业证书 / SideStore（开启 App Group）**，完整内含 Clash 隧道扩展（`10.7.0.1` 环回 + `+.backloop.dev` 真 IP 直连）、Loon 去广告模块引擎、Swipt 界面自动跳过与 Feather + Zsign 自签工作台。
+          - **`OneTools-AllInOne-Lite-unsigned.ipa`（免费 7 天个人号直装版）**：专为 **Sideloadly / AltStore / 爱思 免费 Apple ID** 打造，剥离扩展仅占 **1 个每周 App ID 配额**、零付费权限报错（自动启用宿主本地沙盒回退）。
+
+          ### 核心审美、微交互与性能亮点
+          - **液态磨砂 × 克制流光 (`DESIGN.md`)**：灰白/黑曜石无杂色界面，仅在 **VPN 握手态**、**7 天内临期证书告警（琥珀流光）** 与 **批量重签运行态（松绿流光）** 点亮 `1.5pt` `BorderBeam`。
+          - **无边框 `999pt` 胶囊滑块 & 磨砂灵动浮岛**：消除方框套方框，配备 `SPRING_PRESS` 物理回弹、Bento 主次分重跳字（`DigitSwap`）与右滑阻尼防误触确认（`Swipe Confirm`）。
+          - **极致瘦身与零预载冷启动**：解压 `.app` 缩减约 `35%`，`SwiptUI` / `FeatherUI` / `LibSwipt` / `React` / `Hermes` 按需 `dlopen` 动态加载，双 Go 运行时 **0 ObjC 类名冲突**。
+
+          ---
+          EOF
+          sed -i '' "s/__REL_TAG__/${REL_TAG}/g" "$RUNNER_TEMP/release-notes.md"
+          cat artifacts/onetools/OneTools-Unified-Audit.md >> "$RUNNER_TEMP/release-notes.md"
+
+          ASSETS=(
+            "artifacts/onetools/OneTools-AllInOne-unsigned.ipa"
+            "artifacts/onetools/OneTools-AllInOne-Lite-unsigned.ipa"
+            "artifacts/onetools/OneTools-Unified-Audit.md"
+            "artifacts/onetools/G2-go-runtimes.md"
+          )
+
+          if gh release view "$REL_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$REL_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release upload "$REL_TAG" "${ASSETS[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$REL_TAG" "${ASSETS[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$TITLE" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+          gh release view "$REL_TAG" --repo "$GITHUB_REPOSITORY" --json url,tagName,assets

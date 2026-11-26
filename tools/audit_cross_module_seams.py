@@ -20,6 +20,19 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 # Heuristic detector for nested-quantifier ReDoS patterns such as (a+)+, (.*)+, ([a-z]+)*
 NESTED_QUANTIFIER_RE = re.compile(r"\([^()]*[+*][^()]*\)[+*?{]")
+# Emoji pictograph range banned inside UI chrome / labels (DESIGN.md §1.3)
+EMOJI_SLOP_RE = re.compile(r"[\U0001F300-\U0001FAFF]")
+
+
+def check_emoji_slop_in_ui_text(text: str) -> list[str]:
+    bad: list[str] = []
+    for idx, raw in enumerate(text.splitlines(), 1):
+        stripped = raw.strip()
+        if stripped.startswith("//"):
+            continue
+        if EMOJI_SLOP_RE.search(stripped):
+            bad.append(f"line {idx}: banned Emoji icon/glyph in UI source: {stripped[:90]}")
+    return bad
 
 
 def check_redos_in_plugin_text(text: str) -> list[str]:
@@ -127,6 +140,47 @@ def run_all_checks(root: pathlib.Path = ROOT) -> list[str]:
         for idx, line in enumerate(ci_yml.splitlines(), 1):
             if "key:" in line and "github.run_id" in line:
                 errors.append(f"CI cache bloat regression at macos-ci.yml:{idx}: cache key must not include github.run_id")
+
+    # 7. DESIGN.md & Anti-Slop Aesthetic Constitution guards (P8)
+    design_md = read("DESIGN.md")
+    if design_md:
+        for required_token in ("OneBorderBeam", "OneSlidingPill", "OneBentoValueText", "SPRING_PRESS", "accessibilityReduceMotion"):
+            if required_token not in design_md:
+                errors.append(f"DESIGN.md missing required aesthetic spec token: {required_token}")
+
+    micro_swift = read("OneUI/Sources/OneUI/Motion/OneMicroInteractions.swift")
+    if micro_swift:
+        for required_comp in ("OneBorderBeamModifier", "OneSlidingPill", "OneBentoValueText", "OneRhythmBars", "OneSwipeConfirm"):
+            if required_comp not in micro_swift:
+                errors.append(f"OneMicroInteractions.swift missing component: {required_comp}")
+
+    overview_cards = read_if_hydrated("Clash-Client/apple/ClashClient/Sources/OverviewPrimaryCards.swift")
+    if overview_cards is not None and ("tint: .orange" in overview_cards or "tint: .purple" in overview_cards):
+        errors.append("Anti-Slop regression: OverviewPrimaryCards.swift reintroduced rainbow card header tints")
+
+    if feather_app is not None and '"#848ef9"' in feather_app:
+        errors.append("Anti-Slop regression: FeatherApp.swift reverted default tint to purple #848ef9")
+
+    varied_tab = read_if_hydrated("Feather/Feather/Views/TabView/VariedTabbarView.swift")
+    if varied_tab is not None and ".pickerStyle(.segmented)" in varied_tab:
+        errors.append("Anti-Boxiness regression: VariedTabbarView.swift reverted to boxy .segmented picker")
+
+    # Check UI Swift files for banned Emoji glyphs
+    ui_scan_paths = list((root / "OneUI/Sources/OneUI").rglob("*.swift"))
+    for optional_rel in (
+        "Clash-Client/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift",
+        "Clash-Client/apple/ClashClient/Sources/OverviewComponents.swift",
+        "Clash-Client/apple/ClashClient/Sources/OverviewPrimaryCards.swift",
+        "Clash-Client/apple/ClashClient/Sources/OverviewDetailCards.swift",
+        "Feather/Feather/Utilities/OneToolsFeatherPolish.swift",
+        "Feather/Feather/Views/Settings/About/AboutView.swift",
+    ):
+        cand = root / optional_rel
+        if cand.is_file():
+            ui_scan_paths.append(cand)
+    for ui_file in sorted(ui_scan_paths):
+        for issue in check_emoji_slop_in_ui_text(ui_file.read_text(encoding="utf-8", errors="ignore")):
+            errors.append(f"{ui_file.relative_to(root).as_posix()}: {issue}")
 
     return errors
 

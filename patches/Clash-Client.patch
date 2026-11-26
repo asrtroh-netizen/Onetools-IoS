@@ -619,10 +619,10 @@ index 8dd58722a8d4c24804b695483af61d744ad24d4a..5d3d24477acb6a18f083b607d5ebe98d
                  Section {
 diff --git a/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..3f528f3edfef06fab209b0ab6cea98a8354e8257
+index 0000000000000000000000000000000000000000..71743409c3a50e489cb47c1d94c728cd96122e4c
 --- /dev/null
 +++ b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
-@@ -0,0 +1,664 @@
+@@ -0,0 +1,689 @@
 +#if os(iOS)
 +import ClashClientUI
 +import Foundation
@@ -908,6 +908,7 @@ index 0000000000000000000000000000000000000000..3f528f3edfef06fab209b0ab6cea98a8
 +/// - 统一深链仲裁、全局顶层通知横幅、键盘自适应收起 `UltraGlassDock` 与跨引擎内存压力协同释放。
 +struct OneToolsRootShellView<ProxyContent: View>: View {
 +    @AppStorage(oneToolsShellEnabledDefaultsKey) private var shellEnabled: Bool = true
++    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 +    @StateObject private var router = OneToolsShellRouter.shared
 +    @State private var hasMountedAdblock = false
 +    @State private var hasMountedSigning = false
@@ -926,6 +927,19 @@ index 0000000000000000000000000000000000000000..3f528f3edfef06fab209b0ab6cea98a8
 +        isKeyboardVisible ? 0 : (OneMetrics.dockHeight + OneMetrics.space24)
 +    }
 +
++    private func tabShift(for tab: OneToolsTab) -> CGFloat {
++        guard !reduceMotion else { return 0 }
++        return router.selectedIndex == tab.rawValue ? 0 : 4
++    }
++
++    private func tabAnimation(for tab: OneToolsTab) -> Animation {
++        if reduceMotion {
++            return .linear(duration: 0.10)
++        }
++        let isEntering = router.selectedIndex == tab.rawValue
++        return .timingCurve(0.16, 1.0, 0.3, 1.0, duration: isEntering ? 0.18 : 0.12)
++    }
++
 +    var body: some View {
 +        if shellEnabled {
 +            ZStack(alignment: .bottom) {
@@ -934,12 +948,16 @@ index 0000000000000000000000000000000000000000..3f528f3edfef06fab209b0ab6cea98a8
 +                        Color.clear.frame(height: dockClearanceHeight)
 +                    }
 +                    .opacity(router.selectedIndex == OneToolsTab.proxy.rawValue ? 1 : 0)
++                    .offset(y: tabShift(for: .proxy))
++                    .animation(tabAnimation(for: .proxy), value: router.selectedIndex)
 +                    .allowsHitTesting(router.selectedIndex == OneToolsTab.proxy.rawValue)
 +                    .accessibilityHidden(router.selectedIndex != OneToolsTab.proxy.rawValue)
 +
 +                if hasMountedAdblock || router.selectedIndex == OneToolsTab.adblock.rawValue {
 +                    adblockTab
 +                        .opacity(router.selectedIndex == OneToolsTab.adblock.rawValue ? 1 : 0)
++                        .offset(y: tabShift(for: .adblock))
++                        .animation(tabAnimation(for: .adblock), value: router.selectedIndex)
 +                        .allowsHitTesting(router.selectedIndex == OneToolsTab.adblock.rawValue)
 +                        .accessibilityHidden(router.selectedIndex != OneToolsTab.adblock.rawValue)
 +                }
@@ -947,6 +965,8 @@ index 0000000000000000000000000000000000000000..3f528f3edfef06fab209b0ab6cea98a8
 +                if hasMountedSigning || router.selectedIndex == OneToolsTab.signing.rawValue {
 +                    signingTab
 +                        .opacity(router.selectedIndex == OneToolsTab.signing.rawValue ? 1 : 0)
++                        .offset(y: tabShift(for: .signing))
++                        .animation(tabAnimation(for: .signing), value: router.selectedIndex)
 +                        .allowsHitTesting(router.selectedIndex == OneToolsTab.signing.rawValue)
 +                        .accessibilityHidden(router.selectedIndex != OneToolsTab.signing.rawValue)
 +                }
@@ -957,7 +977,14 @@ index 0000000000000000000000000000000000000000..3f528f3edfef06fab209b0ab6cea98a8
 +                            Color.clear.frame(height: dockClearanceHeight)
 +                        }
 +                        .oneTheme()
-+                        .transition(.opacity)
++                        .transition(
++                            reduceMotion
++                                ? .opacity
++                                : .asymmetric(
++                                    insertion: .opacity.combined(with: .offset(y: 4)),
++                                    removal: .opacity
++                                )
++                        )
 +                }
 +
 +                VStack(spacing: OneMetrics.space8) {
@@ -1245,13 +1272,11 @@ index 0000000000000000000000000000000000000000..3f528f3edfef06fab209b0ab6cea98a8
 +                        SoftLabel("URL Scheme", value: "onetools:// · feather:// · swipt://", mono: true),
 +                        SoftLabel("OneWIFI 配对", value: router.lastOneWifiPairingURL ?? "未收到配对唤起"),
 +                    ])
-+                    HStack(spacing: OneMetrics.space8) {
-+                        OneFilledButton("打开 OneUI 对拍画廊") {
-+                            showGallerySheet = true
-+                        }
-+                        OneOutlinedButton("临时切回原版 Clash 外壳") {
-+                            shellEnabled = false
-+                        }
++                    OneFilledButton("打开 OneUI 对拍画廊") {
++                        showGallerySheet = true
++                    }
++                    OneSwipeConfirm("右滑临时切回原版 Clash 外壳", confirmedTitle: "正在切换…", tone: .amber) {
++                        shellEnabled = false
 +                    }
 +                }
 +            }
@@ -1287,6 +1312,280 @@ index 0000000000000000000000000000000000000000..3f528f3edfef06fab209b0ab6cea98a8
 +    }
 +}
 +#endif
+diff --git a/apple/ClashClient/Sources/OverviewComponents.swift b/apple/ClashClient/Sources/OverviewComponents.swift
+index d6f8c5461d3dc3d5b9491b21d3a7a977bf8494df..f57970f7a0a48080ff278d9cda372bb3abddc2c5 100644
+--- a/apple/ClashClient/Sources/OverviewComponents.swift
++++ b/apple/ClashClient/Sources/OverviewComponents.swift
+@@ -1,10 +1,15 @@
+ import ClashClientUI
++import OneUI
+ import SwiftUI
+ 
+ struct ClashOverviewCard<Content: View>: View {
++    var beamActive: Bool = false
++    var beamTone: OneBeamTone = .neutral
+     let content: Content
+ 
+-    init(@ViewBuilder content: () -> Content) {
++    init(beamActive: Bool = false, beamTone: OneBeamTone = .neutral, @ViewBuilder content: () -> Content) {
++        self.beamActive = beamActive
++        self.beamTone = beamTone
+         self.content = content()
+     }
+ 
+@@ -12,6 +17,7 @@ struct ClashOverviewCard<Content: View>: View {
+         ClashFeatureCard {
+             content
+         }
++        .oneBorderBeam(active: beamActive, tone: beamTone, radius: 20, lineWidth: 1.5)
+     }
+ }
+ 
+@@ -26,6 +32,7 @@ struct OverviewCardHeader: View {
+     let title: String
+     let symbol: ClashSymbol
+     let tint: Color
++    var indexTag: String? = nil
+     var badge: OverviewBadge?
+ 
+     var body: some View {
+@@ -47,11 +54,26 @@ struct OverviewCardHeader: View {
+ 
+     private var iconAndTitle: some View {
+         HStack(spacing: ClashTheme.Spacing.row) {
+-            ClashIconWell(symbol: symbol, tint: tint)
+-
+-            Text(clash: .copy(title))
+-                .font(.title2.weight(.semibold))
+-                .foregroundStyle(tint)
++            Image(systemName: symbol.name)
++                .font(.system(size: 15, weight: .semibold))
++                .foregroundStyle(.primary)
++                .frame(width: 32, height: 32)
++                .background(
++                    RoundedRectangle(cornerRadius: 10, style: .continuous)
++                        .fill(Color.primary.opacity(0.06))
++                )
++                .accessibilityHidden(true)
++
++            VStack(alignment: .leading, spacing: 1) {
++                if let indexTag {
++                    Text(indexTag)
++                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
++                        .foregroundStyle(.secondary.opacity(0.75))
++                }
++                Text(clash: .copy(title))
++                    .font(.title3.weight(.semibold))
++                    .foregroundStyle(.primary)
++            }
+         }
+     }
+ 
+@@ -153,10 +175,10 @@ struct ConnectionPresentation {
+         return .shieldFill
+     }
+     var statusTint: Color {
+-        if isConnected { return .green }
+-        if isBusy { return .orange }
+-        if normalized == "invalid" { return .red }
+-        return .gray
++        if isConnected { return Color(red: 0.243, green: 0.812, blue: 0.557) } // #3ECF8E Emerald
++        if isBusy { return Color(red: 0.898, green: 0.600, blue: 0.204) } // #E59934 Amber
++        if normalized == "invalid" { return Color(red: 0.898, green: 0.325, blue: 0.325) } // #E55353 Crimson
++        return .secondary
+     }
+ }
+ 
+diff --git a/apple/ClashClient/Sources/OverviewDetailCards.swift b/apple/ClashClient/Sources/OverviewDetailCards.swift
+index bcec32db2282c683ec066c7b0f8023316ea3fbde..74dd8c2f4090569d5294a62e956b9a7aaa45aea7 100644
+--- a/apple/ClashClient/Sources/OverviewDetailCards.swift
++++ b/apple/ClashClient/Sources/OverviewDetailCards.swift
+@@ -1,4 +1,5 @@
+ import ClashClientUI
++import OneUI
+ import SwiftUI
+ 
+ struct EgressCard: View {
+@@ -11,7 +12,8 @@ struct EgressCard: View {
+                 OverviewCardHeader(
+                     title: "Egress",
+                     symbol: .network,
+-                    tint: .green
++                    tint: .primary,
++                    indexTag: "04 · EGRESS"
+                 )
+ 
+                 VStack(spacing: ClashTheme.Spacing.row) {
+@@ -65,16 +67,20 @@ struct RuntimeCard: View {
+                 OverviewCardHeader(
+                     title: "Runtime",
+                     symbol: .cpu,
+-                    tint: .indigo
++                    tint: .primary,
++                    indexTag: "05 · ENGINE"
+                 )
+ 
+                 VStack(spacing: ClashTheme.Spacing.row) {
+                     RuntimeMetricRow(title: "Core", value: .verbatim(runtime.coreVersion), symbol: .cpu)
+-                    RuntimeMetricRow(
+-                        title: "Memory",
+-                        value: .verbatim(String(format: "%.1f MB", runtime.memoryMB)),
+-                        symbol: .memorychip
+-                    )
++                    HStack(alignment: .firstTextBaseline, spacing: ClashTheme.Spacing.row) {
++                        Label { Text(clash: "Memory") } icon: { Image(systemName: ClashSymbol.memorychip.name).accessibilityHidden(true) }
++                            .foregroundStyle(.primary)
++                        Spacer(minLength: ClashTheme.Spacing.row)
++                        OneBentoValueText(String(format: "%.1f MB", runtime.memoryMB), baseSize: 16, color: .primary)
++                    }
++                    .font(.subheadline)
++                    .accessibilityElement(children: .combine)
+                 }
+ 
+                 Button(action: collectGarbage) {
+diff --git a/apple/ClashClient/Sources/OverviewPrimaryCards.swift b/apple/ClashClient/Sources/OverviewPrimaryCards.swift
+index 932ecfee8b50381da3cb672a80717d6fcf1e8137..67078c309de9d5aeb3b94dbbcc37a0e213282321 100644
+--- a/apple/ClashClient/Sources/OverviewPrimaryCards.swift
++++ b/apple/ClashClient/Sources/OverviewPrimaryCards.swift
+@@ -1,4 +1,5 @@
+ import ClashClientUI
++import OneUI
+ import SwiftUI
+ 
+ struct ConnectionCard: View {
+@@ -7,12 +8,13 @@ struct ConnectionCard: View {
+     let stop: () -> Void
+ 
+     var body: some View {
+-        ClashOverviewCard {
++        ClashOverviewCard(beamActive: connection.isBusy, beamTone: .neutral) {
+             VStack(alignment: .leading, spacing: ClashTheme.Spacing.row) {
+                 OverviewCardHeader(
+                     title: "Connection",
+                     symbol: connection.symbol,
+-                    tint: .blue,
++                    tint: .primary,
++                    indexTag: "01 · TUNNEL",
+                     badge: OverviewBadge(title: connection.badgeTitle, tint: connection.statusTint)
+                 )
+ 
+@@ -35,9 +37,9 @@ struct ConnectionCard: View {
+     private var connectionAction: some View {
+         if connection.isBusy {
+             HStack(spacing: ClashTheme.Spacing.compact) {
+-                ProgressView()
++                OneRhythmBars(color: .primary, height: 15)
+                 Text("Working…")
+-                    .font(.subheadline)
++                    .font(.subheadline.weight(.medium))
+                     .foregroundStyle(.secondary)
+             }
+             .frame(
+@@ -114,7 +116,8 @@ struct TrafficCard: View {
+                 OverviewCardHeader(
+                     title: "Live Traffic",
+                     symbol: .waveformPathEcg,
+-                    tint: .orange
++                    tint: .primary,
++                    indexTag: "02 · THROUGHPUT"
+                 )
+ 
+                 if dynamicTypeSize.isAccessibilitySize {
+@@ -158,34 +161,46 @@ private struct TrafficMetric: View {
+     let symbol: ClashSymbol
+     let rate: String
+     let total: String
++    @Environment(\.colorScheme) private var colorScheme
+ 
+     var body: some View {
+-        VStack(alignment: .leading, spacing: ClashTheme.Spacing.tight) {
+-            Label { Text(clash: .copy(title)) } icon: { Image(systemName: symbol.name).accessibilityHidden(true) }
+-                .font(.subheadline.weight(.semibold))
+-                .foregroundStyle(.secondary)
+-            Text(rate)
+-                .font(.system(.headline, design: .monospaced))
+-                .lineLimit(1)
+-                .minimumScaleFactor(0.8)
++        VStack(alignment: .leading, spacing: 6) {
++            HStack(spacing: 5) {
++                Image(systemName: symbol.name)
++                    .font(.system(size: 11, weight: .semibold))
++                    .foregroundStyle(.secondary)
++                    .accessibilityHidden(true)
++                Text(clash: .copy(title))
++                    .font(.caption.weight(.medium))
++                    .foregroundStyle(.secondary)
++            }
++            OneBentoValueText(rate, baseSize: 21, color: .primary)
+             Text("Total \(total)")
+-                .font(.caption)
+-                .foregroundStyle(.secondary)
++                .font(.caption2)
++                .monospacedDigit()
++                .foregroundStyle(.secondary.opacity(0.8))
+         }
+         .padding(ClashTheme.Spacing.row)
+         .frame(maxWidth: .infinity, alignment: .leading)
+         .background(
+-            RoundedRectangle(cornerRadius: ClashTheme.Radius.control, style: .continuous)
+-                .fill(ClashTheme.raisedFill)
++            RoundedRectangle(cornerRadius: 14, style: .continuous)
++                .fill(colorScheme == .dark ? Color.white.opacity(0.045) : Color.black.opacity(0.032))
++                .overlay(alignment: .top) {
++                    RoundedRectangle(cornerRadius: 14, style: .continuous)
++                        .strokeBorder(
++                            LinearGradient(
++                                colors: [.white.opacity(colorScheme == .dark ? 0.10 : 0.65), .clear],
++                                startPoint: .top,
++                                endPoint: .bottom
++                            ),
++                            lineWidth: 0.5
++                        )
++                }
+         )
+         .accessibilityElement(children: .combine)
+     }
+ }
+ 
+- 
+- 
+- 
+- 
+ struct RoutingCard: View {
+     let routing: OverviewRoutingSnapshot
+     let setMode: (String) -> Void
+@@ -194,13 +209,30 @@ struct RoutingCard: View {
+         Self.validModes.contains(routing.mode.lowercased()) ? routing.mode.lowercased() : "rule"
+     }
+ 
++    private var modeBinding: Binding<String> {
++        Binding(
++            get: { normalizedMode },
++            set: { next in setMode(next) }
++        )
++    }
++
+     var body: some View {
+         ClashOverviewCard {
+             VStack(alignment: .leading, spacing: ClashTheme.Spacing.standard) {
+                 OverviewCardHeader(
+                     title: "Outbound Mode",
+                     symbol: .arrowTriangleBranch,
+-                    tint: .purple
++                    tint: .primary,
++                    indexTag: "03 · ROUTING"
++                )
++
++                OneSlidingPill(
++                    [
++                        .init("rule", title: "Rule"),
++                        .init("global", title: "Global"),
++                        .init("direct", title: "Direct"),
++                    ],
++                    selection: modeBinding
+                 )
+ 
+                 VStack(alignment: .leading, spacing: ClashTheme.Spacing.compact) {
 diff --git a/apple/ClashClient/Sources/SystemIntegration/ClashNotificationCenterDelegate.swift b/apple/ClashClient/Sources/SystemIntegration/ClashNotificationCenterDelegate.swift
 index 8f7b7beb5af757a5530c7974329bcb468072d3da..e64089fa1ad45f21d9bfc793cbbc9fc7ce34f398 100644
 --- a/apple/ClashClient/Sources/SystemIntegration/ClashNotificationCenterDelegate.swift

@@ -1,5 +1,13 @@
 import SwiftUI
 
+private struct OneActionPressButtonStyle: ButtonStyle {
+    let scale: CGFloat
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .modifier(OneSpringPressModifier(isPressed: configuration.isPressed, targetScale: scale))
+    }
+}
+
 public struct GlassActionButton: View {
     let title: String
     let icon: String?
@@ -22,7 +30,7 @@ public struct GlassActionButton: View {
         Button(action: action) {
             HStack(spacing: OneMetrics.space6) {
                 if busy {
-                    ProgressView().controlSize(.mini).tint(ink)
+                    OneRhythmBars(color: ink, height: 13)
                 } else if let icon {
                     MaterialIcon(name: icon, size: 16, color: ink)
                 }
@@ -35,7 +43,7 @@ public struct GlassActionButton: View {
             .frame(minWidth: OneMetrics.minimumTarget, minHeight: OneMetrics.minimumTarget)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OneActionPressButtonStyle(scale: 0.97))
         .inkRipple(overlayColor: selected ? OneTone.green.color.opacity(0.10) : OnePalette.onSurface.opacity(0.10))
         .disabled(busy)
         .accessibilityAddTraits(selected ? .isSelected : [])

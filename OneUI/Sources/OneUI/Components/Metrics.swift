@@ -10,32 +10,42 @@ public struct MetricCard: View {
     let sub: String
     let systemImage: String
     let tone: OneTone
+    let indexTag: String?
 
-    public init(_ label: String, value: String, sub: String, systemImage: String, tone: OneTone = .green) {
+    public init(_ label: String, value: String, sub: String, systemImage: String, tone: OneTone = .green, indexTag: String? = nil) {
         self.label = label
         self.value = value
         self.sub = sub
         self.systemImage = systemImage
         self.tone = tone
+        self.indexTag = indexTag
     }
 
     public var body: some View {
         GlassCard {
             HStack(alignment: .top, spacing: OneMetrics.space12) {
-                TitleIcon(systemImage: systemImage, tone: tone, side: 40)
+                TitleIcon(systemImage: systemImage, tone: tone, side: 38)
                 VStack(alignment: .leading, spacing: OneMetrics.space6) {
-                    Text(label)
-                        .font(OneText.labelSmall())
-                        .tracking(0.4)
-                        .foregroundStyle(OnePalette.onSurfaceVariant)
-                    Text(value)
-                        .font(OneText.headline(.medium))
-                        .monospacedDigit()
-                        .lineLimit(2)
-                        .numericTransition()
+                    HStack(spacing: 4) {
+                        if let indexTag {
+                            Text(indexTag)
+                                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(OnePalette.onSurfaceVariant.opacity(0.62))
+                            Text("·")
+                                .font(OneText.labelSmall())
+                                .foregroundStyle(OnePalette.onSurfaceVariant.opacity(0.45))
+                        }
+                        Text(label)
+                            .font(OneText.labelSmall())
+                            .tracking(0.4)
+                            .foregroundStyle(OnePalette.onSurfaceVariant)
+                            .lineLimit(1)
+                    }
+                    OneBentoValueText(value, baseSize: 22, color: OnePalette.onSurface)
                     Text(sub)
                         .font(OneText.labelSmall(.regular))
-                        .foregroundStyle(OnePalette.onSurfaceVariant.opacity(0.78))
+                        .monospacedDigit()
+                        .foregroundStyle(OnePalette.onSurfaceVariant.opacity(0.76))
                         .lineLimit(2)
                 }
             }
