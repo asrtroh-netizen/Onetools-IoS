@@ -278,7 +278,7 @@ index bd978db7bac0ebed35e3702ad3940a349c2a38df..f3325564b0c52ffc62465034bfe947b6
  "Switch to %@" = "切換到 %@";
  "Switch to another profile before deleting" = "刪除前請先切換到其他設定檔";
 diff --git a/apple/ClashClient/Sources/ClashClientApp.swift b/apple/ClashClient/Sources/ClashClientApp.swift
-index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..1db56bd10625f4c63e4902173f08d8121d692f08 100644
+index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..76a96b365b795b7364d2f6d0b1132a4268832bba 100644
 --- a/apple/ClashClient/Sources/ClashClientApp.swift
 +++ b/apple/ClashClient/Sources/ClashClientApp.swift
 @@ -4,8 +4,24 @@ import SwiftUI
@@ -317,41 +317,51 @@ index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..1db56bd10625f4c63e4902173f08d812
  
          }
      }
-@@ -598,6 +616,33 @@ struct AppShellView: View {
-             command.refreshLogDisplayLevel()
-             profiles.restageActiveRuntime()
-         }
-+        .onReceive(NotificationCenter.default.publisher(for: .oneToolsUpdateSwiptLoopback)) { note in
-+            guard let enabled = note.userInfo?["enabled"] as? Bool else { return }
-+            Task { @MainActor in
-+                var next = vpn.tunnelSettings
-+                next.swiptLoopback = enabled
-+                _ = await vpn.updateTunnelSettings(next)
-+                profiles.restageActiveRuntime()
-+                if vpn.isConnected {
-+                    OneToolsShellRouter.shared.showBanner(
-+                        "已更新 10.7.0.1 环回配置，重连 VPN 后立即生效",
-+                        actionTitle: "立即重连",
-+                        autoDismissSeconds: 7.0
-+                    ) {
-+                        NotificationCenter.default.post(name: .oneToolsReconnectTunnelRequested, object: nil)
+@@ -177,6 +195,33 @@ struct AppShellView: View {
+         vpn.applicationBecameActive()
+     }
+ 
++    private func installOneToolsLoopbackHooks() {
++        OneToolsShellRouter.shared.reconnectTunnelHandler = { [vpn] in
++            await vpn.stopVPN()
++            try? await Task.sleep(nanoseconds: 450_000_000)
++            _ = await vpn.startVPN()
++        }
++        OneToolsShellRouter.shared.applySwiptLoopbackHandler = { [vpn, profiles] enabled in
++            var next = vpn.tunnelSettings
++            next.swiptLoopback = enabled
++            _ = await vpn.updateTunnelSettings(next)
++            profiles.restageActiveRuntime()
++            if vpn.isConnected {
++                OneToolsShellRouter.shared.showBanner(
++                    "已更新 10.7.0.1 环回配置，重连 VPN 后立即生效",
++                    actionTitle: "立即重连",
++                    autoDismissSeconds: 7.0
++                ) {
++                    Task { @MainActor in
++                        await OneToolsShellRouter.shared.reconnectTunnelHandler?()
 +                    }
-+                } else {
-+                    OneToolsShellRouter.shared.showBanner("已更新 10.7.0.1 环回配置，下次开启 VPN 自动生效")
 +                }
++            } else {
++                OneToolsShellRouter.shared.showBanner("已更新 10.7.0.1 环回配置，下次开启 VPN 自动生效")
 +            }
 +        }
-+        .onReceive(NotificationCenter.default.publisher(for: .oneToolsReconnectTunnelRequested)) { _ in
-+            Task { @MainActor in
-+                await vpn.stopVPN()
-+                try? await Task.sleep(nanoseconds: 450_000_000)
-+                _ = await vpn.startVPN()
-+            }
-+        }
-         .onChange(of: navigationState.selectedRoot) { _ in
-             syncConnectionsForSelectedTab()
++    }
++
+ 
+     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+     @StateObject private var preferences = AppPreferencesModel()
+@@ -661,8 +706,7 @@ struct AppShellView: View {
+          
+          
+         .task {
+-
+-
++            installOneToolsLoopbackHooks()
          }
-@@ -853,7 +898,9 @@ struct AppShellView: View {
+         .task {
+              
+@@ -853,7 +897,9 @@ struct AppShellView: View {
              if !command.isConnected { Task { await nodes.refresh() } }
          }
          .onOpenURL { url in
@@ -611,10 +621,10 @@ index 8dd58722a8d4c24804b695483af61d744ad24d4a..5d3d24477acb6a18f083b607d5ebe98d
                  Section {
 diff --git a/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..2d6e7e42a0372c1c49e8cc945dabffe7d7214fa1
+index 0000000000000000000000000000000000000000..3f528f3edfef06fab209b0ab6cea98a8354e8257
 --- /dev/null
 +++ b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
-@@ -0,0 +1,661 @@
+@@ -0,0 +1,664 @@
 +#if os(iOS)
 +import ClashClientUI
 +import Foundation
@@ -778,6 +788,9 @@ index 0000000000000000000000000000000000000000..2d6e7e42a0372c1c49e8cc945dabffe7
 +    @Published var lastOneWifiPairingURL: String?
 +    @Published var lastFeatherURL: String?
 +    @Published var banner: OneToolsBannerPayload?
++
++    var applySwiptLoopbackHandler: (@MainActor (Bool) async -> Void)?
++    var reconnectTunnelHandler: (@MainActor () async -> Void)?
 +
 +    private var bannerDismissTask: Task<Void, Never>?
 +
@@ -1256,11 +1269,11 @@ index 0000000000000000000000000000000000000000..2d6e7e42a0372c1c49e8cc945dabffe7
 +        .onChange(of: swiptLoopbackOn) { next in
 +            appGroupDefaults?.set(next, forKey: ClashTunnelRouteShaping.swiptLoopbackKey)
 +            guard didLoadInitialLoopback else { return }
-+            NotificationCenter.default.post(
-+                name: .oneToolsUpdateSwiptLoopback,
-+                object: nil,
-+                userInfo: ["enabled": next]
-+            )
++            if let handler = router.applySwiptLoopbackHandler {
++                Task { @MainActor in
++                    await handler(next)
++                }
++            }
 +        }
 +        .onChange(of: publicBlurFallback) { next in
 +            OneBackdropBlurView.preferPublicMaterialFallback = next
