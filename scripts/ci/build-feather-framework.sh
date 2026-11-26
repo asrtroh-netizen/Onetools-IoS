@@ -3,10 +3,11 @@
 # (+ IDevice.framework & OpenSSL.framework) on Xcode 27 for embedding into OneTools.
 set -euo pipefail
 
-FEATHER_DIR="${1:?Usage: $0 <feather-dir> <ipa-out-dir> <embedded-stage-dir> [spm-cache-dir]}"
-IPA_OUT_DIR="${2:?Usage: $0 <feather-dir> <ipa-out-dir> <embedded-stage-dir> [spm-cache-dir]}"
-EMBED_OUT_DIR="${3:?Usage: $0 <feather-dir> <ipa-out-dir> <embedded-stage-dir> [spm-cache-dir]}"
+FEATHER_DIR="${1:?Usage: $0 <feather-dir> <ipa-out-dir> <embedded-stage-dir> [spm-cache-dir] [build-standalone-ipa:0|1]}"
+IPA_OUT_DIR="${2:?Usage: $0 <feather-dir> <ipa-out-dir> <embedded-stage-dir> [spm-cache-dir] [build-standalone-ipa:0|1]}"
+EMBED_OUT_DIR="${3:?Usage: $0 <feather-dir> <ipa-out-dir> <embedded-stage-dir> [spm-cache-dir] [build-standalone-ipa:0|1]}"
 SPM_CACHE_DIR="${4:-${RUNNER_TEMP:-/tmp}/FeatherSPM}"
+BUILD_STANDALONE_IPA="${5:-0}"
 
 mkdir -p "$IPA_OUT_DIR" "$EMBED_OUT_DIR/host-frameworks" "$EMBED_OUT_DIR/runtime-frameworks"
 IPA_OUT_DIR="$(cd "$IPA_OUT_DIR" && pwd)"
@@ -23,36 +24,41 @@ trap cleanup EXIT
 echo "==> Fetching Feather local HTTPS server TLS assets (deps)"
 make deps
 
-DERIVED_STANDALONE="${RUNNER_TEMP:-/tmp}/FeatherDerivedData"
 COMP_CACHE="${RUNNER_TEMP:-/tmp}/FeatherCompCache"
-rm -rf _build packages "$DERIVED_STANDALONE"
 
-echo "==> Building standalone Feather.app (Release)"
-xcodebuild \
-  -project Feather.xcodeproj \
-  -scheme Feather \
-  -configuration Release \
-  -destination "generic/platform=iOS" \
-  -derivedDataPath "$DERIVED_STANDALONE" \
-  -clonedSourcePackagesDirPath "$SPM_CACHE_DIR" \
-  -skipPackagePluginValidation \
-  -skipMacroValidation \
-  COMPILATION_CACHE_ENABLE_CACHING=YES \
-  COMPILATION_CACHE_CAS_PATH="$COMP_CACHE" \
-  CODE_SIGNING_ALLOWED=NO \
-  ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO
+if [[ "$BUILD_STANDALONE_IPA" == "1" ]]; then
+  DERIVED_STANDALONE="${RUNNER_TEMP:-/tmp}/FeatherDerivedData"
+  rm -rf _build packages "$DERIVED_STANDALONE"
 
-APP_DIR="$(find _build "$DERIVED_STANDALONE" -type d -name 'Feather.app' | head -n 1)"
-if [[ -z "$APP_DIR" ]]; then
-  echo "FAIL: Feather.app not found after standalone xcodebuild" >&2
-  exit 1
+  echo "==> Building standalone Feather.app (Release)"
+  xcodebuild \
+    -project Feather.xcodeproj \
+    -scheme Feather \
+    -configuration Release \
+    -destination "generic/platform=iOS" \
+    -derivedDataPath "$DERIVED_STANDALONE" \
+    -clonedSourcePackagesDirPath "$SPM_CACHE_DIR" \
+    -skipPackagePluginValidation \
+    -skipMacroValidation \
+    COMPILATION_CACHE_ENABLE_CACHING=YES \
+    COMPILATION_CACHE_CAS_PATH="$COMP_CACHE" \
+    CODE_SIGNING_ALLOWED=NO \
+    ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO
+
+  APP_DIR="$(find _build "$DERIVED_STANDALONE" -type d -name 'Feather.app' | head -n 1)"
+  if [[ -z "$APP_DIR" ]]; then
+    echo "FAIL: Feather.app not found after standalone xcodebuild" >&2
+    exit 1
+  fi
+  mkdir -p _build/Payload
+  cp -R "$APP_DIR" _build/Payload/Feather.app
+  chmod -R 0755 _build/Payload/Feather.app
+  cp deps/* _build/Payload/Feather.app/ || true
+  codesign --force --sign - --timestamp=none _build/Payload/Feather.app
+  ditto -c -k --sequesterRsrc --keepParent _build/Payload "$IPA_OUT_DIR/OneTools-Feather-unsigned.ipa"
+else
+  echo "==> Skipping standalone Feather.app build (BUILD_STANDALONE_IPA=0; building FeatherUI.framework only)"
 fi
-mkdir -p _build/Payload
-cp -R "$APP_DIR" _build/Payload/Feather.app
-chmod -R 0755 _build/Payload/Feather.app
-cp deps/* _build/Payload/Feather.app/ || true
-codesign --force --sign - --timestamp=none _build/Payload/Feather.app
-ditto -c -k --sequesterRsrc --keepParent _build/Payload "$IPA_OUT_DIR/OneTools-Feather-unsigned.ipa"
 
 echo "==> Creating Clang module map for Feather C/ObjC helpers"
 cat > "$OBJC_MOD_DIR/FeatherObjC.h" <<'OBJC'
@@ -129,6 +135,7 @@ def patch_feather_cfg(block: str, is_debug: bool) -> str:
     cond = '"DEBUG ONETOOLS_EMBEDDED $(inherited)"' if is_debug else '"ONETOOLS_EMBEDDED $(inherited)"'
     injected = (
         f'\t\t\t\tASSETCATALOG_COMPILER_APPICON_NAME = "";\n'
+        f'\t\t\t\tDEAD_CODE_STRIPPING = YES;\n'
         f'\t\t\t\tDEFINES_MODULE = YES;\n'
         f'\t\t\t\tDEPLOYMENT_LOCATION = NO;\n'
         f'\t\t\t\tDEPLOYMENT_POSTPROCESSING = NO;\n'
@@ -141,6 +148,11 @@ def patch_feather_cfg(block: str, is_debug: bool) -> str:
         f'\t\t\t\tSKIP_INSTALL = NO;\n'
         f'\t\t\t\tSWIFT_ACTIVE_COMPILATION_CONDITIONS = {cond};\n'
         f'\t\t\t\tEXPORTED_SYMBOLS_FILE = "{objc_mod_dir}/FeatherUI.exp";\n'
+        f'\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (\n'
+        f'\t\t\t\t\t"$(inherited)",\n'
+        f'\t\t\t\t\t"@executable_path/Frameworks",\n'
+        f'\t\t\t\t\t"@loader_path/..",\n'
+        f'\t\t\t\t);\n'
         f'\t\t\t\tSWIFT_INCLUDE_PATHS = (\n'
         f'\t\t\t\t\t"$(inherited)",\n'
         f'\t\t\t\t\t"{objc_mod_dir}",\n'
@@ -207,9 +219,16 @@ if [[ -f Feather/Resources/ellekit.deb ]]; then
 fi
 
 cp -RL "$FEATHER_UI_FW" "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework"
+xcrun strip -x "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/FeatherUI"
+xcrun nm -gU "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/FeatherUI" > "$OBJC_MOD_DIR/featherui_stripped.syms"
+if ! grep -q '_OBJC_CLASS_\$_OneToolsFeatherBridge$' "$OBJC_MOD_DIR/featherui_stripped.syms"; then
+  echo "FAIL: _OBJC_CLASS_\$_OneToolsFeatherBridge missing after strip -x!" >&2
+  exit 1
+fi
 rm -rf "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Headers" \
        "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/PrivateHeaders" \
-       "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Modules"
+       "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Modules" \
+       "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/BCSymbolMaps"
 mkdir -p "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Headers" \
          "$EMBED_OUT_DIR/host-frameworks/FeatherUI.framework/Modules"
 
@@ -220,6 +239,8 @@ NS_ASSUME_NONNULL_BEGIN
 @interface OneToolsFeatherBridge : NSObject
 + (UIViewController *)makeRootViewController;
 + (void)handleIncomingURL:(NSURL *)url;
++ (void)selectSubtab:(NSString *)rawName;
++ (void)releaseIdleMemory;
 @end
 NS_ASSUME_NONNULL_END
 OBJC
@@ -244,7 +265,10 @@ for fw_name in IDevice OpenSSL; do
     echo "Staging dynamic $fw_name.framework from $FW_PATH"
     dst_fw="$EMBED_OUT_DIR/runtime-frameworks/${fw_name}.framework"
     cp -RL "$FW_PATH" "$dst_fw"
-    rm -rf "$dst_fw/Headers" "$dst_fw/PrivateHeaders" "$dst_fw/Modules"
+    rm -rf "$dst_fw/Headers" "$dst_fw/PrivateHeaders" "$dst_fw/Modules" "$dst_fw/BCSymbolMaps"
+    if [[ -f "$dst_fw/$fw_name" ]]; then
+      xcrun strip -x "$dst_fw/$fw_name" || true
+    fi
   else
     echo "Info: ${fw_name} is statically linked into FeatherUI.framework (not a dynamic @rpath framework)"
   fi

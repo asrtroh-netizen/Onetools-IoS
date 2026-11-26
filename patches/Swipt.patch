@@ -11,6 +11,67 @@ index 0000000000000000000000000000000000000000..a52424cd8676d75eb6efa2a80e525678
 +
 +    private final class Token {}
 +}
+diff --git a/Swipt/Automation/OpenSwipletView.swift b/Swipt/Automation/OpenSwipletView.swift
+index 3d10f6ed77a56c1d05e4ec595449680e6891cb3e..66ecab3459402e6b309b5cb755ea7c5f2f6f5fee 100644
+--- a/Swipt/Automation/OpenSwipletView.swift
++++ b/Swipt/Automation/OpenSwipletView.swift
+@@ -5,22 +5,45 @@ struct SwipletOpener: ViewModifier {
+     @State private var preview: SwipletPreview?
+     @State private var alert: AlertState?
+ 
++    private func openSwiplet(at url: URL, cleanupAfterOpen: Bool = false) {
++        guard #available(iOS 17.4, *), url.isFileURL, url.pathExtension.lowercased() == "swiplet" else { return }
++        Task {
++            defer {
++                if cleanupAfterOpen {
++                    try? FileManager.default.removeItem(at: url)
++                }
++            }
++            do {
++                let opened = try await SwipletStore.shared.open(url)
++                if let preview {
++                    SwipletStore.shared.discard(preview)
++                }
++                preview = opened
++            } catch {
++                alert = AlertState(String(localized: "Can’t Open the Swiplet"), error: error)
++            }
++        }
++    }
++
+     func body(content: Content) -> some View {
+         content
++            #if !ONETOOLS_EMBEDDED
+             .onOpenURL { url in
+-                guard #available(iOS 17.4, *), url.isFileURL else { return }
+-                Task {
+-                    do {
+-                        let opened = try await SwipletStore.shared.open(url)
+-                        if let preview {
+-                            SwipletStore.shared.discard(preview)
+-                        }
+-                        preview = opened
+-                    } catch {
+-                        alert = AlertState(String(localized: "Can’t Open the Swiplet"), error: error)
+-                    }
++                openSwiplet(at: url)
++            }
++            #endif
++            #if os(iOS)
++            .onAppear {
++                if let pending = OneToolsSwiptBridge.consumePendingSwipletURL() {
++                    openSwiplet(at: pending, cleanupAfterOpen: true)
++                }
++            }
++            .onReceive(NotificationCenter.default.publisher(for: OneToolsSwiptBridge.openSwipletNotification)) { _ in
++                if let pending = OneToolsSwiptBridge.consumePendingSwipletURL() {
++                    openSwiplet(at: pending, cleanupAfterOpen: true)
+                 }
+             }
++            #endif
+             .sheet(item: $preview) { preview in
+                 if #available(iOS 17.4, *) {
+                     NavigationStackCompat {
 diff --git a/Swipt/Automation/SwipletInterface.swift b/Swipt/Automation/SwipletInterface.swift
 index b6a67a7ccb57d48d647754cf1e0f7eb30794986e..ec5aff10457a2ce90552d96d9d95fe58e906ccab 100644
 --- a/Swipt/Automation/SwipletInterface.swift
@@ -198,6 +259,41 @@ index f1013d68052402df14cbe239740d5e380499f3c5..5f5c1cbbb280fe76f1fffdb6b68d2f91
          }
          .onChangeCompat(of: device.tunnelFound == true, initial: true) { found in
              if found {
+diff --git a/Swipt/Model/AppDirectory.swift b/Swipt/Model/AppDirectory.swift
+index f27f166b05915092ba76825cd42aa0e0d61d9cbd..e5f476c953940e206c9642445fc824f2643d9c24 100644
+--- a/Swipt/Model/AppDirectory.swift
++++ b/Swipt/Model/AppDirectory.swift
+@@ -3,7 +3,16 @@ import os
+ 
+ nonisolated enum AppDirectory {
+     static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Swipt", category: "storage")
++    #if ONETOOLS_EMBEDDED
++    static let support: URL = {
++        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
++            .appendingPathComponent("Swipt", isDirectory: true)
++        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
++        return dir
++    }()
++    #else
+     static let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
++    #endif
+     static let pairingRecord = support.appendingPathComponent("PairingRecord.plist")
+ 
+     #if os(macOS)
+@@ -21,6 +30,13 @@ nonisolated enum AppDirectory {
+         }
+         return caches
+     }()
++    #elseif ONETOOLS_EMBEDDED
++    static let caches: URL = {
++        let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
++            .appendingPathComponent("Swipt", isDirectory: true)
++        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
++        return dir
++    }()
+     #else
+     static let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+     #endif
 diff --git a/Swipt/Platform/Platform.swift b/Swipt/Platform/Platform.swift
 index 378a4fdfe62f751f63f524fcc63cf3297c6d2f84..c6a0905e72bf3603fceffd2ef2c4f390892e2542 100644
 --- a/Swipt/Platform/Platform.swift
@@ -213,11 +309,28 @@ index 378a4fdfe62f751f63f524fcc63cf3297c6d2f84..c6a0905e72bf3603fceffd2ef2c4f390
          deviceOptions.deferAccessibilityRestart = AutomatedSetupView.isRequested
          let isAppActive = LockedState(initialState: false)
          self.isAppActive = isAppActive
+diff --git a/Swipt/Settings/AppLanguage.swift b/Swipt/Settings/AppLanguage.swift
+index 7daa2629a28d76e5e765adf78a7bcc008c0baef2..daa5161626cdbaafb137d22ef4e7c8445091978e 100644
+--- a/Swipt/Settings/AppLanguage.swift
++++ b/Swipt/Settings/AppLanguage.swift
+@@ -4,7 +4,7 @@ enum AppLanguage {
+     private static let key = "AppleLanguages"
+ 
+     static var available: [String] {
+-        Bundle.main.localizations.filter { $0 != "Base" }.sorted { name(of: $0).localizedStandardCompare(name(of: $1)) == .orderedAscending }
++        SwiptBundle.resource.localizations.filter { $0 != "Base" }.sorted { name(of: $0).localizedStandardCompare(name(of: $1)) == .orderedAscending }
+     }
+ 
+     static var selected: String? {
 diff --git a/Swipt/SwiptApp.swift b/Swipt/SwiptApp.swift
-index e02423e5720104d1d606d14f5a06ec1575db8950..a27b8cccc4d8313ab4efe2b96251ac22fbb9bf60 100644
+index e02423e5720104d1d606d14f5a06ec1575db8950..89800b0cd851e9bf54cc46a6566a486613e02340 100644
 --- a/Swipt/SwiptApp.swift
 +++ b/Swipt/SwiptApp.swift
-@@ -4,6 +4,7 @@ import UIKit
+@@ -1,9 +1,11 @@
+ import SwiftUI
+ #if os(iOS)
++import LibSwipt
+ import UIKit
  import UserNotifications
  #endif
  
@@ -225,7 +338,7 @@ index e02423e5720104d1d606d14f5a06ec1575db8950..a27b8cccc4d8313ab4efe2b96251ac22
  @main
  enum SwiptMain {
      static func main() {
-@@ -20,8 +21,11 @@ enum SwiptMain {
+@@ -20,8 +22,11 @@ enum SwiptMain {
          SwiptApp.main()
      }
  }
@@ -237,7 +350,7 @@ index e02423e5720104d1d606d14f5a06ec1575db8950..a27b8cccc4d8313ab4efe2b96251ac22
      init() {
          _ = AppDatabase.shared
          #if os(iOS)
-@@ -33,16 +37,46 @@ final class AppLaunch {
+@@ -33,16 +38,104 @@ final class AppLaunch {
      }
  }
  
@@ -258,15 +371,73 @@ index e02423e5720104d1d606d14f5a06ec1575db8950..a27b8cccc4d8313ab4efe2b96251ac22
 +    }
 +}
 +
-+/// Pure Objective-C ABI firewall factory so host targets importing `SwiptUI`
++/// Pure Objective-C ABI firewall factory so host targets loading `SwiptUI`
 +/// do not need transitive Swift/Clang build-time modules (GRDB, Perception, React, Expo).
 +@MainActor
 +@objc(OneToolsSwiptBridge)
 +public final class OneToolsSwiptBridge: NSObject {
-+    @objc public static func makeRootViewController() -> UIViewController {
++    static let openSwipletNotification = Notification.Name("OneToolsSwiptOpenSwiplet")
++    private static var pendingSwipletURL: URL?
++
++    @objc(makeRootViewController)
++    public static func makeRootViewController() -> UIViewController {
 +        let controller = UIHostingController(rootView: SwiptRootView())
 +        controller.view.backgroundColor = .clear
 +        return controller
++    }
++
++    @objc(handleIncomingURL:)
++    public static func handleIncomingURL(_ url: URL) {
++        guard url.isFileURL, url.pathExtension.lowercased() == "swiplet" else { return }
++        let scoped = url.startAccessingSecurityScopedResource()
++        defer {
++            if scoped {
++                url.stopAccessingSecurityScopedResource()
++            }
++        }
++        let inboxDir = AppDirectory.caches.appendingPathComponent("IncomingSwiplets", isDirectory: true)
++        try? FileManager.default.createDirectory(at: inboxDir, withIntermediateDirectories: true)
++        let stagedURL = inboxDir.appendingPathComponent("\(UUID().uuidString)-\(url.lastPathComponent)")
++        do {
++            if FileManager.default.fileExists(atPath: stagedURL.path) {
++                try FileManager.default.removeItem(at: stagedURL)
++            }
++            try FileManager.default.copyItem(at: url, to: stagedURL)
++            if let old = pendingSwipletURL {
++                try? FileManager.default.removeItem(at: old)
++            }
++            pendingSwipletURL = stagedURL
++            NotificationCenter.default.post(name: openSwipletNotification, object: nil)
++        } catch {
++            ErrorAlert.shared.report(String(localized: "Can’t Open the Swiplet"), error: error)
++        }
++    }
++
++    static func consumePendingSwipletURL() -> URL? {
++        defer { pendingSwipletURL = nil }
++        return pendingSwipletURL
++    }
++
++    @objc(handleNotificationUserInfo:title:body:)
++    public static func handleNotificationUserInfo(_ userInfo: NSDictionary, title: String, body: String) {
++        _ = AppLaunch.shared
++        if #available(iOS 17.4, *),
++           let name = userInfo[ErrorAlert.swipletKey] as? String,
++           !SwipletHost.shared.isPresented(name),
++           let entry = SwipletStore.shared.interfaces[name] {
++            SwipletPresentation.open(name: name, entry: entry)
++        }
++        let content = UNMutableNotificationContent()
++        content.title = title
++        content.body = body
++        ErrorAlert.shared.reopen(content)
++    }
++
++    @objc(releaseIdleMemory)
++    public static func releaseIdleMemory() {
++        Task.detached(priority: .utility) {
++            LibSwiptFreeOSMemory()
++        }
 +    }
 +}
 +#endif
@@ -499,3 +670,28 @@ index 4e1813a63887f01b36bc6e1955e7e888e3f7d4e2..8646bbf53523fdf56b6ce95f19434e13
  func run(command *exec.Cmd) {
  	command.Stdout = os.Stdout
  	command.Stderr = os.Stderr
+diff --git a/libswipt/platform.go b/libswipt/platform.go
+index 9ff03be2f07f88639cb8979fe77f8a75c5689c55..dd23469a7ce7b31ddf278c497919aaa3fac6cc0f 100644
+--- a/libswipt/platform.go
++++ b/libswipt/platform.go
+@@ -3,6 +3,8 @@ package libSwipt
+ import (
+ 	"context"
+ 	"encoding/json"
++	"runtime"
++	"runtime/debug"
+ 	"sync"
+ 	"time"
+ 
+@@ -12,6 +14,11 @@ import (
+ 	"github.com/swipt-automation/swipt/internal/log"
+ )
+ 
++func FreeOSMemory() {
++	runtime.GC()
++	debug.FreeOSMemory()
++}
++
+ const (
+ 	SwipletSourceFolder  = automation.SourceFolder
+ 	SwipletAssetsFolder  = automation.AssetsFolder

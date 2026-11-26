@@ -1,3 +1,222 @@
+diff --git a/apple/ClashClient/Shared/ClashAppGroupContainer.swift b/apple/ClashClient/Shared/ClashAppGroupContainer.swift
+index 56b9e9cef4fb8cff2066f6b2ec0de4b450f13a95..0c7759473de21f1f10a2d66d495ed0a38bfb258d 100644
+--- a/apple/ClashClient/Shared/ClashAppGroupContainer.swift
++++ b/apple/ClashClient/Shared/ClashAppGroupContainer.swift
+@@ -35,14 +35,25 @@ extension ClashAppIdentifiers {
+      
+      
+     static let appGroupContainer: URL? = {
+-        let root = FileManager.default
+-            .containerURL(forSecurityApplicationGroupIdentifier: appGroup)
++        if let root = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) {
+ #if os(tvOS)
+-        return root?
+-            .appendingPathComponent("Library", isDirectory: true)
+-            .appendingPathComponent("Caches", isDirectory: true)
++            return root
++                .appendingPathComponent("Library", isDirectory: true)
++                .appendingPathComponent("Caches", isDirectory: true)
+ #else
+-        return root
++            return root
+ #endif
++        }
++#if os(iOS)
++        // Fallback for Free 7-day Apple ID Lite sideload builds where App Groups entitlement was stripped:
++        // keep all host-process stores functional inside Application Support/OneToolsLocalAppGroup.
++        if Bundle.main.bundleURL.pathExtension == "app",
++           let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
++            let local = appSupport.appendingPathComponent("OneToolsLocalAppGroup", isDirectory: true)
++            try? FileManager.default.createDirectory(at: local, withIntermediateDirectories: true)
++            return local
++        }
++#endif
++        return nil
+     }()
+ }
+diff --git a/apple/ClashClient/Shared/ClashAppIdentifiers.swift b/apple/ClashClient/Shared/ClashAppIdentifiers.swift
+index a5b95405711c5f4aaf65c95cd937b910f543fa21..823205d972afe48c3d451a47a9368ecaf9ab515b 100644
+--- a/apple/ClashClient/Shared/ClashAppIdentifiers.swift
++++ b/apple/ClashClient/Shared/ClashAppIdentifiers.swift
+@@ -1,61 +1,132 @@
+ import Foundation
+- 
+- 
+- 
+- 
+- 
+- 
+- 
+- 
+ 
+ enum ClashAppIdentifiers {
+-     
+-    static let base = "org.example.clash"
++    static let compiledBase = "org.example.clash"
+ 
+-     
+-    static let appBundleID = "org.example.clash"
++    private static let extensionSuffixes = [
++        ".extension",
++        ".packet-tunnel",
++        ".controls",
++        ".share",
++        ".tvextension",
++    ]
+ 
+-     
+-    static let macAppBundleID = "org.example.clash"
++    static let base: String = {
++        guard let runtimeID = Bundle.main.bundleIdentifier,
++              !runtimeID.isEmpty,
++              !runtimeID.hasPrefix("com.apple.dt.") else {
++            return compiledBase
++        }
++        for suffix in extensionSuffixes where runtimeID.hasSuffix(suffix) {
++            let trimmed = String(runtimeID.dropLast(suffix.count))
++            if !trimmed.isEmpty {
++                return trimmed
++            }
++        }
++        return runtimeID
++    }()
+ 
+-     
+-    static let tvAppBundleID = "org.example.clash"
++    static var appBundleID: String { base }
++    static var macAppBundleID: String { base }
++    static var tvAppBundleID: String { base }
+ 
+-     
+-    static let packetTunnelExtensionBundleID = "org.example.clash.extension"
++    static let packetTunnelExtensionBundleID: String = {
++        if let plugInsURL = Bundle.main.builtInPlugInsURL,
++           let items = try? FileManager.default.contentsOfDirectory(at: plugInsURL, includingPropertiesForKeys: nil) {
++            for item in items where item.pathExtension == "appex" {
++                if let extBundle = Bundle(url: item),
++                   let extDict = extBundle.infoDictionary?["NSExtension"] as? [String: Any],
++                   let point = extDict["NSExtensionPointIdentifier"] as? String,
++                   point == "com.apple.networkextension.packet-tunnel",
++                   let extID = extBundle.bundleIdentifier, !extID.isEmpty {
++                    return extID
++                }
++            }
++        }
++        return "\(base).extension"
++    }()
+ 
+-     
+-    static let macPacketTunnelExtensionBundleID = "org.example.clash.packet-tunnel"
++    static var macPacketTunnelExtensionBundleID: String { "\(base).packet-tunnel" }
++    static var controlsExtensionBundleID: String { "\(base).controls" }
++    static var shareExtensionBundleID: String { "\(base).share" }
++    static var tvPacketTunnelExtensionBundleID: String { "\(base).tvextension" }
+ 
+-     
+-    static let controlsExtensionBundleID = "org.example.clash.controls"
++    static let appGroup: String = {
++        if let signedGroup = readEmbeddedApplicationGroups()?.first(where: { !$0.isEmpty }) {
++            return signedGroup
++        }
++        if let plistGroup = Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String,
++           !plistGroup.isEmpty,
++           !plistGroup.contains("$(") {
++            return plistGroup
++        }
++        return "group.\(base)"
++    }()
+ 
+-     
+-    static let shareExtensionBundleID = "org.example.clash.share"
++    static var iCloudContainer: String { "iCloud.\(base)" }
+ 
+-     
+-    static let tvPacketTunnelExtensionBundleID = "org.example.clash.tvextension"
++    static let backgroundRefreshTask: String = {
++        if let permitted = Bundle.main.object(forInfoDictionaryKey: "BGTaskSchedulerPermittedIdentifiers") as? [String],
++           let matched = permitted.first(where: { $0.hasSuffix(".refresh") && !$0.contains("$(") }) {
++            return matched
++        }
++        return "\(base).refresh"
++    }()
+ 
+-     
+-     
+-     
+-     
+-     
+-     
+-     
+-     
+-    static var appGroup: String {
++    static var keychainService: String { "\(base).credentials" }
+ 
+-
+-        return "group.org.example.clash"
++    private static func readEmbeddedApplicationGroups() -> [String]? {
++        guard let execURL = Bundle.main.executableURL,
++              let data = try? Data(contentsOf: execURL, options: .mappedIfSafe),
++              data.count >= 32 else {
++            return nil
++        }
++        func u32LE(_ offset: Int) -> UInt32? {
++            guard offset >= 0, offset + 4 <= data.count else { return nil }
++            return UInt32(data[offset])
++                | (UInt32(data[offset + 1]) << 8)
++                | (UInt32(data[offset + 2]) << 16)
++                | (UInt32(data[offset + 3]) << 24)
++        }
++        func u32BE(_ offset: Int) -> UInt32? {
++            guard offset >= 0, offset + 4 <= data.count else { return nil }
++            return (UInt32(data[offset]) << 24)
++                | (UInt32(data[offset + 1]) << 16)
++                | (UInt32(data[offset + 2]) << 8)
++                | UInt32(data[offset + 3])
++        }
++        guard u32LE(0) == 0xfeedfacf, let ncmds = u32LE(16) else { return nil }
++        var cmdOffset = 32
++        var sigOffset: Int?
++        var sigSize: Int?
++        for _ in 0..<min(ncmds, 256) {
++            guard let cmd = u32LE(cmdOffset), let cmdSize = u32LE(cmdOffset + 4), cmdSize >= 8 else { break }
++            if cmd == 0x1d, let doff = u32LE(cmdOffset + 8), let dsize = u32LE(cmdOffset + 12) {
++                sigOffset = Int(doff)
++                sigSize = Int(dsize)
++                break
++            }
++            cmdOffset += Int(cmdSize)
++        }
++        guard let baseOff = sigOffset, let totalSig = sigSize,
++              baseOff >= 0, totalSig >= 12, baseOff + totalSig <= data.count,
++              u32BE(baseOff) == 0xfade0cc0,
++              let blobCount = u32BE(baseOff + 8) else {
++            return nil
++        }
++        for i in 0..<min(Int(blobCount), 32) {
++            let idxOff = baseOff + 12 + i * 8
++            guard let relOff = u32BE(idxOff + 4) else { break }
++            let entOff = baseOff + Int(relOff)
++            guard let magic = u32BE(entOff), let length = u32BE(entOff + 4) else { continue }
++            if magic == 0xfade7171, length > 8, entOff + Int(length) <= data.count {
++                let xmlSlice = data.subdata(in: (entOff + 8)..<(entOff + Int(length)))
++                if let plist = try? PropertyListSerialization.propertyList(from: xmlSlice, format: nil) as? [String: Any],
++                   let groups = plist["com.apple.security.application-groups"] as? [String] {
++                    return groups
++                }
++            }
++        }
++        return nil
+     }
+-
+-     
+-    static let iCloudContainer = "iCloud.org.example.clash"
+-
+-     
+-    static let backgroundRefreshTask = "org.example.clash.refresh"
+-
+-     
+-    static let keychainService = "org.example.clash.credentials"
+ }
 diff --git a/apple/ClashClient/Sources/AppArchitecture/AppLocalization/en.lproj/Localizable.strings b/apple/ClashClient/Sources/AppArchitecture/AppLocalization/en.lproj/Localizable.strings
 index 6b784e5a226701eed368f1a71c285a0bc08e7447..c50e4ba6c86cfeace4d158ebaa364297becc71b6 100644
 --- a/apple/ClashClient/Sources/AppArchitecture/AppLocalization/en.lproj/Localizable.strings
@@ -59,10 +278,35 @@ index bd978db7bac0ebed35e3702ad3940a349c2a38df..f3325564b0c52ffc62465034bfe947b6
  "Switch to %@" = "切換到 %@";
  "Switch to another profile before deleting" = "刪除前請先切換到其他設定檔";
 diff --git a/apple/ClashClient/Sources/ClashClientApp.swift b/apple/ClashClient/Sources/ClashClientApp.swift
-index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..5980bed901016e7d924d6889c2f1e104684cb48a 100644
+index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..1db56bd10625f4c63e4902173f08d8121d692f08 100644
 --- a/apple/ClashClient/Sources/ClashClientApp.swift
 +++ b/apple/ClashClient/Sources/ClashClientApp.swift
-@@ -88,7 +88,9 @@ struct ClashClientApp: App {
+@@ -4,8 +4,24 @@ import SwiftUI
+ import UIKit
+ import WidgetKit
+ 
++final class OneToolsApplicationDelegate: NSObject, UIApplicationDelegate {
++    // React Native 0.88.1 RCTKeyWindow falls back to UIApplication.shared.delegate?.window
++    // when transitioning scenes; SwiftUI's synthesized delegate does not implement `window`.
++    var window: UIWindow? {
++        get {
++            let windows = UIApplication.shared.connectedScenes.lazy
++                .compactMap { $0 as? UIWindowScene }
++                .flatMap(\.windows)
++            return windows.first(where: \.isKeyWindow) ?? windows.first
++        }
++        set {}
++    }
++}
++
+ @main
+ struct ClashClientApp: App {
++    @UIApplicationDelegateAdaptor(OneToolsApplicationDelegate.self) private var oneToolsAppDelegate
++
+     init() {
+          
+          
+@@ -88,7 +104,9 @@ struct ClashClientApp: App {
      var body: some Scene {
          WindowGroup {
  
@@ -73,8 +317,69 @@ index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..5980bed901016e7d924d6889c2f1e104
  
          }
      }
+@@ -598,6 +616,33 @@ struct AppShellView: View {
+             command.refreshLogDisplayLevel()
+             profiles.restageActiveRuntime()
+         }
++        .onReceive(NotificationCenter.default.publisher(for: .oneToolsUpdateSwiptLoopback)) { note in
++            guard let enabled = note.userInfo?["enabled"] as? Bool else { return }
++            Task { @MainActor in
++                var next = vpn.tunnelSettings
++                next.swiptLoopback = enabled
++                _ = await vpn.updateTunnelSettings(next)
++                profiles.restageActiveRuntime()
++                if vpn.isConnected {
++                    OneToolsShellRouter.shared.showBanner(
++                        "已更新 10.7.0.1 环回配置，重连 VPN 后立即生效",
++                        actionTitle: "立即重连",
++                        autoDismissSeconds: 7.0
++                    ) {
++                        NotificationCenter.default.post(name: .oneToolsReconnectTunnelRequested, object: nil)
++                    }
++                } else {
++                    OneToolsShellRouter.shared.showBanner("已更新 10.7.0.1 环回配置，下次开启 VPN 自动生效")
++                }
++            }
++        }
++        .onReceive(NotificationCenter.default.publisher(for: .oneToolsReconnectTunnelRequested)) { _ in
++            Task { @MainActor in
++                await vpn.stopVPN()
++                try? await Task.sleep(nanoseconds: 450_000_000)
++                _ = await vpn.startVPN()
++            }
++        }
+         .onChange(of: navigationState.selectedRoot) { _ in
+             syncConnectionsForSelectedTab()
+         }
+@@ -853,7 +898,9 @@ struct AppShellView: View {
+             if !command.isConnected { Task { await nodes.refresh() } }
+         }
+         .onOpenURL { url in
+-
++            if OneToolsShellRouter.canConsume(url) {
++                return
++            }
+ 
+             if let route = ClashSystemRoute(url: url) {
+                 handleSystemRoute(route)
+diff --git a/apple/ClashClient/Sources/ConfigStore/BackgroundRefresh.swift b/apple/ClashClient/Sources/ConfigStore/BackgroundRefresh.swift
+index 321bf7c5ff96354f63d88f60d6d586839d989fcb..c554e1ed68e134cdd0dc8f60a018da50eeeab746 100644
+--- a/apple/ClashClient/Sources/ConfigStore/BackgroundRefresh.swift
++++ b/apple/ClashClient/Sources/ConfigStore/BackgroundRefresh.swift
+@@ -102,6 +102,11 @@ enum BackgroundRefresh {
+          
+         _ = handler
+ #else
++        let permitted = Bundle.main.object(forInfoDictionaryKey: "BGTaskSchedulerPermittedIdentifiers") as? [String] ?? []
++        guard permitted.contains(identifier) else {
++            registration.lock(); registered = false; registration.unlock()
++            return
++        }
+         let accepted = BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: nil) { task in
+             let work = Task {
+                  
 diff --git a/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift b/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift
-index 134e679549399faa7b76a5f869aab6d2f6750da2..8d79ada69dafd08afca72d6b67f15a946d3098ff 100644
+index 134e679549399faa7b76a5f869aab6d2f6750da2..c9e4ec97e1aa74935dbc4160bad94bbc790b00ac 100644
 --- a/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift
 +++ b/apple/ClashClient/Sources/ConfigStore/ConfigTransforms.swift
 @@ -1,6 +1,9 @@
@@ -152,7 +457,7 @@ index 134e679549399faa7b76a5f869aab6d2f6750da2..8d79ada69dafd08afca72d6b67f15a94
          var written = section
          if let guardRule = UDPFallbackGuard.ruleToInject(
              policy: udpFallback, existingRules: try lines.rules(whoseLinesHold: ["udp", "reject"])) {
-@@ -2312,13 +2318,17 @@ enum ConfigTransforms {
+@@ -2312,13 +2318,18 @@ enum ConfigTransforms {
      private static func clientRuntimeRoot(
          _ parsed: OrderedJSON,
          udpFallback: UDPFallbackPolicy,
@@ -167,11 +472,12 @@ index 134e679549399faa7b76a5f869aab6d2f6750da2..8d79ada69dafd08afca72d6b67f15a94
          }
 +        if swiptLoopback {
 +            appendSwiptLoopbackAddress(to: &root)
++            appendFeatherLocalInstallerFakeIPFilter(to: &root)
 +        }
          return root
      }
  
-@@ -2414,6 +2424,24 @@ enum ConfigTransforms {
+@@ -2414,6 +2425,52 @@ enum ConfigTransforms {
          root = root.setting(path: ["dns", "fake-ip-filter"], to: .array(filter))
      }
  
@@ -191,6 +497,34 @@ index 134e679549399faa7b76a5f869aab6d2f6750da2..8d79ada69dafd08afca72d6b67f15a94
 +        let merged = ClashTunnelRouteShaping.loopbackAddresses(configured: configured, swiptLoopback: true)
 +        guard merged != configured else { return }
 +        root = root.setting(path: ["tun", "loopback-address"], to: .array(merged.map { .string($0) }))
++    }
++
++    private static func appendFeatherLocalInstallerFakeIPFilter(to root: inout OrderedJSON) {
++        guard let dns = root.topLevelValue("dns"),
++              case let .string(enhanced)? = dns.topLevelValue("enhanced-mode"),
++              enhanced.lowercased() == "fake-ip" else {
++            return
++        }
++        var mode = "blacklist"
++        if case let .string(declared)? = dns.topLevelValue("fake-ip-filter-mode") {
++            mode = declared.lowercased()
++        }
++        if mode == "whitelist" { return }
++        var existingStrings: [String] = []
++        if case let .array(existing)? = dns.topLevelValue("fake-ip-filter") {
++            let extracted = existing.compactMap { if case let .string(s) = $0 { return s } else { return nil } }
++            guard extracted.count == existing.count else { return }
++            existingStrings = extracted
++        } else if mode != "rule" {
++            existingStrings = kernelDefaultFakeIPFilter
++        }
++        let merged = ClashTunnelRouteShaping.fakeIPFilterEntries(
++            configured: existingStrings,
++            mode: mode,
++            swiptLoopback: true
++        )
++        guard merged != existingStrings else { return }
++        root = root.setting(path: ["dns", "fake-ip-filter"], to: .array(merged.map { .string($0) }))
 +    }
 +
       
@@ -277,21 +611,129 @@ index 8dd58722a8d4c24804b695483af61d744ad24d4a..5d3d24477acb6a18f083b607d5ebe98d
                  Section {
 diff --git a/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72bd461ee7
+index 0000000000000000000000000000000000000000..2d6e7e42a0372c1c49e8cc945dabffe7d7214fa1
 --- /dev/null
 +++ b/apple/ClashClient/Sources/OneTools/OneToolsRootShellView.swift
-@@ -0,0 +1,446 @@
+@@ -0,0 +1,661 @@
 +#if os(iOS)
 +import ClashClientUI
++import Foundation
 +import OneUI
 +import SwiftUI
 +import UIKit
-+#if canImport(SwiptUI)
-+import SwiptUI
-+#endif
-+#if canImport(FeatherUI)
-+import FeatherUI
-+#endif
++
++extension Notification.Name {
++    static let oneToolsUpdateSwiptLoopback = Notification.Name("OneToolsUpdateSwiptLoopback")
++    static let oneToolsReconnectTunnelRequested = Notification.Name("OneToolsReconnectTunnelRequested")
++}
++
++@objc private protocol OneToolsDynamicBridgeSelectors: NSObjectProtocol {
++    @objc(makeRootViewController)
++    func makeRootViewController() -> UIViewController
++
++    @objc(handleIncomingURL:)
++    func handleIncomingURL(_ url: NSURL)
++
++    @objc(selectSubtab:)
++    func selectSubtab(_ rawName: NSString)
++
++    @objc(handleNotificationUserInfo:title:body:)
++    func handleNotificationUserInfo(_ userInfo: NSDictionary, title: NSString, body: NSString)
++
++    @objc(releaseIdleMemory)
++    func releaseIdleMemory()
++}
++
++/// On-demand (`dlopen` / `Bundle.load()`) loader for embedded `SwiptUI.framework` and `FeatherUI.framework`.
++/// Keeps cold-launch on Tab 0 (`代理`) completely free of `LibSwipt`, `React`, `hermesvm`, `OpenSSL`, and `FeatherUI`
++/// until the user actually enters those tabs or triggers a corresponding deep link / notification.
++@MainActor
++enum OneToolsEmbeddedLoader {
++    private static var swiptLoaded = false
++    private static var featherLoaded = false
++
++    private static var frameworksDir: URL? {
++        Bundle.main.privateFrameworksURL
++    }
++
++    static var isSwiptAvailableOnDisk: Bool {
++        guard let url = frameworksDir?.appendingPathComponent("SwiptUI.framework", isDirectory: true) else {
++            return false
++        }
++        return FileManager.default.fileExists(atPath: url.path)
++    }
++
++    static var isFeatherAvailableOnDisk: Bool {
++        guard let url = frameworksDir?.appendingPathComponent("FeatherUI.framework", isDirectory: true) else {
++            return false
++        }
++        return FileManager.default.fileExists(atPath: url.path)
++    }
++
++    private static func swiptBridgeClass() -> AnyObject? {
++        if let existing = NSClassFromString("OneToolsSwiptBridge") {
++            swiptLoaded = true
++            return existing as AnyObject
++        }
++        guard let url = frameworksDir?.appendingPathComponent("SwiptUI.framework", isDirectory: true),
++              let bundle = Bundle(url: url),
++              bundle.load(),
++              let cls = NSClassFromString("OneToolsSwiptBridge") else {
++            return nil
++        }
++        swiptLoaded = true
++        return cls as AnyObject
++    }
++
++    private static func featherBridgeClass() -> AnyObject? {
++        if let existing = NSClassFromString("OneToolsFeatherBridge") {
++            featherLoaded = true
++            return existing as AnyObject
++        }
++        guard let url = frameworksDir?.appendingPathComponent("FeatherUI.framework", isDirectory: true),
++              let bundle = Bundle(url: url),
++              bundle.load(),
++              let cls = NSClassFromString("OneToolsFeatherBridge") else {
++            return nil
++        }
++        featherLoaded = true
++        return cls as AnyObject
++    }
++
++    static func makeSwiptViewController() -> UIViewController? {
++        swiptBridgeClass()?.makeRootViewController?()
++    }
++
++    static func makeFeatherViewController() -> UIViewController? {
++        featherBridgeClass()?.makeRootViewController?()
++    }
++
++    static func dispatchSwiptURL(_ url: URL) {
++        swiptBridgeClass()?.handleIncomingURL?(url as NSURL)
++    }
++
++    static func dispatchFeatherURL(_ url: URL) {
++        featherBridgeClass()?.handleIncomingURL?(url as NSURL)
++    }
++
++    static func selectFeatherSubtab(_ rawName: String) {
++        featherBridgeClass()?.selectSubtab?(rawName as NSString)
++    }
++
++    static func dispatchSwiptNotification(userInfo: [AnyHashable: Any], title: String, body: String) {
++        swiptBridgeClass()?.handleNotificationUserInfo?(userInfo as NSDictionary, title: title as NSString, body: body as NSString)
++    }
++
++    /// Releases idle memory ONLY on sub-engines that have already been loaded into this process.
++    static func releaseIdleMemoryOnLoadedEngines() {
++        if swiptLoaded, let cls = NSClassFromString("OneToolsSwiptBridge") {
++            (cls as AnyObject).releaseIdleMemory?()
++        }
++        if featherLoaded, let cls = NSClassFromString("OneToolsFeatherBridge") {
++            (cls as AnyObject).releaseIdleMemory?()
++        }
++    }
++}
 +
 +public enum OneToolsTab: Int, CaseIterable, Sendable {
 +    case proxy = 0
@@ -313,35 +755,100 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +    }
 +}
 +
++struct OneToolsBannerPayload: Equatable {
++    let id = UUID()
++    let message: String
++    let actionTitle: String
++    let action: (@MainActor () -> Void)?
++
++    static func == (lhs: OneToolsBannerPayload, rhs: OneToolsBannerPayload) -> Bool {
++        lhs.id == rhs.id
++    }
++}
++
 +@MainActor
 +final class OneToolsShellRouter: ObservableObject {
 +    static let shared = OneToolsShellRouter()
 +
++    private static let featherFileExtensions: Set<String> = ["ipa", "tipa", "p12", "mobileprovision"]
++    private static let swiptFileExtensions: Set<String> = ["swiplet"]
++    private static let ownedSchemes: Set<String> = ["onetools", "feather", "swipt"]
++
 +    @Published var selectedIndex: Int = OneToolsTab.proxy.rawValue
 +    @Published var lastOneWifiPairingURL: String?
 +    @Published var lastFeatherURL: String?
-+    @Published var bannerMessage: String?
++    @Published var banner: OneToolsBannerPayload?
++
++    private var bannerDismissTask: Task<Void, Never>?
 +
 +    private init() {}
 +
++    /// Single-authority predicate used by `ClashClientApp` to prevent Clash's YAML importer
++    /// from hijacking `.ipa`, `.tipa`, `.p12`, `.mobileprovision`, `.swiplet`, `feather://`, `swipt://`, or `onetools://`.
++    nonisolated static func canConsume(_ url: URL) -> Bool {
++        let ext = url.pathExtension.lowercased()
++        if featherFileExtensions.contains(ext) || swiptFileExtensions.contains(ext) {
++            return true
++        }
++        guard let scheme = url.scheme?.lowercased() else { return false }
++        return ownedSchemes.contains(scheme)
++    }
++
++    func showBanner(_ message: String, actionTitle: String = "知道了", autoDismissSeconds: Double = 5.0, action: (@MainActor () -> Void)? = nil) {
++        bannerDismissTask?.cancel()
++        let payload = OneToolsBannerPayload(message: message, actionTitle: actionTitle, action: action)
++        banner = payload
++        if autoDismissSeconds > 0 {
++            let targetID = payload.id
++            bannerDismissTask = Task { @MainActor [weak self] in
++                try? await Task.sleep(nanoseconds: UInt64(autoDismissSeconds * 1_000_000_000))
++                guard !Task.isCancelled, self?.banner?.id == targetID else { return }
++                self?.banner = nil
++            }
++        }
++    }
++
++    func dismissBanner() {
++        bannerDismissTask?.cancel()
++        banner = nil
++    }
++
++    func openSigningCertificatesFromNotification() {
++        selectedIndex = OneToolsTab.signing.rawValue
++        Task { @MainActor in
++            try? await Task.sleep(nanoseconds: 80_000_000)
++            OneToolsEmbeddedLoader.selectFeatherSubtab("certificates")
++        }
++    }
++
++    func openSwiptErrorNotification(userInfo: [AnyHashable: Any], title: String, body: String) {
++        selectedIndex = OneToolsTab.adblock.rawValue
++        Task { @MainActor in
++            try? await Task.sleep(nanoseconds: 80_000_000)
++            OneToolsEmbeddedLoader.dispatchSwiptNotification(userInfo: userInfo, title: title, body: body)
++        }
++    }
++
 +    func handleIncomingURL(_ url: URL) -> Bool {
 +        let ext = url.pathExtension.lowercased()
-+        if ext == "ipa" || ext == "tipa" {
++        if Self.featherFileExtensions.contains(ext) {
 +            selectedIndex = OneToolsTab.signing.rawValue
 +            lastFeatherURL = url.absoluteString
-+            #if canImport(FeatherUI)
-+            OneToolsFeatherBridge.handleIncomingURL(url)
-+            #endif
++            if ext == "p12" || ext == "mobileprovision" {
++                showBanner("已接收证书组件：\(url.lastPathComponent)，正在切入证书配对")
++            }
++            Task { @MainActor in
++                try? await Task.sleep(nanoseconds: 60_000_000)
++                OneToolsEmbeddedLoader.dispatchFeatherURL(url)
++            }
 +            return true
 +        }
-+        if ext == "p12" || ext == "mobileprovision" {
-+            selectedIndex = OneToolsTab.signing.rawValue
-+            lastFeatherURL = url.absoluteString
-+            bannerMessage = "已接收证书文件：\(url.lastPathComponent)，请在证书管理中导入"
-+            return true
-+        }
-+        if ext == "swiplet" {
++        if Self.swiptFileExtensions.contains(ext) {
 +            selectedIndex = OneToolsTab.adblock.rawValue
++            Task { @MainActor in
++                try? await Task.sleep(nanoseconds: 60_000_000)
++                OneToolsEmbeddedLoader.dispatchSwiptURL(url)
++            }
 +            return true
 +        }
 +
@@ -349,9 +856,14 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +        if scheme == "feather" {
 +            selectedIndex = OneToolsTab.signing.rawValue
 +            lastFeatherURL = url.absoluteString
-+            #if canImport(FeatherUI)
-+            OneToolsFeatherBridge.handleIncomingURL(url)
-+            #endif
++            Task { @MainActor in
++                try? await Task.sleep(nanoseconds: 60_000_000)
++                OneToolsEmbeddedLoader.dispatchFeatherURL(url)
++            }
++            return true
++        }
++        if scheme == "swipt" {
++            selectedIndex = OneToolsTab.adblock.rawValue
 +            return true
 +        }
 +        guard scheme == "onetools" else { return false }
@@ -370,7 +882,7 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +        case "onewifi":
 +            lastOneWifiPairingURL = url.absoluteString
 +            selectedIndex = OneToolsTab.toolbox.rawValue
-+            bannerMessage = "已接收 OneWIFI 配对链接，等待互通模块接入"
++            showBanner("已接收 OneWIFI 配对链接，等待互通模块接入")
 +            return true
 +        default:
 +            return false
@@ -380,13 +892,15 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +
 +private let oneToolsShellEnabledDefaultsKey = "onetools.shell.enabled"
 +
-+/// OneTools iOS 根外壳（P5.0–P5.2 / P7）：保持已访问工作区常驻挂载以保留 VPN、配对与签名进度，
-+/// 底部叠加 `OneUI` 液态胶囊底栏 `UltraGlassDock` 切换四大核心工作区。
++/// OneTools iOS 根外壳（P5.0–P5.2 / P7 + 全局优化版）：
++/// - 按需 `dlopen` 加载 `SwiptUI` 与 `FeatherUI`，保持 Tab 0 冷启动零额外运行时开销；
++/// - 统一深链仲裁、全局顶层通知横幅、键盘自适应收起 `UltraGlassDock` 与跨引擎内存压力协同释放。
 +struct OneToolsRootShellView<ProxyContent: View>: View {
 +    @AppStorage(oneToolsShellEnabledDefaultsKey) private var shellEnabled: Bool = true
 +    @StateObject private var router = OneToolsShellRouter.shared
 +    @State private var hasMountedAdblock = false
 +    @State private var hasMountedSigning = false
++    @State private var isKeyboardVisible = false
 +    private let proxyContent: ProxyContent
 +
 +    init(@ViewBuilder proxyContent: () -> ProxyContent) {
@@ -398,7 +912,7 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +    }
 +
 +    private var dockClearanceHeight: CGFloat {
-+        OneMetrics.dockHeight + OneMetrics.space24
++        isKeyboardVisible ? 0 : (OneMetrics.dockHeight + OneMetrics.space24)
 +    }
 +
 +    var body: some View {
@@ -414,9 +928,6 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +
 +                if hasMountedAdblock || router.selectedIndex == OneToolsTab.adblock.rawValue {
 +                    adblockTab
-+                        .safeAreaInset(edge: .bottom, spacing: 0) {
-+                            Color.clear.frame(height: dockClearanceHeight)
-+                        }
 +                        .opacity(router.selectedIndex == OneToolsTab.adblock.rawValue ? 1 : 0)
 +                        .allowsHitTesting(router.selectedIndex == OneToolsTab.adblock.rawValue)
 +                        .accessibilityHidden(router.selectedIndex != OneToolsTab.adblock.rawValue)
@@ -424,9 +935,6 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +
 +                if hasMountedSigning || router.selectedIndex == OneToolsTab.signing.rawValue {
 +                    signingTab
-+                        .safeAreaInset(edge: .bottom, spacing: 0) {
-+                            Color.clear.frame(height: dockClearanceHeight)
-+                        }
 +                        .opacity(router.selectedIndex == OneToolsTab.signing.rawValue ? 1 : 0)
 +                        .allowsHitTesting(router.selectedIndex == OneToolsTab.signing.rawValue)
 +                        .accessibilityHidden(router.selectedIndex != OneToolsTab.signing.rawValue)
@@ -434,11 +942,32 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +
 +                if router.selectedIndex == OneToolsTab.toolbox.rawValue {
 +                    OneToolsToolboxView(router: router, shellEnabled: $shellEnabled)
++                        .safeAreaInset(edge: .bottom, spacing: 0) {
++                            Color.clear.frame(height: dockClearanceHeight)
++                        }
 +                        .oneTheme()
 +                        .transition(.opacity)
 +                }
 +
-+                UltraGlassDock(items: dockItems, selectedIndex: $router.selectedIndex)
++                VStack(spacing: OneMetrics.space8) {
++                    if let banner = router.banner {
++                        OneSnackBarBanner(banner.message, actionTitle: banner.actionTitle) {
++                            let act = banner.action
++                            router.dismissBanner()
++                            act?()
++                        }
++                        .oneTheme()
++                        .padding(.horizontal, OneMetrics.space16)
++                        .transition(.move(edge: .bottom).combined(with: .opacity))
++                    }
++
++                    if !isKeyboardVisible {
++                        UltraGlassDock(items: dockItems, selectedIndex: $router.selectedIndex)
++                            .transition(.move(edge: .bottom).combined(with: .opacity))
++                    }
++                }
++                .animation(.easeOut(duration: 0.2), value: isKeyboardVisible)
++                .animation(.easeOut(duration: 0.2), value: router.banner)
 +            }
 +            .onChange(of: router.selectedIndex) { next in
 +                if next == OneToolsTab.adblock.rawValue {
@@ -457,11 +986,26 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +            .onOpenURL { url in
 +                _ = router.handleIncomingURL(url)
 +            }
++            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
++                isKeyboardVisible = true
++            }
++            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
++                isKeyboardVisible = false
++            }
++            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
++                OneToolsEmbeddedLoader.releaseIdleMemoryOnLoadedEngines()
++            }
++            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
++                OneToolsEmbeddedLoader.releaseIdleMemoryOnLoadedEngines()
++            }
 +        } else {
 +            proxyContent
 +                .onOpenURL { url in
 +                    if url.scheme?.lowercased() == "onetools", url.host?.lowercased() == "shell" {
 +                        shellEnabled = true
++                    } else if OneToolsShellRouter.canConsume(url) {
++                        shellEnabled = true
++                        _ = router.handleIncomingURL(url)
 +                    }
 +                }
 +        }
@@ -469,28 +1013,36 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +
 +    @ViewBuilder
 +    private var adblockTab: some View {
-+        #if canImport(SwiptUI)
-+        OneToolsHostedController(bottomSafeInset: dockClearanceHeight) {
-+            OneToolsSwiptBridge.makeRootViewController()
++        if OneToolsEmbeddedLoader.isSwiptAvailableOnDisk {
++            OneToolsHostedController(bottomSafeInset: dockClearanceHeight) {
++                OneToolsEmbeddedLoader.makeSwiptViewController()
++                    ?? UIHostingController(rootView: OneToolsAdblockHubView(router: router).oneTheme())
++            }
++            .ignoresSafeArea(.container, edges: .all)
++        } else {
++            OneToolsAdblockHubView(router: router)
++                .safeAreaInset(edge: .bottom, spacing: 0) {
++                    Color.clear.frame(height: dockClearanceHeight)
++                }
++                .oneTheme()
 +        }
-+        .ignoresSafeArea()
-+        #else
-+        OneToolsAdblockHubView(router: router)
-+            .oneTheme()
-+        #endif
 +    }
 +
 +    @ViewBuilder
 +    private var signingTab: some View {
-+        #if canImport(FeatherUI)
-+        OneToolsHostedController(bottomSafeInset: dockClearanceHeight) {
-+            OneToolsFeatherBridge.makeRootViewController()
++        if OneToolsEmbeddedLoader.isFeatherAvailableOnDisk {
++            OneToolsHostedController(bottomSafeInset: dockClearanceHeight) {
++                OneToolsEmbeddedLoader.makeFeatherViewController()
++                    ?? UIHostingController(rootView: OneToolsSigningHubView(router: router).oneTheme())
++            }
++            .ignoresSafeArea(.container, edges: .all)
++        } else {
++            OneToolsSigningHubView(router: router)
++                .safeAreaInset(edge: .bottom, spacing: 0) {
++                    Color.clear.frame(height: dockClearanceHeight)
++                }
++                .oneTheme()
 +        }
-+        .ignoresSafeArea()
-+        #else
-+        OneToolsSigningHubView(router: router)
-+            .oneTheme()
-+        #endif
 +    }
 +}
 +
@@ -570,7 +1122,7 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +                }
 +            }
 +
-+            OneSection("界面层 · Swipt 自动化仓位", desc: "G2 双 Go 运行时实测通过后直接挂载 SwiptRootView", systemImage: "extension_outlined", tone: .teal) {
++            OneSection("界面层 · Swipt 自动化仓位", desc: "按需动态加载 SwiptUI.framework", systemImage: "extension_outlined", tone: .teal) {
 +                SoftLabelGrid([
 +                    SoftLabel("环回对端", value: ClashTunnelRouteShaping.swiptLoopbackAddress, mono: true),
 +                    SoftLabel("默认规则", value: "跳过中国广告 (fuzzySkip)"),
@@ -593,20 +1145,20 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +
 +            OneStatusHero(
 +                tone: .neutral,
-+                title: "自签引擎待合入编译",
-+                subtitle: "SigningLogic（提前 7 天 / 1 天到期提醒与批量签名错误隔离）已在 Feather 分支就绪",
++                title: "自签引擎待内嵌打包",
++                subtitle: "批量签名隔离与提前 7 天 / 1 天到期提醒已在三合一完整包启用",
 +                detail: router.lastFeatherURL.map { "最近接收 URL：\($0)" } ?? "支持 feather:// 证书导入与本地环回安装通道",
 +                action: HeroAction("查看工具箱状态") {
 +                    router.selectedIndex = OneToolsTab.toolbox.rawValue
 +                }
 +            )
 +
-+            OneSection("已就绪增强能力（P7）", systemImage: "key_outlined", tone: .green) {
++            OneSection("已就绪增强能力", systemImage: "key_outlined", tone: .green) {
 +                SoftLabelGrid([
 +                    SoftLabel("到期提醒", value: "提前 7 天 / 1 天"),
 +                    SoftLabel("批量签名", value: "单包异常自动隔离"),
 +                    SoftLabel("一键重签", value: "按新证书批量迁移已签应用"),
-+                    SoftLabel("直装通道", value: "复用 10.7.0.1 环回"),
++                    SoftLabel("直装通道", value: "复用 10.7.0.1 + backloop 直连"),
 +                ])
 +            }
 +        }
@@ -617,6 +1169,7 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +    @ObservedObject var router: OneToolsShellRouter
 +    @Binding var shellEnabled: Bool
 +    @State private var swiptLoopbackOn: Bool = true
++    @State private var didLoadInitialLoopback = false
 +    @State private var publicBlurFallback: Bool = OneBackdropBlurView.preferPublicMaterialFallback
 +    @State private var showGallerySheet = false
 +
@@ -625,19 +1178,11 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +    }
 +
 +    private var swiptEmbeddedStatus: String {
-+        #if canImport(SwiptUI)
-+        return "已内嵌合入 (SwiptUI)"
-+        #else
-+        return "独立桥接模式"
-+        #endif
++        OneToolsEmbeddedLoader.isSwiptAvailableOnDisk ? "已内嵌合入 (按需加载)" : "独立桥接模式"
 +    }
 +
 +    private var featherEmbeddedStatus: String {
-+        #if canImport(FeatherUI)
-+        return "已内嵌合入 (FeatherUI)"
-+        #else
-+        return "独立桥接模式"
-+        #endif
++        OneToolsEmbeddedLoader.isFeatherAvailableOnDisk ? "已内嵌合入 (按需加载)" : "独立桥接模式"
 +    }
 +
 +    var body: some View {
@@ -645,12 +1190,6 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +            PageHead("工具箱", desc: "OneTools 全局开关、三合一模块状态与视觉画廊") {
 +                GlassActionButton("OneUI 画廊", systemImage: "science_outlined") {
 +                    showGallerySheet = true
-+                }
-+            }
-+
-+            if let msg = router.bannerMessage {
-+                OneSnackBarBanner(msg, actionTitle: "知道了") {
-+                    router.bannerMessage = nil
 +                }
 +            }
 +
@@ -668,7 +1207,7 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +                    HStack {
 +                        VStack(alignment: .leading, spacing: OneMetrics.space2) {
 +                            Text("Swipt 环回兼容 (10.7.0.1)").font(OneText.bodyLarge())
-+                            Text("在 Clash 运行时配置自动注入 tun.loopback-address")
++                            Text("同步注入 tun.loopback-address 与 backloop.dev 真 IP 直连")
 +                                .font(OneText.bodySmall())
 +                                .foregroundStyle(OnePalette.onSurfaceVariant)
 +                        }
@@ -692,7 +1231,7 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +            OneSection("后期互通与深链记录", systemImage: "link_outlined", tone: .teal) {
 +                VStack(alignment: .leading, spacing: OneMetrics.space12) {
 +                    SoftLabelGrid([
-+                        SoftLabel("URL Scheme", value: "onetools:// · feather://", mono: true),
++                        SoftLabel("URL Scheme", value: "onetools:// · feather:// · swipt://", mono: true),
 +                        SoftLabel("OneWIFI 配对", value: router.lastOneWifiPairingURL ?? "未收到配对唤起"),
 +                    ])
 +                    HStack(spacing: OneMetrics.space8) {
@@ -707,11 +1246,21 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +            }
 +        }
 +        .onAppear {
++            didLoadInitialLoopback = false
 +            swiptLoopbackOn = ClashTunnelRouteShaping.swiptLoopbackEnabled(in: appGroupDefaults)
 +            publicBlurFallback = OneBackdropBlurView.preferPublicMaterialFallback
++            DispatchQueue.main.async {
++                didLoadInitialLoopback = true
++            }
 +        }
 +        .onChange(of: swiptLoopbackOn) { next in
 +            appGroupDefaults?.set(next, forKey: ClashTunnelRouteShaping.swiptLoopbackKey)
++            guard didLoadInitialLoopback else { return }
++            NotificationCenter.default.post(
++                name: .oneToolsUpdateSwiptLoopback,
++                object: nil,
++                userInfo: ["enabled": next]
++            )
 +        }
 +        .onChange(of: publicBlurFallback) { next in
 +            OneBackdropBlurView.preferPublicMaterialFallback = next
@@ -727,6 +1276,49 @@ index 0000000000000000000000000000000000000000..8ec4478dde9806e486097d7231c8ff72
 +    }
 +}
 +#endif
+diff --git a/apple/ClashClient/Sources/SystemIntegration/ClashNotificationCenterDelegate.swift b/apple/ClashClient/Sources/SystemIntegration/ClashNotificationCenterDelegate.swift
+index 8f7b7beb5af757a5530c7974329bcb468072d3da..e64089fa1ad45f21d9bfc793cbbc9fc7ce34f398 100644
+--- a/apple/ClashClient/Sources/SystemIntegration/ClashNotificationCenterDelegate.swift
++++ b/apple/ClashClient/Sources/SystemIntegration/ClashNotificationCenterDelegate.swift
+@@ -70,13 +70,35 @@ final class ClashNotificationCenterDelegate: NSObject, UNUserNotificationCenterD
+         didReceive response: UNNotificationResponse,
+         withCompletionHandler completionHandler: @escaping () -> Void
+     ) {
++        let reqID = response.notification.request.identifier
++        let content = response.notification.request.content
++        let category = content.categoryIdentifier
++        let userInfo = content.userInfo
++        let title = content.title
++        let body = content.body
+         let tap = ClashNotificationTap(
+-            identifier: response.notification.request.identifier,
++            identifier: reqID,
+             action: response.actionIdentifier,
+-            userInfo: response.notification.request.content.userInfo
++            userInfo: userInfo
+         )
+         DispatchQueue.main.async {
+-            MainActor.assumeIsolated { self.deliver(tap) }
++            MainActor.assumeIsolated {
++                #if os(iOS)
++                if reqID.hasPrefix("onetools.cert.expiry.") {
++                    OneToolsShellRouter.shared.openSigningCertificatesFromNotification()
++                    return
++                }
++                if category == "error" {
++                    OneToolsShellRouter.shared.openSwiptErrorNotification(
++                        userInfo: userInfo,
++                        title: title,
++                        body: body
++                    )
++                    return
++                }
++                #endif
++                self.deliver(tap)
++            }
+             completionHandler()
+         }
+     }
 diff --git a/apple/ClashClient/Sources/VPNController.swift b/apple/ClashClient/Sources/VPNController.swift
 index bd4403d8acdd27eb85b8157ea45bca619c5da454..b83fe598080f3f754ce4a08752b36e725c05c94c 100644
 --- a/apple/ClashClient/Sources/VPNController.swift
@@ -766,7 +1358,7 @@ index bd4403d8acdd27eb85b8157ea45bca619c5da454..b83fe598080f3f754ce4a08752b36e72
  }
  
 diff --git a/apple/ClashClient/project.yml b/apple/ClashClient/project.yml
-index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..56fe0694d86a80c78e8e43fa32a88f51e91e88b1 100644
+index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..3e88136f26a2b544f30c3449aedfae1543f57c0a 100644
 --- a/apple/ClashClient/project.yml
 +++ b/apple/ClashClient/project.yml
 @@ -2,7 +2,7 @@ name: ClashClient
@@ -778,18 +1370,16 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..56fe0694d86a80c78e8e43fa32a88f51
      macOS: '13.0'
      tvOS: '17.0'
  settings:
-@@ -25,6 +25,10 @@ packages:
+@@ -25,6 +25,8 @@ packages:
      path: ../ClashClientUI
    ClashMacClient:
      path: ../ClashMacClient
 +  OneUI:
 +    path: ../../../OneUI
-+  SigningLogic:
-+    path: ../../../SigningLogic
    swift-certificates:
      url: https://github.com/apple/swift-certificates.git
      exactVersion: 1.9.0
-@@ -69,6 +73,8 @@ targets:
+@@ -69,6 +71,8 @@ targets:
        buildPhase: resources
      - path: Resources/Module/surge-builtin-system.list
        buildPhase: resources
@@ -798,26 +1388,26 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..56fe0694d86a80c78e8e43fa32a88f51
      - path: ../../Vendor/ClashAdapter/Sources/ClashAdapter
      settings:
        configs:
-@@ -109,7 +115,8 @@ targets:
+@@ -109,7 +113,9 @@ targets:
            - clash
            - clashmeta
            - flclash
 -          - clash
 +          - onetools
 +          - feather
++          - swipt
          CFBundleDocumentTypes:
          - CFBundleTypeName: YAML Configuration
            CFBundleTypeRole: Viewer
-@@ -144,6 +151,8 @@ targets:
+@@ -144,6 +150,7 @@ targets:
      dependencies:
      - package: ClashClientKit
      - package: ClashClientUI
 +    - package: OneUI
-+    - package: SigningLogic
      - package: swift-certificates
        product: X509
      - package: swift-crypto
-@@ -223,6 +232,7 @@ targets:
+@@ -223,6 +230,7 @@ targets:
      - path: ../ClashClientUI/Sources/ClashClientUI/Features/Widgets/ClashWidgetInterfaceAccounting.swift
        group: Shared
      - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
@@ -825,7 +1415,7 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..56fe0694d86a80c78e8e43fa32a88f51
      - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelOutboundMode.swift
      - path: Resources/PrivacyInfo.xcprivacy
        buildPhase: resources
-@@ -414,6 +424,7 @@ targets:
+@@ -414,6 +422,7 @@ targets:
      - path: Sources
        excludes:
        - TV
@@ -833,7 +1423,7 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..56fe0694d86a80c78e8e43fa32a88f51
        - ClashClientApp.swift
        - ClashNavigationLab.swift
        - ClashPushClockTouchProbe.swift
-@@ -454,6 +465,8 @@ targets:
+@@ -454,6 +463,8 @@ targets:
        buildPhase: resources
      - path: Resources/Module/surge-builtin-system.list
        buildPhase: resources
@@ -842,7 +1432,7 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..56fe0694d86a80c78e8e43fa32a88f51
      - path: ../../Vendor/ClashAdapter/Sources/ClashAdapter
      settings:
        configs:
-@@ -626,6 +639,7 @@ targets:
+@@ -626,6 +637,7 @@ targets:
        group: Shared
      - Shared
      - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
@@ -850,7 +1440,7 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..56fe0694d86a80c78e8e43fa32a88f51
      - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelOutboundMode.swift
      - path: Resources/PrivacyInfo.xcprivacy
        buildPhase: resources
-@@ -739,6 +753,8 @@ targets:
+@@ -739,6 +751,8 @@ targets:
        group: SharedFacts
      - path: ../ClashClientUI/Sources/ClashClientUI/Features/RemoteControl/ClashRemoteControlSettings.swift
        group: SharedFacts
@@ -859,7 +1449,7 @@ index 374d1dd52bc7f4cb9dc940e91e2dc757420946eb..56fe0694d86a80c78e8e43fa32a88f51
      - path: Sources/ConfigStore/ConfigTransforms.swift
      - path: Sources/ConfigStore/TopLevelYAMLSections.swift
      - path: Sources/ConfigStore/InvalidDomainSites.swift
-@@ -852,6 +868,7 @@ targets:
+@@ -852,6 +866,7 @@ targets:
        - Info.plist
      - Shared
      - path: ../ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
@@ -877,10 +1467,10 @@ index 84baa5e71a85ed559f5bea8919f7d41feddd1e95..fb86776f7a7862ffa6db209bed561e99
 -let package = Package(name: "ClashClientUI", platforms: [.iOS(.v15), .macOS(.v13), .tvOS(.v17)], products: [.library(name: "ClashClientUI", targets: ["ClashClientUI"])], dependencies: [.package(path: "../ClashClientKit")], targets: [.target(name: "ClashClientUI", dependencies: ["ClashClientKit"], resources: [.copy("Resources/FieldCopy")], swiftSettings: [.unsafeFlags(["-Osize"], .when(platforms: [.iOS, .macOS], configuration: .release))])])
 +let package = Package(name: "ClashClientUI", platforms: [.iOS(.v15), .macOS(.v13), .tvOS(.v17)], products: [.library(name: "ClashClientUI", targets: ["ClashClientUI"])], dependencies: [.package(path: "../ClashClientKit")], targets: [.target(name: "ClashClientUI", dependencies: ["ClashClientKit"], resources: [.copy("Resources/FieldCopy")], swiftSettings: [.unsafeFlags(["-Osize"], .when(platforms: [.iOS, .macOS], configuration: .release))]), .testTarget(name: "ClashClientUITests", dependencies: ["ClashClientUI"])])
 diff --git a/apple/ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift b/apple/ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
-index e1e2cf1ddfde75535663978e05c47c6a51d4dbdd..c28cac93120e4dc72243ee780e9a99b7221af48f 100644
+index e1e2cf1ddfde75535663978e05c47c6a51d4dbdd..1cb85ce7015c64f40a0a462855c722a57716a8b3 100644
 --- a/apple/ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
 +++ b/apple/ClashClientUI/Sources/ClashClientUI/Features/Tunnel/ClashTunnelRouteShaping.swift
-@@ -27,6 +27,26 @@ public enum ClashTunnelRouteShaping {
+@@ -27,6 +27,47 @@ public enum ClashTunnelRouteShaping {
       
       
      public static let excludeAPNsRouteKey = "vpn.tunnel.excludeAPNsRoute"
@@ -889,6 +1479,27 @@ index e1e2cf1ddfde75535663978e05c47c6a51d4dbdd..c28cac93120e4dc72243ee780e9a99b7
 +
 +    /// LocalDevVPN 与 StosVPN 约定的环回对端地址，Swipt 最后兜底试的也是它。
 +    public static let swiptLoopbackAddress = "10.7.0.1"
++
++    /// Feather 本地 HTTPS 安装服务器（127.0.0.1 回环证书）使用的泛域名，Fake-IP 模式下须放行真实 IP。
++    public static let featherInstallerFakeIPFilterEntry = "+.backloop.dev"
++    public static let featherInstallerFakeIPFilterRule = "DOMAIN-SUFFIX,backloop.dev,real-ip"
++
++    /// 在开启环回兼容且处于 Fake-IP 模式时，确保 `*.backloop.dev` 不被分配虚拟 IP 误走远端代理。
++    public static func fakeIPFilterEntries(configured: [String], mode: String, swiptLoopback: Bool) -> [String] {
++        guard swiptLoopback else { return configured }
++        let normalizedMode = mode.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
++        if normalizedMode == "whitelist" { return configured }
++        if normalizedMode == "rule" {
++            let hasBackloopRule = configured.contains { line in
++                let fields = line.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
++                return fields.count >= 3 && fields[0] == "domain-suffix" && fields[1] == "backloop.dev" && fields[2] == "real-ip"
++            }
++            return hasBackloopRule ? configured : [featherInstallerFakeIPFilterRule] + configured
++        }
++        let target = featherInstallerFakeIPFilterEntry.lowercased()
++        let exists = configured.contains { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == target }
++        return exists ? configured : configured + [featherInstallerFakeIPFilterEntry]
++    }
 +
 +    /// 键从没写过时算「开」。`UserDefaults.bool(forKey:)` 对缺失的键返回 false，这里不能用它。
 +    public static func swiptLoopbackEnabled(in defaults: UserDefaults?) -> Bool {
@@ -909,10 +1520,10 @@ index e1e2cf1ddfde75535663978e05c47c6a51d4dbdd..c28cac93120e4dc72243ee780e9a99b7
       
 diff --git a/apple/ClashClientUI/Tests/ClashClientUITests/SwiptLoopbackTests.swift b/apple/ClashClientUI/Tests/ClashClientUITests/SwiptLoopbackTests.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..64f16f41dd14f35cca83c12b4c0c846adc20fd2d
+index 0000000000000000000000000000000000000000..9a04327024fcaa7bbc30451bba503a48a8fd2b19
 --- /dev/null
 +++ b/apple/ClashClientUI/Tests/ClashClientUITests/SwiptLoopbackTests.swift
-@@ -0,0 +1,42 @@
+@@ -0,0 +1,88 @@
 +import XCTest
 +@testable import ClashClientUI
 +
@@ -953,5 +1564,51 @@ index 0000000000000000000000000000000000000000..64f16f41dd14f35cca83c12b4c0c846a
 +        defaults.set(false, forKey: ClashTunnelRouteShaping.swiptLoopbackKey)
 +        XCTAssertFalse(ClashTunnelRouteShaping.swiptLoopbackEnabled(in: defaults))
 +        XCTAssertTrue(ClashTunnelRouteShaping.swiptLoopbackEnabled(in: nil))
++    }
++
++    func testFakeIPFilterAppendsBackloopInBlacklistMode() {
++        let result = ClashTunnelRouteShaping.fakeIPFilterEntries(
++            configured: ["+.push.apple.com"],
++            mode: "blacklist",
++            swiptLoopback: true
++        )
++        XCTAssertEqual(result, ["+.push.apple.com", "+.backloop.dev"])
++    }
++
++    func testFakeIPFilterDoesNotDuplicateBackloopInBlacklistMode() {
++        let result = ClashTunnelRouteShaping.fakeIPFilterEntries(
++            configured: [" +.BACKLOOP.DEV "],
++            mode: "blacklist",
++            swiptLoopback: true
++        )
++        XCTAssertEqual(result, [" +.BACKLOOP.DEV "])
++    }
++
++    func testFakeIPFilterPrependsDomainSuffixRuleInRuleMode() {
++        let result = ClashTunnelRouteShaping.fakeIPFilterEntries(
++            configured: ["MATCH,fake-ip"],
++            mode: "rule",
++            swiptLoopback: true
++        )
++        XCTAssertEqual(result, ["DOMAIN-SUFFIX,backloop.dev,real-ip", "MATCH,fake-ip"])
++    }
++
++    func testFakeIPFilterLeavesWhitelistAndDisabledLoopbackUntouched() {
++        XCTAssertEqual(
++            ClashTunnelRouteShaping.fakeIPFilterEntries(
++                configured: ["example.com"],
++                mode: "whitelist",
++                swiptLoopback: true
++            ),
++            ["example.com"]
++        )
++        XCTAssertEqual(
++            ClashTunnelRouteShaping.fakeIPFilterEntries(
++                configured: ["example.com"],
++                mode: "blacklist",
++                swiptLoopback: false
++            ),
++            ["example.com"]
++        )
 +    }
 +}

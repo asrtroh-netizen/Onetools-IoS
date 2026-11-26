@@ -145,10 +145,72 @@ if [[ ! -d "$APP_PATH" ]]; then
   exit 1
 fi
 
-rm -rf .build/ipa-stage
+rm -rf .build/ipa-stage .build/ipa-lite-stage
 mkdir -p .build/ipa-stage/Payload
 cp -R "$APP_PATH" .build/ipa-stage/Payload/Clash.app
 chmod -R u+w .build/ipa-stage/Payload/Clash.app
+
+echo "==> Stripping non-global debug/local symbols across main executable, extensions, and embedded frameworks"
+xcrun strip -x .build/ipa-stage/Payload/Clash.app/Clash || true
+if [[ -d .build/ipa-stage/Payload/Clash.app/PlugIns ]]; then
+  for appex in .build/ipa-stage/Payload/Clash.app/PlugIns/*.appex; do
+    [[ -d "$appex" ]] || continue
+    ext_bin="$appex/$(basename "$appex" .appex)"
+    [[ -f "$ext_bin" ]] && xcrun strip -x "$ext_bin" || true
+  done
+fi
+if [[ -d .build/ipa-stage/Payload/Clash.app/Frameworks ]]; then
+  for fw in .build/ipa-stage/Payload/Clash.app/Frameworks/*.framework; do
+    [[ -d "$fw" ]] || continue
+    fw_bin="$fw/$(basename "$fw" .framework)"
+    [[ -f "$fw_bin" ]] && xcrun strip -x "$fw_bin" || true
+    rm -rf "$fw/BCSymbolMaps" "$fw/Headers" "$fw/PrivateHeaders" "$fw/Modules"
+  done
+fi
+
+pack_ipa_max_deflate() {
+  local stage_root="$1"
+  local dst_ipa="$2"
+  rm -f "$dst_ipa"
+  python3 - "$stage_root" "$dst_ipa" <<'PY'
+import os, stat, sys, zipfile
+
+stage_root, dst_ipa = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(dst_ipa, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+    for dirpath, dirnames, filenames in os.walk(stage_root):
+        dirnames.sort()
+        filenames.sort()
+        rel_dir = os.path.relpath(dirpath, stage_root).replace(os.sep, "/")
+        if rel_dir != ".":
+            st_dir = os.lstat(dirpath)
+            zinfo = zipfile.ZipInfo(rel_dir + "/")
+            zinfo.external_attr = ((st_dir.st_mode & 0xFFFF) << 16) | 0x10
+            zinfo.compress_type = zipfile.ZIP_STORED
+            zf.writestr(zinfo, b"")
+        for fname in filenames:
+            full = os.path.join(dirpath, fname)
+            arcname = os.path.relpath(full, stage_root).replace(os.sep, "/")
+            st = os.lstat(full)
+            if stat.S_ISLNK(st.st_mode):
+                target = os.readlink(full)
+                zinfo = zipfile.ZipInfo(arcname)
+                zinfo.create_system = 3
+                zinfo.external_attr = (0o120777 << 16)
+                zinfo.compress_type = zipfile.ZIP_STORED
+                zf.writestr(zinfo, target.encode("utf-8"))
+            else:
+                zinfo = zipfile.ZipInfo.from_file(full, arcname)
+                zinfo.create_system = 3
+                zinfo.external_attr = (st.st_mode & 0xFFFF) << 16
+                zinfo.compress_type = zipfile.ZIP_DEFLATED
+                with open(full, "rb") as f_in, zf.open(zinfo, "w") as f_out:
+                    while True:
+                        chunk = f_in.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        f_out.write(chunk)
+PY
+}
 
 if [[ -d .build/ipa-stage/Payload/Clash.app/Frameworks ]]; then
   find .build/ipa-stage/Payload/Clash.app/Frameworks -maxdepth 1 -name '*.framework' -exec \
@@ -158,19 +220,32 @@ if [[ -d .build/ipa-stage/Payload/Clash.app/PlugIns ]]; then
   find .build/ipa-stage/Payload/Clash.app/PlugIns -maxdepth 1 -name '*.appex' -exec \
     codesign --force --sign - --timestamp=none {} \;
 fi
-codesign --force --sign - --timestamp=none .build/ipa-stage/Payload/Clash.app
+codesign --force --sign - --timestamp=none \
+  --entitlements apple/ClashClient/ClashClient.entitlements \
+  .build/ipa-stage/Payload/Clash.app
 
 if [[ "$MODE" == "build-unified" ]]; then
   IPA_OUT="$ART_DIR/OneTools-AllInOne-unsigned.ipa"
-  ditto -c -k --sequesterRsrc --keepParent .build/ipa-stage/Payload "$IPA_OUT"
-  echo "==> Running unified binary, ObjC class-table, and process-isolation audit"
+  pack_ipa_max_deflate .build/ipa-stage "$IPA_OUT"
+
+  echo "==> Building Free 7-day Apple ID Lite Sideload IPA (1 App ID, zero paid entitlements)"
+  mkdir -p .build/ipa-lite-stage/Payload
+  cp -R .build/ipa-stage/Payload/Clash.app .build/ipa-lite-stage/Payload/Clash.app
+  rm -rf .build/ipa-lite-stage/Payload/Clash.app/PlugIns
+  codesign --force --sign - --timestamp=none .build/ipa-lite-stage/Payload/Clash.app
+  IPA_LITE_OUT="$ART_DIR/OneTools-AllInOne-Lite-unsigned.ipa"
+  pack_ipa_max_deflate .build/ipa-lite-stage "$IPA_LITE_OUT"
+
+  echo "==> Running unified binary, ObjC class-table, lazy-dlopen, size-budget, and process-isolation audit"
   bash "$ROOT/scripts/ci/verify-onetools-ipa.sh" \
     .build/ipa-stage/Payload/Clash.app \
     "$IPA_OUT" \
-    "$ART_DIR/OneTools-Unified-Audit.md"
+    "$ART_DIR/OneTools-Unified-Audit.md" \
+    "$IPA_LITE_OUT" \
+    .build/ipa-lite-stage/Payload/Clash.app
 else
   IPA_OUT="$ART_DIR/OneTools-ClashiOS-unsigned.ipa"
-  ditto -c -k --sequesterRsrc --keepParent .build/ipa-stage/Payload "$IPA_OUT"
+  pack_ipa_max_deflate .build/ipa-stage "$IPA_OUT"
 fi
 
 echo "==> Verifying ClashmacOS & ClashtvOS compile cleanly (regression gate)"
@@ -183,6 +258,8 @@ xcodebuild build \
   -clonedSourcePackagesDirPath "$SPM_DIR" \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  COMPILATION_CACHE_ENABLE_CACHING=YES \
+  COMPILATION_CACHE_CAS_PATH="$COMP_CACHE" \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGN_IDENTITY=""
@@ -196,6 +273,8 @@ xcodebuild build \
   -clonedSourcePackagesDirPath "$SPM_DIR" \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  COMPILATION_CACHE_ENABLE_CACHING=YES \
+  COMPILATION_CACHE_CAS_PATH="$COMP_CACHE" \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGN_IDENTITY=""

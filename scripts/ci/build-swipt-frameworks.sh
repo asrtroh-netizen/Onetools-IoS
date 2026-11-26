@@ -56,6 +56,7 @@ cp -R "$MODULES_SRC/"* "$DYN_FW/Modules/"
 IOS_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
 xcrun clang -arch arm64 -isysroot "$IOS_SDK" -miphoneos-version-min=16.4 \
   -dynamiclib -install_name "@rpath/LibSwipt.framework/LibSwipt" \
+  -Wl,-dead_strip \
   -Wl,-force_load,"$STATIC_BIN" \
   -Wl,-exported_symbol,"_OBJC_CLASS_\$_*" \
   -Wl,-exported_symbol,"_OBJC_METACLASS_\$_*" \
@@ -65,6 +66,7 @@ xcrun clang -arch arm64 -isysroot "$IOS_SDK" -miphoneos-version-min=16.4 \
   -framework Foundation -framework Security -framework Network -framework UIKit \
   -lresolv -lc++ -lsqlite3 \
   -o "$DYN_FW/LibSwipt"
+xcrun strip -x "$DYN_FW/LibSwipt"
 
 cat > "$DYN_FW/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -138,11 +140,17 @@ def patch_ios_config(block: str, is_debug: bool) -> str:
     block = block.replace('PRODUCT_NAME = Swipt;', 'PRODUCT_NAME = SwiptUI;')
     cond = '"DEBUG ONETOOLS_EMBEDDED $(inherited)"' if is_debug else '"ONETOOLS_EMBEDDED $(inherited)"'
     extra = (
+        f'\t\t\t\tDEAD_CODE_STRIPPING = YES;\n'
         f'\t\t\t\tDEFINES_MODULE = YES;\n'
         f'\t\t\t\tDYLIB_INSTALL_NAME_BASE = "@rpath";\n'
         f'\t\t\t\tINSTALL_PATH = "@rpath";\n'
         f'\t\t\t\tSKIP_INSTALL = NO;\n'
         f'\t\t\t\tSWIFT_ACTIVE_COMPILATION_CONDITIONS = {cond};\n'
+        f'\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (\n'
+        f'\t\t\t\t\t"$(inherited)",\n'
+        f'\t\t\t\t\t"@executable_path/Frameworks",\n'
+        f'\t\t\t\t\t"@loader_path/..",\n'
+        f'\t\t\t\t);\n'
         f'\t\t\t\tFRAMEWORK_SEARCH_PATHS = (\n'
         f'\t\t\t\t\t"$(inherited)",\n'
         f'\t\t\t\t\t"{dyn_wrap_root}",\n'
@@ -209,11 +217,18 @@ if ! grep -q '_OBJC_CLASS_\$_OneToolsSwiptBridge$' "$DYN_WRAP_ROOT/swiptui.syms"
   exit 1
 fi
 
-echo "==> Staging SwiptUI.framework (pure ObjC ABI firewall) & runtime frameworks"
+echo "==> Staging SwiptUI.framework (pure ObjC ABI firewall, local symbols stripped) & runtime frameworks"
 cp -RL "$SWIPT_UI_FW" "$OUT_DIR/host-frameworks/SwiptUI.framework"
+xcrun strip -x "$OUT_DIR/host-frameworks/SwiptUI.framework/SwiptUI"
+xcrun nm -gU "$OUT_DIR/host-frameworks/SwiptUI.framework/SwiptUI" > "$DYN_WRAP_ROOT/swiptui_stripped.syms"
+if ! grep -q '_OBJC_CLASS_\$_OneToolsSwiptBridge$' "$DYN_WRAP_ROOT/swiptui_stripped.syms"; then
+  echo "FAIL: _OBJC_CLASS_\$_OneToolsSwiptBridge missing after strip -x!" >&2
+  exit 1
+fi
 rm -rf "$OUT_DIR/host-frameworks/SwiptUI.framework/Headers" \
        "$OUT_DIR/host-frameworks/SwiptUI.framework/PrivateHeaders" \
-       "$OUT_DIR/host-frameworks/SwiptUI.framework/Modules"
+       "$OUT_DIR/host-frameworks/SwiptUI.framework/Modules" \
+       "$OUT_DIR/host-frameworks/SwiptUI.framework/BCSymbolMaps"
 mkdir -p "$OUT_DIR/host-frameworks/SwiptUI.framework/Headers" \
          "$OUT_DIR/host-frameworks/SwiptUI.framework/Modules"
 
@@ -223,6 +238,9 @@ cat > "$OUT_DIR/host-frameworks/SwiptUI.framework/Headers/OneToolsSwiptBridge.h"
 NS_ASSUME_NONNULL_BEGIN
 @interface OneToolsSwiptBridge : NSObject
 + (UIViewController *)makeRootViewController;
++ (void)handleIncomingURL:(NSURL *)url;
++ (void)handleNotificationUserInfo:(NSDictionary *)userInfo title:(NSString *)title body:(NSString *)body;
++ (void)releaseIdleMemory;
 @end
 NS_ASSUME_NONNULL_END
 OBJC
@@ -258,7 +276,11 @@ for fw in "${RN_FRAMEWORKS[@]}"; do
   fi
   dst_fw="$OUT_DIR/runtime-frameworks/$(basename "$fw")"
   cp -RL "$fw" "$dst_fw"
-  rm -rf "$dst_fw/Headers" "$dst_fw/PrivateHeaders" "$dst_fw/Modules"
+  rm -rf "$dst_fw/Headers" "$dst_fw/PrivateHeaders" "$dst_fw/Modules" "$dst_fw/BCSymbolMaps"
+  fw_bin="$dst_fw/$(basename "$dst_fw" .framework)"
+  if [[ -f "$fw_bin" ]]; then
+    xcrun strip -x "$fw_bin" || true
+  fi
 done
 
 ls -lh "$OUT_DIR/host-frameworks" "$OUT_DIR/runtime-frameworks" "$OUT_DIR/resources"

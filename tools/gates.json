@@ -226,6 +226,12 @@
       "cwd": ".",
       "enabled": true,
       "command": ["python", "tools/export_upstream_patches.py", "--check"]
+    },
+    {
+      "id": "H4-cross-module-seams",
+      "cwd": ".",
+      "enabled": true,
+      "command": ["python", "-m", "pytest", "tools/test_audit_cross_module_seams.py", "-q"]
     }
   ]
 }

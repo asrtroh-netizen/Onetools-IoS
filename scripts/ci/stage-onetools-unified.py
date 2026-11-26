@@ -71,6 +71,25 @@ def main() -> int:
         info_props.get("UIBackgroundModes", []),
         ["fetch", "processing", "location", "audio"],
     )
+    info_props["LSApplicationQueriesSchemes"] = ensure_list_items(
+        info_props.get("LSApplicationQueriesSchemes", []),
+        ["localdevvpn", "livecontainer", "sidestore", "altstore"],
+    )
+
+    url_types = list(info_props.get("CFBundleURLTypes", []))
+    if url_types and isinstance(url_types[0], dict):
+        url_types[0]["CFBundleURLSchemes"] = ensure_list_items(
+            url_types[0].get("CFBundleURLSchemes", []),
+            ["clash", "clashmeta", "flclash", "onetools", "feather", "swipt"],
+        )
+    else:
+        url_types.append(
+            {
+                "CFBundleTypeRole": "Editor",
+                "CFBundleURLSchemes": ["clash", "clashmeta", "flclash", "onetools", "feather", "swipt"],
+            }
+        )
+    info_props["CFBundleURLTypes"] = url_types
 
     doc_types = list(info_props.get("CFBundleDocumentTypes", []))
     existing_doc_names = {d.get("CFBundleTypeName") for d in doc_types if isinstance(d, dict)}
@@ -146,26 +165,14 @@ def main() -> int:
             exported_utis.append(uti)
     info_props["UTExportedTypeDeclarations"] = exported_utis
 
-    # 3. Wire staged host-frameworks (link+embed) and runtime-frameworks (embed-only) into ClashiOS ONLY
+    # 3. Wire staged host-frameworks AND runtime-frameworks as embed-only (link: false) into ClashiOS ONLY
+    #    so Tab 0 cold launch does not pre-map SwiptUI / FeatherUI / LibSwipt / React / Hermes before main();
+    #    OneToolsEmbeddedLoader loads them on demand via Bundle.load() (dlopen).
     if embedded_dir is not None and embedded_dir.is_dir():
         host_fw_dir = embedded_dir / "host-frameworks"
         runtime_fw_dir = embedded_dir / "runtime-frameworks"
         res_dir = embedded_dir / "resources"
         spec_dir = spec_path.parent
-
-        rel_host_fw_dir = pathlib.Path(
-            pathlib.os.path.relpath(host_fw_dir, spec_dir)
-        ).as_posix()
-
-        base_settings = clash_ios.setdefault("settings", {}).setdefault("base", {})
-        fw_search = base_settings.get("FRAMEWORK_SEARCH_PATHS", ["$(inherited)"])
-        if isinstance(fw_search, str):
-            fw_search = [fw_search]
-        fw_search = ensure_list_items(
-            fw_search,
-            ["$(inherited)", f"$(PROJECT_DIR)/{rel_host_fw_dir}"],
-        )
-        base_settings["FRAMEWORK_SEARCH_PATHS"] = fw_search
 
         deps = clash_ios.setdefault("dependencies", [])
         existing_fws = {d.get("framework") for d in deps if isinstance(d, dict) and "framework" in d}
@@ -175,19 +182,7 @@ def main() -> int:
         if not host_frameworks:
             raise RuntimeError(f"No staged host .framework bundles found in {host_fw_dir}")
 
-        for fw in host_frameworks:
-            rel_fw = pathlib.Path(pathlib.os.path.relpath(fw, spec_dir)).as_posix()
-            if rel_fw not in existing_fws:
-                deps.append(
-                    {
-                        "framework": rel_fw,
-                        "embed": True,
-                        "link": True,
-                        "codeSign": False,
-                    }
-                )
-
-        for fw in runtime_frameworks:
+        for fw in host_frameworks + runtime_frameworks:
             rel_fw = pathlib.Path(pathlib.os.path.relpath(fw, spec_dir)).as_posix()
             if rel_fw not in existing_fws:
                 deps.append(
@@ -200,8 +195,8 @@ def main() -> int:
                 )
 
         print(
-            f"Wired {len(host_frameworks)} host frameworks {[f.name for f in host_frameworks]} "
-            f"and {len(runtime_frameworks)} runtime frameworks {[f.name for f in runtime_frameworks]} into ClashiOS"
+            f"Wired {len(host_frameworks)} lazy-loaded entry frameworks {[f.name for f in host_frameworks]} "
+            f"and {len(runtime_frameworks)} runtime frameworks {[f.name for f in runtime_frameworks]} (embed-only) into ClashiOS"
         )
 
         ex_constants = res_dir / "EXConstants.bundle"

@@ -108,10 +108,10 @@ index a5fc28fedaf882d739eaf04dbe5ab36bdf3ab9c8..3368e73f6d5c898999c1da68baed59f2
  		if inMemory {
  			container.persistentStoreDescriptions.first?.url =
 diff --git a/Feather/FeatherApp.swift b/Feather/FeatherApp.swift
-index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..db247e35ce55f264b08864627fdddfcc34df0648 100644
+index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..9e21327f0ef1dd08421c8d495843f871feaf3a79 100644
 --- a/Feather/FeatherApp.swift
 +++ b/Feather/FeatherApp.swift
-@@ -10,7 +10,78 @@ import Nuke
+@@ -10,7 +10,186 @@ import Nuke
  import IDeviceSwift
  import OSLog
  
@@ -131,7 +131,9 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..db247e35ce55f264b08864627fdddfcc
 +				.transition(.move(edge: .top).combined(with: .opacity))
 +			VariedTabbarView()
 +				.environment(\.managedObjectContext, storage.context)
++				#if !ONETOOLS_EMBEDDED
 +				.onOpenURL(perform: FeatherURLHandler.handle)
++				#endif
 +				.transition(.move(edge: .top).combined(with: .opacity))
 +		}
 +		.animation(.smooth, value: downloadManager.manualDownloads.description)
@@ -156,18 +158,124 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..db247e35ce55f264b08864627fdddfcc
 +	}
 +}
 +
-+/// Pure Objective-C ABI firewall factory so host targets importing `FeatherUI`
++/// Pure Objective-C ABI firewall factory so host targets loading `FeatherUI`
 +/// do not need transitive SwiftPM build-time modules (Vapor, Zsign, NukeUI, Zip).
 +@objc(OneToolsFeatherBridge)
 +public final class OneToolsFeatherBridge: NSObject {
-+	@objc public static func makeRootViewController() -> UIViewController {
++	static let selectSubtabNotification = Notification.Name("OneToolsFeatherSelectSubtab")
++
++	@objc(makeRootViewController)
++	public static func makeRootViewController() -> UIViewController {
 +		let controller = UIHostingController(rootView: FeatherRootView())
 +		controller.view.backgroundColor = .clear
 +		return controller
 +	}
 +
-+	@objc public static func handleIncomingURL(_ url: URL) {
++	@objc(handleIncomingURL:)
++	public static func handleIncomingURL(_ url: URL) {
 +		FeatherURLHandler.handle(url)
++	}
++
++	@objc(selectSubtab:)
++	public static func selectSubtab(_ rawName: String) {
++		FeatherBootstrap.ensureInitialized()
++		NotificationCenter.default.post(
++			name: selectSubtabNotification,
++			object: nil,
++			userInfo: ["tab": rawName]
++		)
++	}
++
++	@objc(releaseIdleMemory)
++	public static func releaseIdleMemory() {
++		if let imageCache = ImagePipeline.shared.configuration.imageCache as? Nuke.ImageCache {
++			imageCache.removeAll()
++		}
++	}
++}
++
++private enum OneToolsCertificateInbox {
++	private static var stagedP12URL: URL?
++	private static var stagedProvisionURL: URL?
++
++	static func accept(_ incomingURL: URL) {
++		let ext = incomingURL.pathExtension.lowercased()
++		guard ext == "p12" || ext == "mobileprovision" else { return }
++
++		let scoped = incomingURL.startAccessingSecurityScopedResource()
++		defer {
++			if scoped {
++				incomingURL.stopAccessingSecurityScopedResource()
++			}
++		}
++
++		let fm = FileManager.default
++		let inboxDir = fm.temporaryDirectory.appendingPathComponent("FeatherCertInbox", isDirectory: true)
++		try? fm.createDirectoryIfNeeded(at: inboxDir)
++		let dstURL = inboxDir.appendingPathComponent("\(UUID().uuidString).\(ext)")
++		do {
++			try? fm.removeItem(at: dstURL)
++			try fm.copyItem(at: incomingURL, to: dstURL)
++		} catch {
++			UIAlertController.showAlertWithOk(title: .localized("Error"), message: error.localizedDescription)
++			return
++		}
++
++		if ext == "p12" {
++			if let old = stagedP12URL { try? fm.removeItem(at: old) }
++			stagedP12URL = dstURL
++		} else {
++			if let old = stagedProvisionURL { try? fm.removeItem(at: old) }
++			stagedProvisionURL = dstURL
++		}
++
++		OneToolsFeatherBridge.selectSubtab("certificates")
++
++		guard let p12URL = stagedP12URL, let provisionURL = stagedProvisionURL else {
++			let missing = (ext == "p12") ? ".mobileprovision 描述文件" : ".p12 证书私钥"
++			UIAlertController.showAlertWithOk(
++				title: "已暂存证书组件",
++				message: "已接收 \(incomingURL.lastPathComponent)。请继续导入配套的 \(missing) 即可输入密码一键完成配对，或直接在「证书」页手动添加。"
++			)
++			return
++		}
++
++		DispatchQueue.main.async {
++			presentPasswordPrompt(p12URL: p12URL, provisionURL: provisionURL)
++		}
++	}
++
++	private static func presentPasswordPrompt(p12URL: URL, provisionURL: URL) {
++		let alert = UIAlertController(
++			title: "导入配对证书",
++			message: "已备齐 .p12 与 .mobileprovision，请输入证书密码完成导入（无密码可留空）：",
++			preferredStyle: .alert
++		)
++		alert.addTextField { tf in
++			tf.placeholder = "证书密码"
++			tf.isSecureTextEntry = true
++		}
++		alert.addAction(UIAlertAction(title: .localized("Cancel"), style: .cancel))
++		alert.addAction(UIAlertAction(title: .localized("Import"), style: .default) { _ in
++			let password = alert.textFields?.first?.text ?? ""
++			guard FR.checkPasswordForCertificate(for: p12URL, with: password, using: provisionURL) else {
++				UIAlertController.showAlertWithOk(title: .localized("Error"), message: "证书密码校验失败或与描述文件不匹配，请重试。")
++				return
++			}
++			FR.handleCertificateFiles(p12URL: p12URL, provisionURL: provisionURL, p12Password: password) { error in
++				let fm = FileManager.default
++				try? fm.removeItem(at: p12URL)
++				try? fm.removeItem(at: provisionURL)
++				stagedP12URL = nil
++				stagedProvisionURL = nil
++				if let error {
++					UIAlertController.showAlertWithOk(title: .localized("Error"), message: error.localizedDescription)
++				} else {
++					CertificateExpiryNotifier.shared.syncNotifications()
++				}
++			}
++		})
++		UIApplication.topViewController()?.present(alert, animated: true)
 +	}
 +}
 +
@@ -190,7 +298,7 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..db247e35ce55f264b08864627fdddfcc
  struct FeatherApp: App {
  	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
  	
-@@ -21,15 +92,7 @@ struct FeatherApp: App {
+@@ -21,15 +200,7 @@ struct FeatherApp: App {
  	
  	var body: some Scene {
  		WindowGroup {
@@ -207,7 +315,7 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..db247e35ce55f264b08864627fdddfcc
  			.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
  				DispatchQueue.main.async {
  					UIAlertController.showAlertWithOk(
-@@ -49,7 +112,7 @@ struct FeatherApp: App {
+@@ -49,7 +220,7 @@ struct FeatherApp: App {
  		}
  	}
  	
@@ -216,7 +324,50 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..db247e35ce55f264b08864627fdddfcc
  		if url.scheme == "feather" {
  			/// feather://import-certificate?p12=<base64>&mobileprovision=<base64>&password=<base64>
  			if url.host == "import-certificate" {
-@@ -156,11 +219,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
+@@ -119,6 +290,7 @@ struct FeatherApp: App {
+ 			}
+ 			/// feather://source/<url>
+ 			if let fullPath = url.validatedScheme(after: "/source/") {
++				OneToolsFeatherBridge.selectSubtab("sources")
+ 				FR.handleSource(fullPath) { }
+ 			}
+ 			/// feather://install/<url.ipa>
+@@ -126,6 +298,7 @@ struct FeatherApp: App {
+ 				let fullPath = url.validatedScheme(after: "/install/"),
+ 				let downloadURL = URL(string: fullPath)
+ 			{
++				OneToolsFeatherBridge.selectSubtab("library")
+ 				UIAlertController.showAlertWithCancel(
+ 					title: .localized("Install"),
+ 					message: .localized("Do you want to download and install this file?") + "\n\n\(downloadURL)",
+@@ -137,16 +310,24 @@ struct FeatherApp: App {
+ 				)
+ 			}
+ 		} else {
+-			if url.pathExtension == "ipa" || url.pathExtension == "tipa" {
++			let ext = url.pathExtension.lowercased()
++			if ext == "ipa" || ext == "tipa" {
++				OneToolsFeatherBridge.selectSubtab("library")
+ 				if FileManager.default.isFileFromFileProvider(at: url) {
+ 					guard url.startAccessingSecurityScopedResource() else { return }
+-					FR.handlePackageFile(url) { _ in }
++					FR.handlePackageFile(url) { _ in
++						url.stopAccessingSecurityScopedResource()
++					}
+ 				} else {
+ 					FR.handlePackageFile(url) { _ in }
+ 				}
+ 				
+ 				return
+ 			}
++			if ext == "p12" || ext == "mobileprovision" {
++				OneToolsCertificateInbox.accept(url)
++				return
++			}
+ 		}
+ 	}
+ }
+@@ -156,11 +337,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
  		_ application: UIApplication,
  		didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
  	) -> Bool {
@@ -234,7 +385,19 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..db247e35ce55f264b08864627fdddfcc
  	}
  	
  	private func _createPipeline() {
-@@ -204,7 +272,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
+@@ -174,8 +360,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
+ 			}()
+ 			let dataCache = try? DataCache(name: "thewonderofyou.Feather.datacache") // disk cache
+ 			let imageCache = Nuke.ImageCache() // memory cache
+-			dataCache?.sizeLimit = 500 * 1024 * 1024
+-			imageCache.costLimit = 100 * 1024 * 1024
++			dataCache?.sizeLimit = 150 * 1024 * 1024
++			imageCache.costLimit = 24 * 1024 * 1024
++			imageCache.countLimit = 150
+ 			$0.dataCache = dataCache
+ 			$0.imageCache = imageCache
+ 			$0.dataLoader = dataLoader
+@@ -204,7 +391,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
  	private func _addDefaultCertificates() {
  		guard
  			UserDefaults.standard.bool(forKey: "feather.didImportDefaultCertificates") == false,
@@ -243,6 +406,60 @@ index 706286b1390b7c193f65ce9f7eeec3a88bf6f7f2..db247e35ce55f264b08864627fdddfcc
  		else {
  			return
  		}
+diff --git a/Feather/Utilities/BackgroundTaskManager.swift b/Feather/Utilities/BackgroundTaskManager.swift
+index 08c56e59b2ec5a4c65483a607f2e0e776a9f7c31..565ac8e2a1adfdb22cc5e73706f50396d7aa4dc6 100644
+--- a/Feather/Utilities/BackgroundTaskManager.swift
++++ b/Feather/Utilities/BackgroundTaskManager.swift
+@@ -15,16 +15,23 @@ import CryptoKit
+ class BackgroundTaskManager: ObservableObject {
+ 	static let shared = BackgroundTaskManager()
+ 	
+-	private let baseId = "\(Bundle.main.bundleIdentifier!).userTask"
++	private let baseId: String? = {
++		let permitted = Bundle.main.object(forInfoDictionaryKey: "BGTaskSchedulerPermittedIdentifiers") as? [String]
++		if let wildcard = permitted?.first(where: { $0.hasSuffix(".userTask.*") }) {
++			return String(wildcard.dropLast(2))
++		}
++		return nil
++	}()
+ 	
+ 	private var activeTasks: [String: BGContinuedProcessingTask] = [:]
+ 	private var registeredTasks: Set<String> = []
+ 	
+ 	func startTask(for downloadId: String, filename: String) {
++		guard let baseId else { return }
+ 		let taskIdentifier = "\(baseId).\(downloadId.md5)"
+ 		
+ 		if !registeredTasks.contains(taskIdentifier) {
+-			BGTaskScheduler.shared.register(forTaskWithIdentifier: taskIdentifier, using: nil) { task in
++			let accepted = BGTaskScheduler.shared.register(forTaskWithIdentifier: taskIdentifier, using: nil) { task in
+ 				guard let task = task as? BGContinuedProcessingTask else { return }
+ 				self.activeTasks[task.identifier] = task
+ 				
+@@ -35,6 +42,7 @@ class BackgroundTaskManager: ObservableObject {
+ 					self.activeTasks.removeValue(forKey: task.identifier)
+ 				}
+ 			}
++			guard accepted else { return }
+ 			self.registeredTasks.insert(taskIdentifier)
+ 		}
+ 		
+@@ -48,6 +56,7 @@ class BackgroundTaskManager: ObservableObject {
+ 	}
+ 	
+ 	func updateProgress(for downloadId: String, progress: Double) {
++		guard let baseId else { return }
+ 		let taskIdentifier = "\(baseId).\(downloadId.md5)"
+ 		
+ 		guard let task = activeTasks[taskIdentifier] else { return }
+@@ -62,6 +71,7 @@ class BackgroundTaskManager: ObservableObject {
+ 	}
+ 	
+ 	func stopTask(for downloadId: String, success: Bool) {
++		guard let baseId else { return }
+ 		let taskIdentifier = "\(baseId).\(downloadId.md5)"
+ 		guard let task = activeTasks[taskIdentifier] else { return }
+ 		
 diff --git a/Feather/Utilities/FeatherBundle.swift b/Feather/Utilities/FeatherBundle.swift
 new file mode 100644
 index 0000000000000000000000000000000000000000..2d970fa3fa1609c920f61420df7fec77bc45117e
@@ -602,6 +819,33 @@ index b9c3aeeecbe81c59f127c5f77e1fd5b411414b8b..7df84686ce8aaa32ca56587f19c5f4e0
  	
  	private func _getAllApps() -> [AppInfoPresentable] {
  		var allApps: [AppInfoPresentable] = []
+diff --git a/Feather/Views/Settings/About/AboutView.swift b/Feather/Views/Settings/About/AboutView.swift
+index a3cd918e945d9f0ee2652c369da259e8fddc73d4..63875849e229ac15fb1f3b00a1e26687cb5b652d 100644
+--- a/Feather/Views/Settings/About/AboutView.swift
++++ b/Feather/Views/Settings/About/AboutView.swift
+@@ -35,14 +35,21 @@ struct AboutView: View {
+ 				VStack {
+ 					FRAppIconView(size: 72)
+ 					
++					#if ONETOOLS_EMBEDDED
++					Text("Feather · OneTools")
++						.font(.largeTitle)
++						.bold()
++						.foregroundStyle(Color.accentColor)
++					#else
+ 					Text(Bundle.main.exec)
+ 						.font(.largeTitle)
+ 						.bold()
+ 						.foregroundStyle(Color.accentColor)
++					#endif
+ 					
+ 					HStack(spacing: 4) {
+ 						Text(.localized("Version"))
+-						Text(Bundle.main.version)
++						Text(FeatherBundle.resource.infoDictionary?["CFBundleShortVersionString"] as? String ?? Bundle.main.version)
+ 					}
+ 					.font(.footnote)
+ 					.foregroundStyle(.secondary)
 diff --git a/Feather/Views/Settings/App Icon/AppIconView.swift b/Feather/Views/Settings/App Icon/AppIconView.swift
 index 32d70b6925689c44547210743c3a965f3785f3bf..b1e2a6b7b3a625b15f988c164d6cfd93fa13f8a7 100644
 --- a/Feather/Views/Settings/App Icon/AppIconView.swift	
@@ -665,6 +909,72 @@ index a1078e5829f12c9e2fa0d0e17087217ef3b81775..dcbb1a2e80cf7cef9f504c683a168bb5
  					Button(.localized("Connect to LocalDevVPN"), systemImage: "link") {
  						UIApplication.open("localdevvpn://enable?scheme=feather")
  					}
+diff --git a/Feather/Views/Settings/Reset/ResetView.swift b/Feather/Views/Settings/Reset/ResetView.swift
+index d84b04e062dcfc7a772048eaa2ab7a907f84c2a6..e22d291134348d879f9788b2de9b5e568136d152 100644
+--- a/Feather/Views/Settings/Reset/ResetView.swift
++++ b/Feather/Views/Settings/Reset/ResetView.swift
+@@ -148,15 +148,17 @@ extension ResetView {
+ 		let tmpDirectory = fileManager.temporaryDirectory
+ 		
+ 		if let files = try? fileManager.contentsOfDirectory(atPath: tmpDirectory.path()) {
+-			for file in files {
++			for file in files where file.hasPrefix("Feather") {
+ 				try? fileManager.removeItem(atPath: tmpDirectory.appendingPathComponent(file).path())
+ 			}
+ 		}
+ 	}
+ 	
+ 	static func clearNetworkCache() {
++		#if !ONETOOLS_EMBEDDED
+ 		URLCache.shared.removeAllCachedResponses()
+ 		HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
++		#endif
+ 		
+ 		if let dataCache = ImagePipeline.shared.configuration.dataCache as? DataCache {
+ 			dataCache.removeAll()
+@@ -190,7 +192,14 @@ extension ResetView {
+ 	}
+ 	
+ 	static func resetUserDefaults() {
++		#if ONETOOLS_EMBEDDED
++		let defaults = UserDefaults.standard
++		for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("Feather.") || key.hasPrefix("feather.") {
++			defaults.removeObject(forKey: key)
++		}
++		#else
+ 		UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
++		#endif
+ 	}
+ 	
+ 	static func resetAll() {
+diff --git a/Feather/Views/Settings/SettingsView.swift b/Feather/Views/Settings/SettingsView.swift
+index 2de8b28ed6d85d45367c5cc886a431c0c654eaee..9a394939e0135e7cb269b26a39f73a6bc94507f4 100644
+--- a/Feather/Views/Settings/SettingsView.swift
++++ b/Feather/Views/Settings/SettingsView.swift
+@@ -51,9 +51,11 @@ struct SettingsView: View {
+ 					NavigationLink(destination: AppearanceView()) {
+ 						Label(.localized("Appearance"), systemImage: "paintbrush")
+ 					}
++					#if !ONETOOLS_EMBEDDED
+ 					NavigationLink(destination: AppIconView(currentIcon: $_currentIcon)) {
+ 						Label(.localized("App Icon"), systemImage: "app.badge")
+ 					}
++					#endif
+ 				}
+                 
+ 				NBSection(.localized("Certificates")) {
+@@ -108,7 +110,11 @@ extension SettingsView {
+ 		Section {
+ 			NavigationLink(destination: AboutView()) {
+ 				Label {
++					#if ONETOOLS_EMBEDDED
++					Text(verbatim: .localized("About %@", arguments: "Feather"))
++					#else
+ 					Text(verbatim: .localized("About %@", arguments: Bundle.main.name))
++					#endif
+ 				} icon: {
+ 					FRAppIconView(size: 23)
+ 				}
 diff --git a/Feather/Views/Signing/SigningView.swift b/Feather/Views/Signing/SigningView.swift
 index 7972089c64cc7a3c96aa59572ea65dfe6742fe66..53d234e79607c2a11ad16b7af33f60bccde4db33 100644
 --- a/Feather/Views/Signing/SigningView.swift
@@ -709,6 +1019,65 @@ index 766cafb464d9e37517cc16b996f444927f84d9d6..e5f79f585e3a8eb1fd362768da20700e
  								NBTitleWithSubtitleView(
  									title: .localized("All Repositories"),
  									subtitle: .localized("See all apps from your sources")
+diff --git a/Feather/Views/TabView/VariedTabbarView.swift b/Feather/Views/TabView/VariedTabbarView.swift
+index a857f77dd669cabf345252368ee64d838599e4a1..c53834e54f331623b825ecbb76336b019c3164d1 100644
+--- a/Feather/Views/TabView/VariedTabbarView.swift
++++ b/Feather/Views/TabView/VariedTabbarView.swift
+@@ -8,13 +8,41 @@
+ import SwiftUI
+ 
+ struct VariedTabbarView: View {
++	#if ONETOOLS_EMBEDDED
++	@State private var selectedTab: TabEnum = .library
++	private let embeddedTabs: [TabEnum] = [.library, .sources, .certificates, .settings]
++	#endif
++
+ 	init() {}
+ 	
+ 	var body: some View {
++		#if ONETOOLS_EMBEDDED
++		VStack(spacing: 0) {
++			Picker("", selection: $selectedTab) {
++				ForEach(embeddedTabs, id: \.self) { tab in
++					Text(tab.title).tag(tab)
++				}
++			}
++			.pickerStyle(.segmented)
++			.padding(.horizontal, 16)
++			.padding(.vertical, 6)
++
++			ZStack {
++				TabEnum.view(for: selectedTab)
++			}
++			.frame(maxWidth: .infinity, maxHeight: .infinity)
++		}
++		.onReceive(NotificationCenter.default.publisher(for: OneToolsFeatherBridge.selectSubtabNotification)) { note in
++			if let raw = note.userInfo?["tab"] as? String, let matched = TabEnum(rawValue: raw) {
++				selectedTab = matched
++			}
++		}
++		#else
+ 		if #available(iOS 18, *) {
+ 			ExtendedTabbarView()
+ 		} else {
+ 			TabbarView()
+ 		}
++		#endif
+ 	}
+ }
+diff --git a/NimbleKit/Sources/NimbleExtensions/FileManager/FileManager+shortcuts.swift b/NimbleKit/Sources/NimbleExtensions/FileManager/FileManager+shortcuts.swift
+index 063f3e81d54c5dd9735b80c1a8e1ca3f20f2ce1e..04947bad95de050707c63f2ff4e753c50f92c52d 100644
+--- a/NimbleKit/Sources/NimbleExtensions/FileManager/FileManager+shortcuts.swift
++++ b/NimbleKit/Sources/NimbleExtensions/FileManager/FileManager+shortcuts.swift
+@@ -56,7 +56,7 @@ extension FileManager {
+ 	public func decodeAndWrite(base64: String, pathComponent: String) -> URL? {
+ 		let raw = base64.replacingOccurrences(of: " ", with: "+")
+ 		guard let data = Data(base64Encoded: raw) else { return nil }
+-		let dir = self.temporaryDirectory.appendingPathComponent(UUID().uuidString + pathComponent)
++		let dir = self.temporaryDirectory.appendingPathComponent("FeatherCert_" + UUID().uuidString + pathComponent)
+ 		try? data.write(to: dir)
+ 		return dir
+ 	}
 diff --git a/NimbleKit/Sources/NimbleExtensions/String/String+localized.swift b/NimbleKit/Sources/NimbleExtensions/String/String+localized.swift
 index d0be3b712cbe3ae3103862ff6bfa3039c8a98cb4..076f88a2617248e0ac269850396c2e851ceaba0f 100644
 --- a/NimbleKit/Sources/NimbleExtensions/String/String+localized.swift

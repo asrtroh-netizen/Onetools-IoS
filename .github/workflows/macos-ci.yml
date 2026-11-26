@@ -14,6 +14,12 @@ on:
       - 'docs/**'
       - '*.md'
   workflow_dispatch:
+    inputs:
+      build_standalone_ipas:
+        description: 'Also build standalone Feather.ipa & Swipt.ipa in addition to All-in-One'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -45,10 +51,12 @@ jobs:
             tools/test_golden_diff.py \
             tools/test_check_ad_coverage.py \
             tools/test_export_upstream_patches.py \
+            tools/test_audit_cross_module_seams.py \
             tools/test_loon_lint.py -q
           python3 tools/check_samples.py
           python3 tools/loon_lint.py adblock/onetools-cn-ads.plugin
           python3 tools/check_ad_coverage.py
+          python3 tools/audit_cross_module_seams.py
           python3 tools/make_contact_sheet.py --check
           python3 tools/export_upstream_patches.py --check-manifest
 
@@ -134,18 +142,22 @@ jobs:
           key: feather-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Feather/Feather.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: feather-spm-${{ steps.xcode.outputs.build }}-
 
-      - name: Build standalone Feather IPA & FeatherUI.framework
+      - name: Build FeatherUI.framework (and optional standalone Feather IPA)
+        env:
+          BUILD_STANDALONE: ${{ inputs.build_standalone_ipas == true && '1' || '0' }}
         run: |
           bash scripts/ci/build-feather-framework.sh \
             "$GITHUB_WORKSPACE/Feather" \
             "$GITHUB_WORKSPACE/artifacts/feather" \
             "$RUNNER_TEMP/feather-embedded" \
-            "$RUNNER_TEMP/FeatherSPM"
+            "$RUNNER_TEMP/FeatherSPM" \
+            "$BUILD_STANDALONE"
           ditto -c -k --sequesterRsrc --keepParent \
             "$RUNNER_TEMP/feather-embedded" \
             "$GITHUB_WORKSPACE/artifacts/feather/feather-embedded.zip"
 
-      - name: Upload OneTools-Feather-IPA
+      - name: Upload OneTools-Feather-IPA (when standalone enabled)
+        if: ${{ inputs.build_standalone_ipas == true }}
         uses: actions/upload-artifact@v4
         with:
           name: OneTools-Feather-IPA
@@ -251,14 +263,17 @@ jobs:
           key: swipt-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Swipt/Swipt.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: swipt-spm-${{ steps.xcode.outputs.build }}-
 
-      - name: Build standalone Swipt IPA & SwiptUI.framework + LibSwipt.framework
+      - name: Build SwiptUI.framework + LibSwipt.framework (and optional standalone Swipt IPA)
         working-directory: Swipt
         env:
+          BUILD_STANDALONE: ${{ inputs.build_standalone_ipas == true && '1' || '0' }}
           XCODEBUILD_FLAGS: -clonedSourcePackagesDirPath ${{ runner.temp }}/SwiptSPM COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_CAS_PATH=${{ runner.temp }}/SwiptCompCache
         run: |
-          make archive_ios_ipa
           mkdir -p "$GITHUB_WORKSPACE/artifacts/swipt"
-          cp build/Swipt.ipa "$GITHUB_WORKSPACE/artifacts/swipt/OneTools-Swipt-unsigned.ipa"
+          if [[ "$BUILD_STANDALONE" == "1" ]]; then
+            make archive_ios_ipa
+            cp build/Swipt.ipa "$GITHUB_WORKSPACE/artifacts/swipt/OneTools-Swipt-unsigned.ipa"
+          fi
           bash "$GITHUB_WORKSPACE/scripts/ci/build-swipt-frameworks.sh" \
             "$GITHUB_WORKSPACE/Swipt" \
             "$RUNNER_TEMP/swipt-embedded" \
@@ -271,7 +286,8 @@ jobs:
             "$GITHUB_WORKSPACE/artifacts/swipt/LibSwipt.xcframework.zip"
           ls -lh "$GITHUB_WORKSPACE/artifacts/swipt"
 
-      - name: Upload OneTools-Swipt-IPA
+      - name: Upload OneTools-Swipt-IPA (when standalone enabled)
+        if: ${{ inputs.build_standalone_ipas == true }}
         uses: actions/upload-artifact@v4
         with:
           name: OneTools-Swipt-IPA
@@ -362,10 +378,9 @@ jobs:
           path: |
             ${{ runner.temp }}/ClashSourcePackages
             ${{ runner.temp }}/ClashCompilationCache
-          key: clash-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}-${{ github.run_id }}
+          key: clash-spm-v2-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}
           restore-keys: |
-            clash-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}-
-            clash-spm-${{ steps.xcode.outputs.build }}-
+            clash-spm-v2-${{ steps.xcode.outputs.build }}-
 
       - name: Download FeatherUI embedded frameworks
         uses: actions/download-artifact@v4
@@ -413,13 +428,13 @@ jobs:
             "artifacts/onetools/G2-go-runtimes.md"
 
       - name: Save Clash SwiftPM & Compilation Cache (Xcode 27)
-        if: always()
+        if: steps.clash_spm_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
             ${{ runner.temp }}/ClashSourcePackages
             ${{ runner.temp }}/ClashCompilationCache
-          key: clash-spm-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}-${{ github.run_id }}
+          key: clash-spm-v2-${{ steps.xcode.outputs.build }}-${{ hashFiles('Clash-Client/Dependencies.lock.json', 'patches/Clash-Client.patch') }}
 
       - name: Upload OneTools-AllInOne-IPA & Verification Reports
         uses: actions/upload-artifact@v4
@@ -427,6 +442,7 @@ jobs:
           name: OneTools-AllInOne-IPA
           path: |
             artifacts/onetools/OneTools-AllInOne-unsigned.ipa
+            artifacts/onetools/OneTools-AllInOne-Lite-unsigned.ipa
             artifacts/onetools/OneTools-Unified-Audit.md
             artifacts/onetools/G1-clash-kernel.md
             artifacts/onetools/G2-go-runtimes.md
