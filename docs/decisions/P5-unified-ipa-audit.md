@@ -1,32 +1,27 @@
-# P5 / P7 三合一单包（OneTools All-in-One IPA）云端总装审计报告
+# P5 / P7 三合一单包（OneTools All-in-One IPA）全局优化与云端总装审计报告
 
-- 日期：2026-11-26
-- 云端全绿流水线：[Run #45669957741](https://github.com/asrtroh-netizen/Onetools-IoS/actions/runs/45669957741)（HEAD `7da61fef`）
-- 产物文件名：`OneTools-AllInOne-unsigned.ipa`
-- 安装包体积：**117.8 MB**（`123,526,894` 字节；解压后 `.app` 体积 `332 MB`）
-- 桌面显示名（`CFBundleDisplayName`）：`OneTools`
-- 应用组标识（`AppGroupIdentifier`）：`group.org.onetools.app`
-- Swipt 官方源通道（`SwiptChannel`）：`stable`（首次进入自动静默安装 `skip-chinese-ads` 并预置 `fuzzySkip = true`）
+- 日期：2026-11-26 / 2026-11-27
+- 优化后全绿流水线：[Run #45742425538](https://github.com/asrtroh-netizen/Onetools-IoS/actions/runs/45742425538)（HEAD `e5197d8`）
+- 全功能版产物：`OneTools-AllInOne-unsigned.ipa`（**`101.1 MiB` / `105,990,482` 字节**，较优化前 `117.80 MiB` 直降 **`-16.72 MiB / -14.2%`**）
+- 免费个人号精简自签版产物：`OneTools-AllInOne-Lite-unsigned.ipa`（**`96.9 MiB` / `101,556,964` 字节**，剥离 3 个 `.appex` 仅占 `1` 个每周 App ID 配额、`0` 付费权限）
+- 解压后 `.app` 体积：**`217 MB`**（较优化前 `332 MB` 缩减 **`-115 MB / -34.6%`**）
+- 首屏冷启动隔离（`pre-main`）：**PASS**（主可执行文件 `Clash` 仅强链接 `Clash.framework`，`SwiptUI` / `FeatherUI` / `LibSwipt` / `React` / `hermesvm` / `OpenSSL` 均按需 `dlopen` 加载）
+- 跨镜像 Objective-C 类表冲突数：**`0`**（全包主程序 + 12 个动态框架零重名 ObjC 类）
+- 隧道扩展隔离与内存段水位：**PASS**（`ClashiOSExtension` 仅链接 `Clash.framework`，静态 `__DATA` 段总计 `41.06 MB` < `50 MB` Jetsam 红线）
 
-## 1. 主程序与扩展进程链接结构
+## 内嵌动态框架瘦身前后对比（`Payload/Clash.app/Frameworks/`）
 
-- **主可执行文件 `Payload/Clash.app/Clash`**：同时链接 `@rpath/Clash.framework/Clash`、`@rpath/SwiptUI.framework/SwiptUI`（通过纯 ObjC ABI 防火墙 `OneToolsSwiptBridge` 挂载 `SwiptRootView`）与 `@rpath/FeatherUI.framework/FeatherUI`（通过纯 ObjC ABI 防火墙 `OneToolsFeatherBridge` 挂载 `FeatherRootView` 及 `feather://` / `.ipa` / `.tipa` 深链路由）。
-- **隧道扩展 `Payload/Clash.app/PlugIns/ClashiOSExtension.appex/ClashiOSExtension`**：仅链接 `@rpath/Clash.framework/Clash`，完全隔离于 `LibSwipt`、`SwiptUI`、`FeatherUI`、React Native 与 Hermes。
-- **跨镜像 Objective-C 类表冲突数**：**0**（全包主程序 + 12 个动态框架零重名 ObjC 类）。
-
-## 2. 内嵌 12 个动态框架清单（`Payload/Clash.app/Frameworks/`）
-
-| 动态框架 | 解压体积 | 用途 |
-|---|---|---|
-| `Clash.framework` | `49M` | Clash（`mihomo`）核心代理、Loon 模块引擎与 `10.7.0.1` 环回注入 |
-| `LibSwipt.framework` | `45M` | Swipt Go 核心运行时（`SwiptGoSeqRef` 独立 ObjC 命名空间） |
-| `SwiptUI.framework` | `43M` | Swipt 原生界面、`main.jsbundle` 与 `DeveloperDiskImage` |
-| `FeatherUI.framework` | `40M` | Feather 原生自签工作台、`Zsign`、`IDeviceSwift`、`Vapor` 与 `SigningLogic`（批量签名、一键重签、7天/1天到期通知） |
-| `React.framework` | `12M` | Swiplet React Native 运行时底座 |
-| `hermesvm.framework` | `6.1M` | Swiplet Hermes JS 字节码引擎 |
-| `OpenSSL.framework` | `4.2M` | Zsign 证书解析与 CMS 代码签名加密库 |
-| `ExpoModulesCore.framework` | `3.3M` | Swiplet Expo 核心桥接模块 |
-| `ReactNativeDependencies.framework` | `1.3M` | React Native 原生运行时依赖 |
-| `ExpoMaps.framework` | `904K` | Swiplet 地图组件支持 |
-| `ExpoFont.framework` | `280K` | Swiplet 字体加载支持 |
-| `ExpoModulesWorklets.framework` | `168K` | Swiplet Worklets 并发支持 |
+| 动态框架 | 优化前体积 | 优化后体积 | 变化说明 |
+|---|---|---|---|
+| `Clash.framework` | `49M` | `49M` | Clash（`mihomo`）核心代理、Loon 模块引擎、`10.7.0.1` 环回与 `+.backloop.dev` 真 IP 放行 |
+| `LibSwipt.framework` | `45M` | **`39M`** | Swipt Go 核心运行时（`SwiptGoSeqRef` 隔离 + 新增 `FreeOSMemory()` 内存释放 + `strip -x`） |
+| `SwiptUI.framework` | `43M` | **`31M`** | Swipt 原生界面（沙盒独立子目录、冷启动 `.swiplet` 队列、局部符号剥离 `-28%`） |
+| `FeatherUI.framework` | `40M` | **`18M`** | Feather 自签工作台（局部符号剥离 **`-55%`**、顶栏分段扁平化、`.p12/.mobileprovision` 配对暂存、Nuke `24 MiB` 上限） |
+| `React.framework` | `12M` | **`6.5M`** | React Native 运行时底座（`strip -x` `-46%`） |
+| `hermesvm.framework` | `6.1M` | **`2.9M`** | Hermes JS 引擎（`strip -x` **`-52%`**） |
+| `OpenSSL.framework` | `4.2M` | **`4.0M`** | Zsign CMS 签名加密库 |
+| `ExpoModulesCore.framework` | `3.3M` | **`2.1M`** | Expo 核心模块（`-36%`） |
+| `ReactNativeDependencies.framework` | `1.3M` | **`860K`** | RN 原生依赖（`-34%`） |
+| `ExpoMaps.framework` | `904K` | `904K` | Swiplet 地图组件支持 |
+| `ExpoFont.framework` | `280K` | `280K` | Swiplet 字体支持 |
+| `ExpoModulesWorklets.framework` | `168K` | **`112K`** | Swiplet Worklets 支持（`-33%`） |
