@@ -278,7 +278,7 @@ index bd978db7bac0ebed35e3702ad3940a349c2a38df..f3325564b0c52ffc62465034bfe947b6
  "Switch to %@" = "切換到 %@";
  "Switch to another profile before deleting" = "刪除前請先切換到其他設定檔";
 diff --git a/apple/ClashClient/Sources/ClashClientApp.swift b/apple/ClashClient/Sources/ClashClientApp.swift
-index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..76a96b365b795b7364d2f6d0b1132a4268832bba 100644
+index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..09cd53b38cf06cdea1cd1d1c05e3ffe5b1ae2fdd 100644
 --- a/apple/ClashClient/Sources/ClashClientApp.swift
 +++ b/apple/ClashClient/Sources/ClashClientApp.swift
 @@ -4,8 +4,24 @@ import SwiftUI
@@ -317,22 +317,20 @@ index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..76a96b365b795b7364d2f6d0b1132a42
  
          }
      }
-@@ -177,6 +195,33 @@ struct AppShellView: View {
+@@ -177,6 +195,31 @@ struct AppShellView: View {
          vpn.applicationBecameActive()
      }
  
 +    private func installOneToolsLoopbackHooks() {
 +        OneToolsShellRouter.shared.reconnectTunnelHandler = { [vpn] in
-+            await vpn.stopVPN()
-+            try? await Task.sleep(nanoseconds: 450_000_000)
-+            _ = await vpn.startVPN()
++            await vpn.forceRestart()
 +        }
-+        OneToolsShellRouter.shared.applySwiptLoopbackHandler = { [vpn, profiles] enabled in
++        OneToolsShellRouter.shared.applySwiptLoopbackHandler = { [vpn, profiles, command] enabled in
 +            var next = vpn.tunnelSettings
 +            next.swiptLoopback = enabled
 +            _ = await vpn.updateTunnelSettings(next)
 +            profiles.restageActiveRuntime()
-+            if vpn.isConnected {
++            if command.isConnected {
 +                OneToolsShellRouter.shared.showBanner(
 +                    "已更新 10.7.0.1 环回配置，重连 VPN 后立即生效",
 +                    actionTitle: "立即重连",
@@ -351,7 +349,7 @@ index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..76a96b365b795b7364d2f6d0b1132a42
  
      @Environment(\.horizontalSizeClass) private var horizontalSizeClass
      @StateObject private var preferences = AppPreferencesModel()
-@@ -661,8 +706,7 @@ struct AppShellView: View {
+@@ -661,8 +704,7 @@ struct AppShellView: View {
           
           
          .task {
@@ -361,7 +359,7 @@ index 4c66a9672c43e533adfa35f167ec1d8ecad4612f..76a96b365b795b7364d2f6d0b1132a42
          }
          .task {
               
-@@ -853,7 +897,9 @@ struct AppShellView: View {
+@@ -853,7 +895,9 @@ struct AppShellView: View {
              if !command.isConnected { Task { await nodes.refresh() } }
          }
          .onOpenURL { url in

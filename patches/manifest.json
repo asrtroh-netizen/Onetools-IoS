@@ -2,10 +2,10 @@
   "repos": {
     "Clash-Client": {
       "base_revision": "e3e647283b1593a61dba622f13cd499deeda9b8b",
-      "head_revision": "47e7df6afbd8023456457e5b7a6ecfc2ae604666",
-      "patch_bytes": 75751,
+      "head_revision": "cf64e4203e72fc383e7cd20f6000aa38c9d6c151",
+      "patch_bytes": 75670,
       "patch_file": "patches/Clash-Client.patch",
-      "patch_sha256": "b90f99a8286815d0580a5cc146faff1a6d10ec2e8ba571a69f331cd5b29e7525",
+      "patch_sha256": "0893d9d096c1bae94df506f276d3fd1d913a7aed0e3734e468a675ff2fd89d37",
       "url": "https://github.com/ProjectClash/Clash-Client.git"
     },
     "Feather": {
