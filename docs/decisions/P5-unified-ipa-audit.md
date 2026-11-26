@@ -1,9 +1,10 @@
 # P5 / P7 三合一单包（OneTools All-in-One IPA）全局优化与云端总装审计报告
 
-- 日期：2026-11-26 / 2026-11-27
-- 优化后全绿流水线：[Run #45742425538](https://github.com/asrtroh-netizen/Onetools-IoS/actions/runs/45742425538)（HEAD `e5197d8`）
-- 全功能版产物：`OneTools-AllInOne-unsigned.ipa`（**`101.1 MiB` / `105,990,482` 字节**，较优化前 `117.80 MiB` 直降 **`-16.72 MiB / -14.2%`**）
-- 免费个人号精简自签版产物：`OneTools-AllInOne-Lite-unsigned.ipa`（**`96.9 MiB` / `101,556,964` 字节**，剥离 3 个 `.appex` 仅占 `1` 个每周 App ID 配额、`0` 付费权限）
+- 日期：2026-11-27
+- 正式 GitHub Release：[v1.1.0](https://github.com/asrtroh-netizen/Onetools-IoS/releases/tag/v1.1.0)
+- 最新全绿流水线：[Run #45870316025](https://github.com/asrtroh-netizen/Onetools-IoS/actions/runs/45870316025)（HEAD `58e0efb`）
+- 全功能版产物：`OneTools-AllInOne-unsigned.ipa`（**`101.15 MiB` / `106,067,550` 字节**，较初版 `117.80 MiB` 直降 **`-16.65 MiB / -14.1%`**）
+- 免费个人号精简自签版产物：`OneTools-AllInOne-Lite-unsigned.ipa`（**`96.93 MiB` / `101,634,033` 字节**，剥离 3 个 `.appex` 仅占 `1` 个每周 App ID 配额、`0` 付费权限）
 - 解压后 `.app` 体积：**`217 MB`**（较优化前 `332 MB` 缩减 **`-115 MB / -34.6%`**）
 - 首屏冷启动隔离（`pre-main`）：**PASS**（主可执行文件 `Clash` 仅强链接 `Clash.framework`，`SwiptUI` / `FeatherUI` / `LibSwipt` / `React` / `hermesvm` / `OpenSSL` 均按需 `dlopen` 加载）
 - 跨镜像 Objective-C 类表冲突数：**`0`**（全包主程序 + 12 个动态框架零重名 ObjC 类）
